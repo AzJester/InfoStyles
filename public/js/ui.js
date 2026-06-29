@@ -97,8 +97,34 @@ export function wireModalDismiss(modal) {
   });
 }
 
-// Global Escape closes the topmost modal; "/" focuses search when not typing.
+// --- Lightbox: view an image full size ---
+export function openLightbox(src, alt = "") {
+  const lb = document.getElementById("lightbox");
+  const img = document.getElementById("lightboxImg");
+  if (!lb || !img) return;
+  img.src = src;
+  img.alt = alt;
+  lb.hidden = false;
+}
+function closeLightbox() {
+  const lb = document.getElementById("lightbox");
+  if (lb && !lb.hidden) {
+    lb.hidden = true;
+    document.getElementById("lightboxImg").src = "";
+    return true;
+  }
+  return false;
+}
+document.addEventListener("click", (e) => {
+  const lb = document.getElementById("lightbox");
+  if (lb && !lb.hidden && (e.target === lb || e.target.id === "lightboxImg" || e.target.closest("#lightbox"))) {
+    closeLightbox();
+  }
+});
+
+// Global Escape closes the lightbox, then the topmost modal; "/" focuses search.
 document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && closeLightbox()) return;
   if (e.key === "Escape" && openModals.length) {
     closeModal(openModals[openModals.length - 1]);
     return;

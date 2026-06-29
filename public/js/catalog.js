@@ -4,7 +4,7 @@
 import { getCatalog } from "./api.js";
 
 const BUILTIN_FIELDS = [
-  "category", "style", "type", "icons", "layout", "charts", "background", "avoid", "notebookLMPrompt", "sampleImage",
+  "category", "style", "type", "icons", "layout", "charts", "background", "avoid", "notebookLMPrompt", "sampleImage", "images",
 ];
 
 let builtin = [];

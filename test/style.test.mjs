@@ -19,6 +19,17 @@ test("sanitizeStyle accepts an https URL or a safe /uploads path for the sample 
   assert.equal(sanitizeStyle({}).sampleImage, "");
 });
 
+test("sanitizeStyle validates the images array and keeps the first as sampleImage", () => {
+  const s = sanitizeStyle({ images: ["https://a.example/x.png", "javascript:bad", "/uploads/s/y.jpg", "/uploads/evil.svg"] });
+  assert.deepEqual(s.images, ["https://a.example/x.png", "/uploads/s/y.jpg"]);
+  assert.equal(s.sampleImage, "https://a.example/x.png");
+});
+
+test("sanitizeStyle migrates a legacy single sampleImage into images", () => {
+  const s = sanitizeStyle({ sampleImage: "/uploads/s/old.png" });
+  assert.deepEqual(s.images, ["/uploads/s/old.png"]);
+});
+
 test("sanitizeStyle fills sensible defaults", () => {
   const s = sanitizeStyle({});
   assert.equal(s.style, "Untitled");

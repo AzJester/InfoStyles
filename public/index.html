@@ -120,12 +120,13 @@
           <label class="field"><span class="field-label">Avoid</span><input id="fAvoid" class="input" /></label>
           <label class="field span-2"><span class="field-label">NotebookLM prompt</span><textarea id="fNotebook" class="input textarea" rows="2"></textarea></label>
           <div class="field span-2" id="sampleRow">
-            <span class="field-label">Sample image (optional)</span>
-            <div class="sample-uploader">
-              <input type="file" id="fSampleFile" accept="image/*" class="input" />
-              <div id="samplePreview" class="sample-preview"></div>
-              <span id="sampleStatus" class="field-help"></span>
+            <span class="field-label">Example images (optional)</span>
+            <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Add example images">
+              <input type="file" id="fSampleFile" accept="image/*" multiple hidden />
+              <p class="dropzone-hint">Drag &amp; drop images here, or <span class="linkish">click to browse</span></p>
             </div>
+            <div id="samplePreview" class="thumb-grid"></div>
+            <span id="sampleStatus" class="field-help"></span>
           </div>
         </div>
 
@@ -151,6 +152,10 @@
           <span class="field-help">Bulk-adds styles from a JSON array as custom styles (saved for everyone).</span>
         </div>
       </div>
+    </div>
+
+    <div id="lightbox" class="lightbox" hidden role="dialog" aria-modal="true" aria-label="Image full size">
+      <img id="lightboxImg" alt="" />
     </div>
 
     <div id="toast" class="toast" hidden></div>
