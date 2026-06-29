@@ -16,12 +16,26 @@ function clause(value) {
  * @param {object} style - { style, type, palette[], layout, icons, charts, background, avoid }
  * @returns {string}
  */
-export function toImagePrompt(style) {
+const ASPECT_WORD = {
+  "16:9": "wide 16:9",
+  "1:1": "square",
+  "4:5": "portrait 4:5",
+  "9:16": "tall 9:16",
+};
+
+/**
+ * Build an image-generation prompt.
+ * @param {object} style
+ * @param {object} [opts] - { aspect: "16:9"|"1:1"|"4:5"|"9:16", model: "openai"|"midjourney"|"dalle"|"generic" }
+ */
+export function toImagePrompt(style, opts = {}) {
+  const aspect = ASPECT_WORD[opts.aspect] ? opts.aspect : "16:9";
+  const model = opts.model || "openai";
   const name = clean(style.style);
   const parts = [];
 
   parts.push(
-    `A wide 16:9 infographic slide${name ? ` in the style of "${name}"` : ""}.`
+    `A ${ASPECT_WORD[aspect]} infographic slide${name ? ` in the style of "${name}"` : ""}.`
   );
 
   const visual = clause(style.type);
@@ -53,7 +67,28 @@ export function toImagePrompt(style) {
   const avoid = clause(style.avoid);
   if (avoid) parts.push(`Style constraints to respect: keep the design free of ${avoid}.`);
 
-  return parts.join(" ");
+  let out = parts.join(" ");
+  // Model-specific tail: Midjourney uses --ar flags; others get a plain clause.
+  if (model === "midjourney") out += ` --ar ${aspect} --v 6`;
+  else out += ` Aspect ratio: ${aspect}.`;
+  return out;
+}
+
+// --- {{variable}} templating in prompts ---
+const VAR_RE = /\{\{\s*([\w-]+)\s*\}\}/g;
+
+export function extractVariables(text) {
+  const seen = new Set();
+  let m;
+  VAR_RE.lastIndex = 0;
+  while ((m = VAR_RE.exec(String(text || "")))) seen.add(m[1]);
+  return [...seen];
+}
+
+export function applyVariables(text, values) {
+  return String(text || "").replace(VAR_RE, (whole, name) =>
+    values[name] != null && values[name] !== "" ? values[name] : whole
+  );
 }
 
 /**

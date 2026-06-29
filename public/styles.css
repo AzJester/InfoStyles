@@ -223,7 +223,10 @@ mark { background: none; color: inherit; font-weight: 600; }
 .detail-field { font-size: 0.8125rem; display: flex; flex-direction: column; gap: 2px; }
 .detail-label { font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
 .prompt-block { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
-.prompt-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 0.8125rem; font-weight: 600; }
+.prompt-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 0.8125rem; font-weight: 600; flex-wrap: wrap; }
+.prompt-opts { display: inline-flex; gap: 6px; align-items: center; }
+.prompt-opts .select { padding: 4px 8px; font-size: 0.8rem; max-width: 120px; }
+.detail-foot { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 .prompt-text { margin: 0; padding: 12px; font-family: var(--mono); font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; }
 .detail-admin { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 8px; }
 .image-area { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }

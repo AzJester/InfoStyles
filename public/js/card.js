@@ -1,9 +1,9 @@
 // Style cards and the detail modal (palette, both prompts, admin image generation).
-import { escapeHtml, highlight, copyText, toast, openModal, wireModalDismiss } from "./ui.js";
+import { escapeHtml, highlight, copyText, copyWithVariables, toast, openModal, wireModalDismiss } from "./ui.js";
 import { toImagePrompt, toNotebookLMPrompt } from "./imagePrompt.js";
 import { isFavorite, toggleFavorite } from "./storage.js";
 import { openLightbox } from "./ui.js";
-import { bestTextColor, paletteFormats } from "./palette.js";
+import { bestTextColor, paletteFormats, randomPalette } from "./palette.js";
 import * as api from "./api.js";
 
 // Large detail swatches show an "Aa" in the most readable text color (contrast check).
@@ -112,6 +112,14 @@ function fieldBlock(label, value) {
   return `<div class="detail-field"><span class="detail-label">${label}</span><span>${escapeHtml(value)}</span></div>`;
 }
 
+function toMarkdown(style, palette, imgPrompt, nbPrompt) {
+  let md = `## ${style.style || "Untitled"}\n`;
+  if (style.category) md += `**Category:** ${style.category}\n`;
+  if (palette.length) md += `**Palette:** ${palette.join(" ")}\n`;
+  md += `\n### OpenAI image prompt\n${imgPrompt}\n\n### NotebookLM prompt\n${nbPrompt}\n`;
+  return md;
+}
+
 export function openDetail(style, ctx) {
   const modal = document.getElementById("detailModal");
   const body = document.getElementById("detailBody");
@@ -121,9 +129,14 @@ export function openDetail(style, ctx) {
     wireModalDismiss(modal);
     modal._dismissWired = true;
   }
-  const imagePrompt = toImagePrompt(style);
   const notebookPrompt = style.notebookLMPrompt || toNotebookLMPrompt(style);
   const imgs = imagesOf(style);
+
+  // Live state: palette can be "rolled", and the image prompt reflects aspect/model.
+  const original = (style.palette || []).slice();
+  let palette = original.slice();
+  const imgOpts = { aspect: "16:9", model: "openai" };
+  let currentImagePrompt = "";
 
   const adminBar =
     ctx.admin()
@@ -162,21 +175,7 @@ export function openDetail(style, ctx) {
         : ""
     }
 
-    ${
-      style.palette?.length
-        ? `<div class="detail-palette">
-             <div class="swatches lg">${detailSwatchRow(style.palette)}</div>
-             <div class="palette-actions">
-               <span class="palette-actions-label">Copy palette:</span>
-               <button type="button" class="btn btn-sm" data-pal="hex">Hex</button>
-               <button type="button" class="btn btn-sm" data-pal="css">CSS</button>
-               <button type="button" class="btn btn-sm" data-pal="scss">SCSS</button>
-               <button type="button" class="btn btn-sm" data-pal="tailwind">Tailwind</button>
-               <button type="button" class="btn btn-sm" data-pal="json">JSON</button>
-             </div>
-           </div>`
-        : ""
-    }
+    <div class="detail-palette" id="detailPalette"></div>
 
     <div class="detail-grid">
       ${fieldBlock("Type", style.type)}
@@ -188,9 +187,25 @@ export function openDetail(style, ctx) {
     </div>
 
     <div class="prompt-block">
-      <div class="prompt-head"><span>OpenAI image prompt</span>
-        <button type="button" class="btn btn-sm" data-copy-img>Copy</button></div>
-      <pre class="prompt-text">${escapeHtml(imagePrompt)}</pre>
+      <div class="prompt-head">
+        <span>OpenAI image prompt</span>
+        <span class="prompt-opts">
+          <select id="aspectSel" class="select" aria-label="Aspect ratio">
+            <option value="16:9">16:9</option>
+            <option value="1:1">1:1</option>
+            <option value="4:5">4:5</option>
+            <option value="9:16">9:16</option>
+          </select>
+          <select id="modelSel" class="select" aria-label="Target model">
+            <option value="openai">OpenAI</option>
+            <option value="dalle">DALL·E 3</option>
+            <option value="midjourney">Midjourney</option>
+            <option value="generic">Generic</option>
+          </select>
+          <button type="button" class="btn btn-sm" data-copy-img>Copy</button>
+        </span>
+      </div>
+      <pre class="prompt-text" id="imgPromptText"></pre>
     </div>
 
     <div class="prompt-block">
@@ -199,20 +214,77 @@ export function openDetail(style, ctx) {
       <pre class="prompt-text">${escapeHtml(notebookPrompt)}</pre>
     </div>
 
+    <div class="detail-foot">
+      <button type="button" class="btn btn-sm" data-copy-md>Copy as Markdown</button>
+    </div>
+
     ${adminBar}
   `;
 
-  // wire copies
-  body.querySelector("[data-copy-img]").addEventListener("click", () => copyText(imagePrompt, "Image prompt copied"));
+  function renderImagePrompt() {
+    currentImagePrompt = toImagePrompt({ ...style, palette }, imgOpts);
+    body.querySelector("#imgPromptText").textContent = currentImagePrompt;
+  }
+
+  function renderPalette() {
+    const el = body.querySelector("#detailPalette");
+    if (!original.length) {
+      el.hidden = true;
+      return;
+    }
+    const same = palette.length === original.length && palette.every((c, i) => c === original[i]);
+    el.innerHTML = `
+      <div class="swatches lg">${detailSwatchRow(palette)}</div>
+      <div class="palette-actions">
+        <span class="palette-actions-label">Copy palette:</span>
+        <button type="button" class="btn btn-sm" data-pal="hex">Hex</button>
+        <button type="button" class="btn btn-sm" data-pal="css">CSS</button>
+        <button type="button" class="btn btn-sm" data-pal="scss">SCSS</button>
+        <button type="button" class="btn btn-sm" data-pal="tailwind">Tailwind</button>
+        <button type="button" class="btn btn-sm" data-pal="json">JSON</button>
+        <button type="button" class="btn btn-sm" data-roll title="Generate a different palette">🎲 Shuffle palette</button>
+        ${same ? "" : `<button type="button" class="btn btn-sm" data-reset>Reset</button>`}
+      </div>`;
+    el.querySelectorAll(".swatch").forEach((sw) =>
+      sw.addEventListener("click", () => copyText(sw.dataset.hex, sw.dataset.hex))
+    );
+    const pf = paletteFormats(palette);
+    el.querySelectorAll("[data-pal]").forEach((btn) =>
+      btn.addEventListener("click", () => copyText(pf[btn.dataset.pal], `Palette copied (${btn.dataset.pal})`))
+    );
+    el.querySelector("[data-roll]").addEventListener("click", () => {
+      palette = randomPalette(original.length || 5);
+      renderPalette();
+      renderImagePrompt();
+      toast("New palette rolled 🎲");
+    });
+    el.querySelector("[data-reset]")?.addEventListener("click", () => {
+      palette = original.slice();
+      renderPalette();
+      renderImagePrompt();
+    });
+  }
+
+  renderPalette();
+  renderImagePrompt();
+
+  // copies
+  body.querySelector("[data-copy-img]").addEventListener("click", () =>
+    copyWithVariables(currentImagePrompt, "Image prompt copied")
+  );
   body.querySelector("[data-copy-nb]")?.addEventListener("click", () =>
-    copyText(notebookPrompt, "NotebookLM prompt copied")
+    copyWithVariables(notebookPrompt, "NotebookLM prompt copied")
   );
-  body.querySelectorAll(".swatch").forEach((sw) =>
-    sw.addEventListener("click", () => copyText(sw.dataset.hex, sw.dataset.hex))
-  );
-  const pf = paletteFormats(style.palette);
-  body.querySelectorAll("[data-pal]").forEach((btn) =>
-    btn.addEventListener("click", () => copyText(pf[btn.dataset.pal], `Palette copied (${btn.dataset.pal})`))
+  body.querySelector("#aspectSel").addEventListener("change", (e) => {
+    imgOpts.aspect = e.target.value;
+    renderImagePrompt();
+  });
+  body.querySelector("#modelSel").addEventListener("change", (e) => {
+    imgOpts.model = e.target.value;
+    renderImagePrompt();
+  });
+  body.querySelector("[data-copy-md]").addEventListener("click", () =>
+    copyText(toMarkdown(style, palette, currentImagePrompt, notebookPrompt), "Copied as Markdown")
   );
   body.querySelectorAll("[data-img]").forEach((el) =>
     el.addEventListener("click", () => openLightbox(imgs[Number(el.dataset.img)], el.alt))

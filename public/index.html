@@ -158,6 +158,16 @@
       </div>
     </div>
 
+    <!-- Fill {{variables}} before copying a prompt -->
+    <div id="varModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="varTitle">
+      <div class="modal-card">
+        <div class="modal-head"><h2 id="varTitle">Fill in the prompt</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <p class="field-help">This prompt has placeholders. Fill them in, then copy.</p>
+        <div id="varFields"></div>
+        <div class="modal-foot"><button class="btn btn-primary" id="varCopyBtn">Copy</button></div>
+      </div>
+    </div>
+
     <div id="lightbox" class="lightbox" hidden role="dialog" aria-modal="true" aria-label="Image full size">
       <img id="lightboxImg" alt="" />
     </div>

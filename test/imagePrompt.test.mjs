@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { toImagePrompt, toNotebookLMPrompt } from "../public/js/imagePrompt.js";
+import { toImagePrompt, toNotebookLMPrompt, extractVariables, applyVariables } from "../public/js/imagePrompt.js";
 
 test("includes the palette as an exact-color instruction", () => {
   const p = toImagePrompt({ style: "Test", palette: ["#1F2537", "#FFFFFF"] });
@@ -23,6 +23,22 @@ test("skips empty fields cleanly", () => {
 test("names the style", () => {
   const p = toImagePrompt({ style: "Synthwave" });
   assert.match(p, /in the style of "Synthwave"/);
+});
+
+test("toImagePrompt respects aspect ratio and model", () => {
+  const sq = toImagePrompt({ style: "X" }, { aspect: "1:1" });
+  assert.match(sq, /A square infographic slide/);
+  assert.match(sq, /Aspect ratio: 1:1\.$/);
+  const mj = toImagePrompt({ style: "X" }, { model: "midjourney", aspect: "9:16" });
+  assert.match(mj, /--ar 9:16 --v 6$/);
+  // default
+  assert.match(toImagePrompt({ style: "X" }), /A wide 16:9 infographic slide/);
+});
+
+test("extractVariables / applyVariables handle {{tokens}}", () => {
+  assert.deepEqual(extractVariables("Hi {{name}}, about {{topic}} and {{name}}"), ["name", "topic"]);
+  assert.equal(applyVariables("Hi {{name}}", { name: "Sam" }), "Hi Sam");
+  assert.equal(applyVariables("Hi {{name}}", {}), "Hi {{name}}"); // unfilled left intact
 });
 
 test("toNotebookLMPrompt builds a terse paragraph from fields", () => {
