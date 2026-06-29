@@ -8,5 +8,6 @@ export default async function handler(req, res) {
     admin: isAdmin(req),
     kv: kvAvailable(),
     imageEnabled: !!process.env.OPENAI_API_KEY,
+    uploadEnabled: !!process.env.BLOB_READ_WRITE_TOKEN,
   });
 }

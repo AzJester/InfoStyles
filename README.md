@@ -7,7 +7,8 @@ Hosted on **Vercel**: a static front end plus a small serverless `/api`. The key
 ## What visitors can do (no login)
 
 - Browse, search, and filter by category (grouped, with counts), by **color**, or by **favorites** (saved in their browser).
-- Open any style for a detail view: full fields, a large palette (click swatches or "copy all hex" / "copy as CSS vars"), and both prompts.
+- Switch between **grid and list** views (remembered per browser).
+- Open any style for a detail view: full fields, a large palette (click swatches or "copy all hex" / "copy as CSS vars"), the sample image (if one was added), and both prompts.
 - Copy the **NotebookLM** prompt or the generated **OpenAI image** prompt.
 - Light/dark theme toggle, keyboard shortcuts (`/` to search, `Esc` to close).
 
@@ -17,6 +18,7 @@ Hosted on **Vercel**: a static front end plus a small serverless `/api`. The key
 - **Edit any existing style** (built-in or custom) and **delete** styles. Changes save to the shared store and are visible to everyone.
 - **Remix** a style with AI ("make this darker, for finance").
 - **Generate a preview image** (OpenAI) inline and download it.
+- **Upload a sample image** to a style (stored in Vercel Blob); shows on the card and in detail for everyone.
 - Bulk **import** styles from JSON.
 
 The AI features and the keys are gated server-side. Hiding the admin UI is only cosmetic; the real boundary is that `/api/generate-*` and `/api/styles` reject any request without a valid admin session.
@@ -25,7 +27,8 @@ The AI features and the keys are gated server-side. Hiding the admin UI is only 
 
 1. Import the GitHub repo into Vercel (no framework / "Other"; no build command needed — the data JSON is committed). Vercel serves `public/` and runs `api/`.
 2. Add a **KV** store: Vercel dashboard → Storage → create KV → connect to the project. This sets `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically.
-3. Set **Environment Variables** (Project → Settings → Environment Variables):
+3. Add a **Blob** store (for sample-image uploads): Storage → create Blob → connect to the project. This sets `BLOB_READ_WRITE_TOKEN` automatically. Optional — the upload field only appears if it's set.
+4. Set **Environment Variables** (Project → Settings → Environment Variables):
 
    | Variable | Purpose |
    | --- | --- |
@@ -33,8 +36,9 @@ The AI features and the keys are gated server-side. Hiding the admin UI is only 
    | `AUTH_SECRET` | A long random string used to sign session cookies. |
    | `ANTHROPIC_API_KEY` | Server-side key for AI style generation (Claude). |
    | `OPENAI_API_KEY` | Server-side key for image generation. Optional — image button only appears if set. |
+   | `BLOB_READ_WRITE_TOKEN` | Set automatically when you connect a Vercel Blob store. Enables sample-image uploads. |
 
-4. Deploy. Pushes to `main` auto-deploy. Open the app, click **Admin**, sign in, and the AI/edit features unlock.
+5. Deploy. Pushes to `main` auto-deploy. Open the app, click **Admin**, sign in, and the AI/edit features unlock.
 
 > The `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` are only ever read inside the serverless functions. They are never sent to the browser and never appear in client code.
 

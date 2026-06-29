@@ -34,17 +34,20 @@
         <span class="count-badge" id="resultCount"></span>
       </div>
       <div class="controls">
-        <input type="search" id="search" class="search" placeholder="Search styles, fields, colors…   ( / )" autocomplete="off" spellcheck="false" aria-label="Search styles" />
+        <input type="search" id="search" class="search" placeholder="Search styles…   ( / )" autocomplete="off" spellcheck="false" aria-label="Search styles" />
         <select id="categoryFilter" class="select" aria-label="Filter by category"></select>
-        <button id="favFilter" class="btn" aria-pressed="false">☆ Favorites</button>
+        <button id="favFilter" class="btn btn-icon" aria-pressed="false" title="Show favorites" aria-label="Show favorites">☆</button>
+        <button id="viewBtn" class="btn btn-icon" title="Switch to list view" aria-label="Switch to list view">☰</button>
         <label class="color-filter" title="Filter by color">
           <input type="color" id="colorFilter" value="#000000" aria-label="Filter by palette color" />
-          <button id="colorClear" class="color-clear" hidden aria-label="Clear color filter">✕</button>
         </label>
-        <button id="newStyleBtn" class="btn btn-primary" hidden>+ New style</button>
-        <button id="themeBtn" class="btn btn-icon" aria-label="Toggle theme">☾</button>
-        <button id="settingsBtn" class="btn btn-icon" title="Settings" aria-label="Settings">⚙</button>
-        <button id="adminBtn" class="btn">Admin</button>
+        <button id="colorClear" class="btn btn-icon" hidden aria-label="Clear color filter" title="Clear color filter">✕</button>
+        <div class="controls-utility">
+          <button id="newStyleBtn" class="btn btn-primary" hidden>+ New style</button>
+          <button id="themeBtn" class="btn btn-icon" aria-label="Toggle theme">☾</button>
+          <button id="settingsBtn" class="btn btn-icon" title="Settings" aria-label="Settings">⚙</button>
+          <button id="adminBtn" class="btn btn-icon" title="Admin sign in" aria-label="Admin sign in">🔑</button>
+        </div>
       </div>
     </header>
 
@@ -111,6 +114,14 @@
           <label class="field"><span class="field-label">Background</span><input id="fBackground" class="input" /></label>
           <label class="field"><span class="field-label">Avoid</span><input id="fAvoid" class="input" /></label>
           <label class="field span-2"><span class="field-label">NotebookLM prompt</span><textarea id="fNotebook" class="input textarea" rows="2"></textarea></label>
+          <div class="field span-2" id="sampleRow">
+            <span class="field-label">Sample image (optional)</span>
+            <div class="sample-uploader">
+              <input type="file" id="fSampleFile" accept="image/*" class="input" />
+              <div id="samplePreview" class="sample-preview"></div>
+              <span id="sampleStatus" class="field-help"></span>
+            </div>
+          </div>
         </div>
 
         <div class="modal-foot">

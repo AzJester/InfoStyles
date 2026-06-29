@@ -30,12 +30,17 @@ export function initCreator(ctx) {
     palettePreview: el("palettePreview"),
     save: el("saveStyleBtn"),
     aiHint: el("aiHint"),
+    sampleRow: el("sampleRow"),
+    sampleFile: el("fSampleFile"),
+    samplePreview: el("samplePreview"),
+    sampleStatus: el("sampleStatus"),
   };
 
   let mode = "create"; // create | edit | remix
   let currentId = null;
   let currentKind = "custom";
   let baseStyle = null;
+  let sampleImage = ""; // current sample image URL (Blob)
 
   for (const m of MODELS) {
     const o = document.createElement("option");
@@ -83,6 +88,15 @@ export function initCreator(ctx) {
     if (!refs.categoryNew.hidden) refs.categoryNew.focus();
   });
 
+  function renderSamplePreview() {
+    refs.samplePreview.innerHTML = sampleImage
+      ? `<img class="sample-thumb" src="${escapeHtml(sampleImage)}" alt="Sample preview" />
+         <button type="button" class="btn btn-sm" id="sampleRemove">Remove</button>`
+      : "";
+    const rm = document.getElementById("sampleRemove");
+    if (rm) rm.addEventListener("click", () => { sampleImage = ""; renderSamplePreview(); });
+  }
+
   function fillForm(style) {
     for (const [key, id] of Object.entries(FIELD_IDS)) {
       document.getElementById(id).value = style[key] || "";
@@ -90,6 +104,10 @@ export function initCreator(ctx) {
     refs.palette.value = (style.palette || []).join(" ");
     populateCategories(style.category || "");
     renderPalettePreview();
+    sampleImage = style.sampleImage || "";
+    refs.sampleStatus.textContent = "";
+    refs.sampleFile.value = "";
+    renderSamplePreview();
   }
 
   function readForm() {
@@ -99,13 +117,34 @@ export function initCreator(ctx) {
     }
     out.category = refs.category.value === "__new__" ? refs.categoryNew.value.trim() : refs.category.value;
     out.palette = parsePalette(refs.palette.value);
+    out.sampleImage = sampleImage;
     return out;
   }
+
+  // Only admins with Blob configured can upload; otherwise hide the row.
+  refs.sampleFile.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    refs.sampleStatus.classList.remove("error");
+    refs.sampleStatus.textContent = "Processing…";
+    try {
+      const dataUrl = await downscale(file, 1200, 0.82);
+      refs.sampleStatus.textContent = "Uploading…";
+      const { url } = await api.uploadImage(dataUrl, file.name);
+      sampleImage = url;
+      refs.sampleStatus.textContent = "Uploaded ✓";
+      renderSamplePreview();
+    } catch (err) {
+      refs.sampleStatus.textContent = err.message;
+      refs.sampleStatus.classList.add("error");
+    }
+  });
 
   function open(modeName, style) {
     mode = modeName;
     baseStyle = null;
     setStatus("");
+    refs.sampleRow.hidden = !(ctx.uploadEnabled && ctx.uploadEnabled());
     if (modeName === "edit") {
       currentId = style.id;
       currentKind = ctx.kindOf(style.id);
@@ -189,6 +228,30 @@ export function initCreator(ctx) {
     openEdit: (style) => open("edit", style),
     openRemix: (style) => open("remix", style),
   };
+}
+
+// Downscale an image file in the browser to keep the upload small and fast.
+function downscale(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const c = document.createElement("canvas");
+      c.width = w;
+      c.height = h;
+      c.getContext("2d").drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read that image file."));
+    };
+    img.src = url;
+  });
 }
 
 function parsePalette(raw) {

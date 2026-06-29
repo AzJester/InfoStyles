@@ -3,7 +3,7 @@
 import * as api from "./api.js";
 import { openModal, closeModal, wireModalDismiss, toast } from "./ui.js";
 
-const state = { admin: false, kv: false, imageEnabled: false };
+const state = { admin: false, kv: false, imageEnabled: false, uploadEnabled: false };
 let onChange = () => {};
 
 export function adminState() {
@@ -15,6 +15,7 @@ async function refreshSession() {
   state.admin = !!s.admin;
   state.kv = !!s.kv;
   state.imageEnabled = !!s.imageEnabled;
+  state.uploadEnabled = !!s.uploadEnabled;
   reflect();
   onChange();
 }
@@ -22,7 +23,11 @@ async function refreshSession() {
 function reflect() {
   document.body.classList.toggle("is-admin", state.admin);
   const loginBtn = document.getElementById("adminBtn");
-  if (loginBtn) loginBtn.textContent = state.admin ? "Admin ✓" : "Admin";
+  if (loginBtn) {
+    loginBtn.classList.toggle("active", state.admin);
+    loginBtn.title = state.admin ? "Admin (signed in)" : "Admin sign in";
+    loginBtn.setAttribute("aria-label", loginBtn.title);
+  }
 }
 
 export async function initAdmin(opts = {}) {

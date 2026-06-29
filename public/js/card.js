@@ -1,5 +1,5 @@
 // Style cards and the detail modal (palette, both prompts, admin image generation).
-import { escapeHtml, highlight, copyText, toast, openModal } from "./ui.js";
+import { escapeHtml, highlight, copyText, toast, openModal, wireModalDismiss } from "./ui.js";
 import { toImagePrompt } from "./imagePrompt.js";
 import { isFavorite, toggleFavorite } from "./storage.js";
 import * as api from "./api.js";
@@ -29,30 +29,22 @@ export function buildCard(style, ctx, query = "") {
   card.setAttribute("role", "button");
   card.setAttribute("aria-label", `Open ${style.style}`);
 
-  const badges = [
-    style.category ? `<span class="badge">${highlight(style.category, query)}</span>` : "",
-    style._custom ? `<span class="badge badge-custom">Custom</span>` : "",
-    style._edited ? `<span class="badge badge-edited">Edited</span>` : "",
-  ].join("");
-
   card.innerHTML = `
-    <div class="card-head">
-      <div class="card-title">${highlight(style.style || "Untitled style", query)}</div>
-      <div class="badges">${badges}</div>
+    ${style.sampleImage ? `<img class="card-thumb" loading="lazy" alt="" src="${escapeHtml(style.sampleImage)}" />` : ""}
+    <div class="card-body">
+      <div class="card-head">
+        <div class="card-title">${highlight(style.style || "Untitled style", query)}</div>
+        ${favBtn(style)}
+      </div>
+      ${style.category ? `<div class="card-category">${highlight(style.category, query)}</div>` : ""}
     </div>
     ${style.palette?.length ? `<div class="swatches">${swatchRow(style.palette)}</div>` : ""}
-    <dl class="fields">
-      ${style.type ? `<p class="field-line"><dt>Type:</dt> <dd>${highlight(style.type, query)}</dd></p>` : ""}
-      ${style.layout ? `<p class="field-line"><dt>Layout:</dt> <dd>${highlight(style.layout, query)}</dd></p>` : ""}
-    </dl>
     <div class="card-actions">
-      ${favBtn(style)}
-      <button type="button" class="btn btn-sm" data-img-prompt>Copy image prompt</button>
-      <button type="button" class="btn btn-sm btn-ghost" data-open>Details</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-img-prompt>Copy image prompt</button>
     </div>
   `;
 
-  // open detail when clicking the card body (not the interactive controls)
+  // the whole card opens the detail modal (click anywhere but the controls)
   const open = () => openDetail(style, ctx);
   card.addEventListener("click", (e) => {
     if (e.target.closest("button")) return;
@@ -64,7 +56,6 @@ export function buildCard(style, ctx, query = "") {
       open();
     }
   });
-  card.querySelector("[data-open]").addEventListener("click", open);
   card.querySelector("[data-img-prompt]").addEventListener("click", () =>
     copyText(toImagePrompt(style), "Image prompt copied")
   );
@@ -91,6 +82,12 @@ function fieldBlock(label, value) {
 export function openDetail(style, ctx) {
   const modal = document.getElementById("detailModal");
   const body = document.getElementById("detailBody");
+  // Wire the close (✕) button and backdrop dismissal once; delegation on the
+  // modal container survives the innerHTML rebuild below.
+  if (!modal._dismissWired) {
+    wireModalDismiss(modal);
+    modal._dismissWired = true;
+  }
   const imagePrompt = toImagePrompt(style);
 
   const adminBar =
@@ -109,12 +106,14 @@ export function openDetail(style, ctx) {
         <h2 id="detailTitle">${escapeHtml(style.style || "Untitled")}</h2>
         <div class="badges">
           ${style.category ? `<span class="badge">${escapeHtml(style.category)}</span>` : ""}
-          ${style._custom ? `<span class="badge badge-custom">Custom</span>` : ""}
-          ${style._edited ? `<span class="badge badge-edited">Edited</span>` : ""}
+          ${style._custom ? `<span class="badge">Custom</span>` : ""}
+          ${style._edited ? `<span class="badge">Edited</span>` : ""}
         </div>
       </div>
       <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
     </div>
+
+    ${style.sampleImage ? `<img class="detail-image" alt="Sample for ${escapeHtml(style.style)}" src="${escapeHtml(style.sampleImage)}" />` : ""}
 
     ${
       style.palette?.length
@@ -139,7 +138,7 @@ export function openDetail(style, ctx) {
 
     <div class="prompt-block">
       <div class="prompt-head"><span>OpenAI image prompt</span>
-        <button type="button" class="btn btn-sm btn-primary" data-copy-img>Copy</button></div>
+        <button type="button" class="btn btn-sm" data-copy-img>Copy</button></div>
       <pre class="prompt-text">${escapeHtml(imagePrompt)}</pre>
     </div>
 
