@@ -123,7 +123,10 @@ export function openDetail(style, ctx) {
           ${style._edited ? `<span class="badge">Edited</span>` : ""}
         </div>
       </div>
-      <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
+      <div class="detail-head-actions">
+        <button type="button" class="btn btn-sm" data-copy-link>Copy link</button>
+        <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
+      </div>
     </div>
 
     ${style.sampleImage ? `<img class="detail-image" alt="Sample for ${escapeHtml(style.style)}" src="${escapeHtml(style.sampleImage)}" />` : ""}
@@ -174,6 +177,9 @@ export function openDetail(style, ctx) {
   );
   body.querySelector("[data-copy-hex]")?.addEventListener("click", () =>
     copyText((style.palette || []).join(" "), "Palette copied")
+  );
+  body.querySelector("[data-copy-link]")?.addEventListener("click", () =>
+    copyText(`${location.origin}${location.pathname}?style=${encodeURIComponent(style.id)}`, "Link copied")
   );
   body.querySelector("[data-copy-css]")?.addEventListener("click", () => {
     const css = ":root {\n" + (style.palette || []).map((h, i) => `  --color-${i + 1}: ${h};`).join("\n") + "\n}";
