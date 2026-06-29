@@ -8,7 +8,7 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 
 - Browse, search, and filter by category (grouped, with counts), by **color**, or by **favorites** (saved in their browser).
 - Switch between **grid and list** views (defaults to list; remembered per browser).
-- Open any style for a detail view: full fields, a large palette (click swatches or "copy all hex" / "copy as CSS vars"), the sample image (if one was added), and both prompts.
+- Open any style for a detail view: full fields, a large palette (click swatches or "copy all hex" / "copy as CSS vars"), any example images (click to view full size), and both prompts.
 - Copy the **NotebookLM** prompt or the generated **OpenAI image** prompt.
 - Light/dark theme toggle, keyboard shortcuts (`/` to search, `Esc` to close).
 
@@ -17,7 +17,7 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - **AI-create** a style from a description (Claude), with a **category picker** (choose an existing one or add a new one).
 - **Edit any existing style** (built-in or custom) and **delete** styles. Changes save to the shared store and are visible to everyone.
 - **Remix** a style with AI ("make this darker, for finance").
-- **Upload a sample image** to a style; it is stored on the Render persistent disk and served from `/uploads`, visible to everyone.
+- **Upload example images** to a style (drag-and-drop or click; multiple per style). Stored on the Render persistent disk and served from `/uploads`, shown as thumbnails that open full size, visible to everyone.
 - Bulk **import** styles from JSON.
 
 The AI features and the keys are gated server-side. Hiding the admin UI is only cosmetic; the real boundary is that `/api/generate-*` and `/api/styles` reject any request without a valid admin session.

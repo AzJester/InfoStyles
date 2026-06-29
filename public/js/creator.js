@@ -1,7 +1,7 @@
 // Style editor: AI-assisted create, AI remix, and manual edit — all saving to the
 // server (KV) so changes are global. The form doubles as the editor for old styles.
 import * as api from "./api.js";
-import { openModal, closeModal, wireModalDismiss, toast, escapeHtml } from "./ui.js";
+import { openModal, closeModal, wireModalDismiss, toast, escapeHtml, openLightbox } from "./ui.js";
 import { MODELS, getModel, setModel } from "./storage.js";
 import { toNotebookLMPrompt } from "./imagePrompt.js";
 
@@ -33,6 +33,7 @@ export function initCreator(ctx) {
     aiHint: el("aiHint"),
     sampleRow: el("sampleRow"),
     sampleFile: el("fSampleFile"),
+    dropzone: el("dropzone"),
     samplePreview: el("samplePreview"),
     sampleStatus: el("sampleStatus"),
   };
@@ -41,7 +42,7 @@ export function initCreator(ctx) {
   let currentId = null;
   let currentKind = "custom";
   let baseStyle = null;
-  let sampleImage = ""; // current sample image URL (Blob)
+  let images = []; // example image URLs for this style
 
   for (const m of MODELS) {
     const o = document.createElement("option");
@@ -89,13 +90,46 @@ export function initCreator(ctx) {
     if (!refs.categoryNew.hidden) refs.categoryNew.focus();
   });
 
-  function renderSamplePreview() {
-    refs.samplePreview.innerHTML = sampleImage
-      ? `<img class="sample-thumb" src="${escapeHtml(sampleImage)}" alt="Sample preview" />
-         <button type="button" class="btn btn-sm" id="sampleRemove">Remove</button>`
-      : "";
-    const rm = document.getElementById("sampleRemove");
-    if (rm) rm.addEventListener("click", () => { sampleImage = ""; renderSamplePreview(); });
+  function renderThumbs() {
+    refs.samplePreview.innerHTML = images
+      .map(
+        (url, i) =>
+          `<div class="thumb"><img src="${escapeHtml(url)}" alt="Example ${i + 1}" data-view="${i}" />` +
+          `<button type="button" class="thumb-remove" data-remove="${i}" aria-label="Remove image" title="Remove">✕</button></div>`
+      )
+      .join("");
+    refs.samplePreview.querySelectorAll("[data-view]").forEach((img) =>
+      img.addEventListener("click", () => openLightbox(images[Number(img.dataset.view)]))
+    );
+    refs.samplePreview.querySelectorAll("[data-remove]").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        images.splice(Number(btn.dataset.remove), 1);
+        renderThumbs();
+      })
+    );
+  }
+
+  async function processFiles(fileList) {
+    const files = [...(fileList || [])].filter((f) => f.type.startsWith("image/"));
+    if (!files.length) return;
+    refs.sampleStatus.classList.remove("error");
+    let done = 0;
+    for (const file of files) {
+      refs.sampleStatus.textContent = `Uploading ${done + 1}/${files.length}…`;
+      try {
+        const dataUrl = await downscale(file, 1400, 0.82);
+        const { url } = await api.uploadImage(dataUrl, file.name);
+        images.push(url);
+        renderThumbs();
+        done++;
+      } catch (err) {
+        refs.sampleStatus.textContent = err.message;
+        refs.sampleStatus.classList.add("error");
+        return;
+      }
+    }
+    refs.sampleStatus.textContent = `${done} image${done === 1 ? "" : "s"} added ✓`;
+    refs.sampleFile.value = "";
   }
 
   function fillForm(style) {
@@ -105,10 +139,14 @@ export function initCreator(ctx) {
     refs.palette.value = (style.palette || []).join(" ");
     populateCategories(style.category || "");
     renderPalettePreview();
-    sampleImage = style.sampleImage || "";
+    images = Array.isArray(style.images) && style.images.length
+      ? style.images.slice()
+      : style.sampleImage
+        ? [style.sampleImage]
+        : [];
     refs.sampleStatus.textContent = "";
     refs.sampleFile.value = "";
-    renderSamplePreview();
+    renderThumbs();
   }
 
   function readForm() {
@@ -118,31 +156,37 @@ export function initCreator(ctx) {
     }
     out.category = refs.category.value === "__new__" ? refs.categoryNew.value.trim() : refs.category.value;
     out.palette = parsePalette(refs.palette.value);
-    out.sampleImage = sampleImage;
+    out.images = images.slice();
+    out.sampleImage = images[0] || "";
     // Guarantee a NotebookLM prompt: derive one from the fields if left blank
     // (e.g. when the style was filled in by hand rather than AI-generated).
     if (!out.notebookLMPrompt) out.notebookLMPrompt = toNotebookLMPrompt(out);
     return out;
   }
 
-  // Only admins with Blob configured can upload; otherwise hide the row.
-  refs.sampleFile.addEventListener("change", async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    refs.sampleStatus.classList.remove("error");
-    refs.sampleStatus.textContent = "Processing…";
-    try {
-      const dataUrl = await downscale(file, 1200, 0.82);
-      refs.sampleStatus.textContent = "Uploading…";
-      const { url } = await api.uploadImage(dataUrl, file.name);
-      sampleImage = url;
-      refs.sampleStatus.textContent = "Uploaded ✓";
-      renderSamplePreview();
-    } catch (err) {
-      refs.sampleStatus.textContent = err.message;
-      refs.sampleStatus.classList.add("error");
+  // Drag-and-drop + click-to-browse upload (admins with the disk configured).
+  refs.sampleFile.addEventListener("change", (e) => processFiles(e.target.files));
+  refs.dropzone.addEventListener("click", () => refs.sampleFile.click());
+  refs.dropzone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      refs.sampleFile.click();
     }
   });
+  ["dragenter", "dragover"].forEach((ev) =>
+    refs.dropzone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      refs.dropzone.classList.add("dragover");
+    })
+  );
+  ["dragleave", "drop"].forEach((ev) =>
+    refs.dropzone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      if (ev === "dragleave" && refs.dropzone.contains(e.relatedTarget)) return;
+      refs.dropzone.classList.remove("dragover");
+    })
+  );
+  refs.dropzone.addEventListener("drop", (e) => processFiles(e.dataTransfer?.files));
 
   function open(modeName, style) {
     mode = modeName;

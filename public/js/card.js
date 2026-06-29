@@ -2,7 +2,14 @@
 import { escapeHtml, highlight, copyText, toast, openModal, wireModalDismiss } from "./ui.js";
 import { toImagePrompt, toNotebookLMPrompt } from "./imagePrompt.js";
 import { isFavorite, toggleFavorite } from "./storage.js";
+import { openLightbox } from "./ui.js";
 import * as api from "./api.js";
+
+// Example images for a style (back-compat: fall back to the legacy single sampleImage).
+function imagesOf(style) {
+  if (Array.isArray(style.images) && style.images.length) return style.images;
+  return style.sampleImage ? [style.sampleImage] : [];
+}
 
 function swatchRow(palette) {
   return (palette || [])
@@ -29,8 +36,9 @@ export function buildCard(style, ctx, query = "") {
   card.setAttribute("role", "button");
   card.setAttribute("aria-label", `Open ${style.style}`);
 
+  const thumb = imagesOf(style)[0];
   card.innerHTML = `
-    ${style.sampleImage ? `<img class="card-thumb" loading="lazy" alt="" src="${escapeHtml(style.sampleImage)}" />` : ""}
+    ${thumb ? `<img class="card-thumb" loading="lazy" alt="" src="${escapeHtml(thumb)}" />` : ""}
     <div class="card-body">
       <div class="card-head">
         <div class="card-title">${highlight(style.style || "Untitled style", query)}</div>
@@ -102,6 +110,7 @@ export function openDetail(style, ctx) {
   }
   const imagePrompt = toImagePrompt(style);
   const notebookPrompt = style.notebookLMPrompt || toNotebookLMPrompt(style);
+  const imgs = imagesOf(style);
 
   const adminBar =
     ctx.admin()
@@ -129,7 +138,16 @@ export function openDetail(style, ctx) {
       </div>
     </div>
 
-    ${style.sampleImage ? `<img class="detail-image" alt="Sample for ${escapeHtml(style.style)}" src="${escapeHtml(style.sampleImage)}" />` : ""}
+    ${
+      imgs.length
+        ? `<div class="detail-images">${imgs
+            .map(
+              (u, i) =>
+                `<img class="detail-thumb" data-img="${i}" loading="lazy" alt="Example ${i + 1} for ${escapeHtml(style.style)}" src="${escapeHtml(u)}" />`
+            )
+            .join("")}</div>`
+        : ""
+    }
 
     ${
       style.palette?.length
@@ -177,6 +195,9 @@ export function openDetail(style, ctx) {
   );
   body.querySelector("[data-copy-hex]")?.addEventListener("click", () =>
     copyText((style.palette || []).join(" "), "Palette copied")
+  );
+  body.querySelectorAll("[data-img]").forEach((el) =>
+    el.addEventListener("click", () => openLightbox(imgs[Number(el.dataset.img)], el.alt))
   );
   body.querySelector("[data-copy-link]")?.addEventListener("click", () =>
     copyText(`${location.origin}${location.pathname}?style=${encodeURIComponent(style.id)}`, "Link copied")

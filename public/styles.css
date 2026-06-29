@@ -154,12 +154,36 @@ mark { background: none; color: inherit; font-weight: 600; }
 .gallery--list .swatches { flex-shrink: 0; }
 .gallery--list .card-actions { margin-top: 0; opacity: 1; flex-shrink: 0; }
 
-/* sample image in the editor + detail */
-.sample-uploader { display: flex; flex-direction: column; gap: 8px; }
-.sample-preview:empty { display: none; }
-.sample-preview { display: flex; align-items: center; gap: 10px; }
-.sample-thumb { height: 64px; border-radius: 8px; border: 1px solid var(--border); }
-.detail-image { width: 100%; max-height: 360px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 16px; background: var(--bg); }
+/* example-image uploader (editor) */
+.dropzone {
+  border: 1.5px dashed var(--border-strong); border-radius: 10px;
+  padding: 18px; text-align: center; color: var(--muted); cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone:hover, .dropzone:focus-visible { border-color: var(--accent); }
+.dropzone.dragover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.dropzone-hint { margin: 0; font-size: 0.85rem; }
+.linkish { color: var(--accent); text-decoration: underline; }
+.thumb-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.thumb-grid:empty { display: none; }
+.thumb { position: relative; }
+.thumb img { height: 72px; width: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); cursor: zoom-in; display: block; }
+.thumb-remove {
+  position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 999px;
+  border: none; background: var(--danger); color: #fff; font-size: 0.7rem; line-height: 1; cursor: pointer;
+}
+
+/* example images in the detail view */
+.detail-images { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.detail-thumb { height: 120px; max-width: 100%; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); cursor: zoom-in; background: var(--bg); }
+
+/* lightbox */
+.lightbox {
+  position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 10, 14, 0.85); padding: 24px; cursor: zoom-out;
+}
+.lightbox[hidden] { display: none; }
+.lightbox img { max-width: 96vw; max-height: 92vh; border-radius: 8px; box-shadow: 0 10px 50px rgba(0,0,0,0.5); }
 
 /* ---------- Modals ---------- */
 .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(10, 12, 18, 0.5); padding: 20px; }
