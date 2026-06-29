@@ -125,6 +125,10 @@ const ctx = {
     closeModal(document.getElementById("detailModal"));
     creator.openRemix(style);
   },
+  onDuplicate: (style) => {
+    closeModal(document.getElementById("detailModal"));
+    creator.openDuplicate(style);
+  },
   afterChange: () => reloadAndRender(),
   afterSave: () => reloadAndRender(),
 };
@@ -173,6 +177,8 @@ async function init() {
   await initAdmin({
     onChange: () => {
       els.newStyleBtn.hidden = !adminState().admin;
+      // Re-render so cards show/hide admin-only controls (e.g. Delete).
+      applyFilters();
     },
   });
 

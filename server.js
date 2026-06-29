@@ -18,13 +18,39 @@ const app = express();
 
 app.use(express.json({ limit: "1mb" }));
 
-// Baseline security headers (previously in vercel.json).
+// Baseline security headers. CSP keeps scripts to same-origin (the theme-init
+// script is an external file); inline styles are allowed for the palette swatches.
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; " +
+      "script-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  );
   next();
 });
+
+// Block cross-origin state-changing requests (CSRF mitigation). Same-origin
+// fetches send an Origin matching the host; cross-site POSTs are rejected.
+app.use((req, res, next) => {
+  if (req.method === "POST" && req.headers.origin) {
+    let host;
+    try {
+      host = new URL(req.headers.origin).host;
+    } catch {
+      return res.status(403).json({ error: "Bad origin." });
+    }
+    if (host !== req.headers.host) {
+      return res.status(403).json({ error: "Cross-origin request blocked." });
+    }
+  }
+  next();
+});
+
+// Health check for Render.
+app.get("/api/health", (req, res) => res.status(200).json({ ok: true }));
 
 // Adapt a handler and surface unexpected errors as JSON rather than crashing.
 const wrap = (handler) => (req, res) =>
