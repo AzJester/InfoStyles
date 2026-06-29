@@ -29,19 +29,37 @@
       <div class="controls">
         <input type="search" id="search" class="search" placeholder="Search styles…   ( / )" autocomplete="off" spellcheck="false" aria-label="Search styles" />
         <select id="categoryFilter" class="select" aria-label="Filter by category"></select>
-        <select id="sortSelect" class="select" aria-label="Sort styles">
-          <option value="">Sort: default</option>
-          <option value="name-asc">Name A→Z</option>
-          <option value="name-desc">Name Z→A</option>
-          <option value="category">Category</option>
-        </select>
         <button id="favFilter" class="btn btn-icon" aria-pressed="false" title="Show favorites" aria-label="Show favorites">☆</button>
-        <button id="randomBtn" class="btn btn-icon" title="Open a random style" aria-label="Open a random style">🎲</button>
         <button id="viewBtn" class="btn btn-icon" title="Switch to list view" aria-label="Switch to list view">☰</button>
-        <label class="color-filter" title="Filter by color">
-          <input type="color" id="colorFilter" value="#000000" aria-label="Filter by palette color" />
-        </label>
-        <button id="colorClear" class="btn btn-icon" hidden aria-label="Clear color filter" title="Clear color filter">✕</button>
+
+        <div class="popover">
+          <button id="toolsBtn" class="btn btn-icon" aria-haspopup="true" aria-expanded="false" title="More tools" aria-label="More tools">⋯</button>
+          <div id="toolsPanel" class="popover-panel" hidden>
+            <label class="tool-row">
+              <span>Sort</span>
+              <select id="sortSelect" class="select" aria-label="Sort styles">
+                <option value="">Default</option>
+                <option value="name-asc">Name A→Z</option>
+                <option value="name-desc">Name Z→A</option>
+                <option value="category">Category</option>
+              </select>
+            </label>
+            <div class="tool-row">
+              <span>Filter by color</span>
+              <span class="tool-color">
+                <input type="color" id="colorFilter" value="#000000" aria-label="Filter by palette color" />
+                <button id="colorClear" class="btn btn-icon" hidden aria-label="Clear color filter" title="Clear color filter">✕</button>
+              </span>
+            </div>
+            <div class="tool-row">
+              <span>Surprise me</span>
+              <button id="randomBtn" class="btn btn-sm" title="Open a random style">🎲 Random</button>
+            </div>
+          </div>
+        </div>
+
+        <span class="controls-divider" aria-hidden="true"></span>
+
         <div class="controls-utility">
           <button id="newStyleBtn" class="btn btn-primary" hidden>+ New style</button>
           <button id="newPromptBtn" class="btn btn-primary" hidden>+ New prompt</button>
