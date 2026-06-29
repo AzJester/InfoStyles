@@ -7,11 +7,15 @@ test("normalizePalette keeps valid unique hex, uppercased", () => {
   assert.deepEqual(normalizePalette(["#abc", "#ABC", "bad"]), ["#ABC"]);
 });
 
-test("sanitizeStyle only accepts an https sample image URL", () => {
-  assert.equal(sanitizeStyle({ sampleImage: "https://blob.example/x.png" }).sampleImage, "https://blob.example/x.png");
+test("sanitizeStyle accepts an https URL or a safe /uploads path for the sample image", () => {
+  assert.equal(sanitizeStyle({ sampleImage: "https://cdn.example/x.png" }).sampleImage, "https://cdn.example/x.png");
+  assert.equal(sanitizeStyle({ sampleImage: "/uploads/samples/eagle-ab12cd.jpg" }).sampleImage, "/uploads/samples/eagle-ab12cd.jpg");
+  // rejected: insecure, scripty, data URIs, traversal, non-image, empty
   assert.equal(sanitizeStyle({ sampleImage: "http://insecure/x.png" }).sampleImage, "");
   assert.equal(sanitizeStyle({ sampleImage: "javascript:alert(1)" }).sampleImage, "");
   assert.equal(sanitizeStyle({ sampleImage: "data:image/png;base64,AAAA" }).sampleImage, "");
+  assert.equal(sanitizeStyle({ sampleImage: "/uploads/../../etc/passwd" }).sampleImage, "");
+  assert.equal(sanitizeStyle({ sampleImage: "/uploads/evil.svg" }).sampleImage, "");
   assert.equal(sanitizeStyle({}).sampleImage, "");
 });
 

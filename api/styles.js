@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   if (!requireAdmin(req, res)) return;
   if (!kvAvailable()) {
-    return res.status(503).json({ error: "Persistence not configured. Enable Vercel KV and set its env vars." });
+    return res.status(503).json({ error: "Persistence not configured. Connect a Render Key Value store and set REDIS_URL." });
   }
 
   const { action = "save", kind, id, style } = req.body || {};
