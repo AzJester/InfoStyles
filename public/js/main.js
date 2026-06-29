@@ -181,7 +181,8 @@ async function init() {
     state.favOnly = !state.favOnly;
     els.favFilter.classList.toggle("active", state.favOnly);
     els.favFilter.setAttribute("aria-pressed", String(state.favOnly));
-    els.favFilter.textContent = state.favOnly ? `★ Favorites (${favoriteCount()})` : "☆ Favorites";
+    els.favFilter.textContent = state.favOnly ? "★" : "☆";
+    els.favFilter.title = state.favOnly ? `Showing favorites (${favoriteCount()})` : "Show favorites";
     applyFilters();
   });
 

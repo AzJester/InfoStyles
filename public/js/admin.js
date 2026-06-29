@@ -22,7 +22,11 @@ async function refreshSession() {
 function reflect() {
   document.body.classList.toggle("is-admin", state.admin);
   const loginBtn = document.getElementById("adminBtn");
-  if (loginBtn) loginBtn.textContent = state.admin ? "Admin ✓" : "Admin";
+  if (loginBtn) {
+    loginBtn.classList.toggle("active", state.admin);
+    loginBtn.title = state.admin ? "Admin (signed in)" : "Admin sign in";
+    loginBtn.setAttribute("aria-label", loginBtn.title);
+  }
 }
 
 export async function initAdmin(opts = {}) {
