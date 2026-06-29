@@ -1,5 +1,5 @@
 // Style cards and the detail modal (palette, both prompts, admin image generation).
-import { escapeHtml, highlight, copyText, toast, openModal } from "./ui.js";
+import { escapeHtml, highlight, copyText, toast, openModal, wireModalDismiss } from "./ui.js";
 import { toImagePrompt } from "./imagePrompt.js";
 import { isFavorite, toggleFavorite } from "./storage.js";
 import * as api from "./api.js";
@@ -79,6 +79,12 @@ function fieldBlock(label, value) {
 export function openDetail(style, ctx) {
   const modal = document.getElementById("detailModal");
   const body = document.getElementById("detailBody");
+  // Wire the close (✕) button and backdrop dismissal once; delegation on the
+  // modal container survives the innerHTML rebuild below.
+  if (!modal._dismissWired) {
+    wireModalDismiss(modal);
+    modal._dismissWired = true;
+  }
   const imagePrompt = toImagePrompt(style);
 
   const adminBar =
