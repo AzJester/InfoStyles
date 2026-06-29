@@ -3,7 +3,7 @@
 import * as api from "./api.js";
 import { openModal, closeModal, wireModalDismiss, toast } from "./ui.js";
 
-const state = { admin: false, kv: false, imageEnabled: false };
+const state = { admin: false, kv: false, imageEnabled: false, uploadEnabled: false };
 let onChange = () => {};
 
 export function adminState() {
@@ -15,6 +15,7 @@ async function refreshSession() {
   state.admin = !!s.admin;
   state.kv = !!s.kv;
   state.imageEnabled = !!s.imageEnabled;
+  state.uploadEnabled = !!s.uploadEnabled;
   reflect();
   onChange();
 }

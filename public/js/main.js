@@ -4,7 +4,7 @@ import { loadCatalog, getStyles, getCategories, kindOf } from "./catalog.js";
 import { buildCard } from "./card.js";
 import { initCreator } from "./creator.js";
 import { initAdmin, adminState } from "./admin.js";
-import { isFavorite, favoriteCount, getTheme, setTheme } from "./storage.js";
+import { isFavorite, favoriteCount, getTheme, setTheme, getView, setView } from "./storage.js";
 import { toast, openModal, wireModalDismiss, closeModal } from "./ui.js";
 
 const PAGE_SIZE = 60;
@@ -23,6 +23,7 @@ const els = {
   colorClear: document.getElementById("colorClear"),
   newStyleBtn: document.getElementById("newStyleBtn"),
   themeBtn: document.getElementById("themeBtn"),
+  viewBtn: document.getElementById("viewBtn"),
 };
 
 let creator;
@@ -33,6 +34,18 @@ function applyTheme(theme) {
   if (els.themeBtn) {
     els.themeBtn.textContent = theme === "dark" ? "☀" : "☾";
     els.themeBtn.setAttribute("aria-label", theme === "dark" ? "Switch to light theme" : "Switch to dark theme");
+  }
+}
+
+// ---------- view (grid | list) ----------
+function applyView(view) {
+  const list = view === "list";
+  els.gallery.classList.toggle("gallery--list", list);
+  if (els.viewBtn) {
+    els.viewBtn.textContent = list ? "▦" : "☰";
+    const label = list ? "Switch to grid view" : "Switch to list view";
+    els.viewBtn.title = label;
+    els.viewBtn.setAttribute("aria-label", label);
   }
 }
 
@@ -102,6 +115,7 @@ function matches(style, q) {
 const ctx = {
   admin: () => adminState().admin,
   imageEnabled: () => adminState().imageEnabled,
+  uploadEnabled: () => adminState().uploadEnabled,
   kindOf,
   getCategories,
   onEdit: (style) => {
@@ -149,6 +163,7 @@ async function reloadAndRender() {
 // ---------- boot ----------
 async function init() {
   applyTheme(getTheme());
+  applyView(getView());
 
   await loadCatalog();
   buildCategoryOptions();
@@ -204,6 +219,12 @@ async function init() {
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     setTheme(next);
     applyTheme(next);
+  });
+
+  els.viewBtn.addEventListener("click", () => {
+    const next = els.gallery.classList.contains("gallery--list") ? "grid" : "list";
+    setView(next);
+    applyView(next);
   });
 
   document.addEventListener("favorites-changed", () => {

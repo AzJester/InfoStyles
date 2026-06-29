@@ -30,11 +30,14 @@ export function buildCard(style, ctx, query = "") {
   card.setAttribute("aria-label", `Open ${style.style}`);
 
   card.innerHTML = `
-    <div class="card-head">
-      <div class="card-title">${highlight(style.style || "Untitled style", query)}</div>
-      ${favBtn(style)}
+    ${style.sampleImage ? `<img class="card-thumb" loading="lazy" alt="" src="${escapeHtml(style.sampleImage)}" />` : ""}
+    <div class="card-body">
+      <div class="card-head">
+        <div class="card-title">${highlight(style.style || "Untitled style", query)}</div>
+        ${favBtn(style)}
+      </div>
+      ${style.category ? `<div class="card-category">${highlight(style.category, query)}</div>` : ""}
     </div>
-    ${style.category ? `<div class="card-category">${highlight(style.category, query)}</div>` : ""}
     ${style.palette?.length ? `<div class="swatches">${swatchRow(style.palette)}</div>` : ""}
     <div class="card-actions">
       <button type="button" class="btn btn-sm btn-ghost" data-img-prompt>Copy image prompt</button>
@@ -109,6 +112,8 @@ export function openDetail(style, ctx) {
       </div>
       <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
     </div>
+
+    ${style.sampleImage ? `<img class="detail-image" alt="Sample for ${escapeHtml(style.style)}" src="${escapeHtml(style.sampleImage)}" />` : ""}
 
     ${
       style.palette?.length

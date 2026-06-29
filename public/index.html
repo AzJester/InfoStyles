@@ -37,6 +37,7 @@
         <input type="search" id="search" class="search" placeholder="Search styles…   ( / )" autocomplete="off" spellcheck="false" aria-label="Search styles" />
         <select id="categoryFilter" class="select" aria-label="Filter by category"></select>
         <button id="favFilter" class="btn btn-icon" aria-pressed="false" title="Show favorites" aria-label="Show favorites">☆</button>
+        <button id="viewBtn" class="btn btn-icon" title="Switch to list view" aria-label="Switch to list view">☰</button>
         <label class="color-filter" title="Filter by color">
           <input type="color" id="colorFilter" value="#000000" aria-label="Filter by palette color" />
         </label>
@@ -113,6 +114,14 @@
           <label class="field"><span class="field-label">Background</span><input id="fBackground" class="input" /></label>
           <label class="field"><span class="field-label">Avoid</span><input id="fAvoid" class="input" /></label>
           <label class="field span-2"><span class="field-label">NotebookLM prompt</span><textarea id="fNotebook" class="input textarea" rows="2"></textarea></label>
+          <div class="field span-2" id="sampleRow">
+            <span class="field-label">Sample image (optional)</span>
+            <div class="sample-uploader">
+              <input type="file" id="fSampleFile" accept="image/*" class="input" />
+              <div id="samplePreview" class="sample-preview"></div>
+              <span id="sampleStatus" class="field-help"></span>
+            </div>
+          </div>
         </div>
 
         <div class="modal-foot">

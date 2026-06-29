@@ -37,3 +37,4 @@ export const generateStyle = (payload) => post("/api/generate-style", payload);
 export const generateImage = (payload) => post("/api/generate-image", payload);
 export const saveStyle = (payload) => post("/api/styles", { action: "save", ...payload });
 export const deleteStyle = (payload) => post("/api/styles", { action: "delete", ...payload });
+export const uploadImage = (dataUrl, filename) => post("/api/upload-image", { dataUrl, filename });

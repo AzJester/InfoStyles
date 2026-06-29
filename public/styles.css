@@ -120,6 +120,26 @@ mark { background: none; color: inherit; font-weight: 600; }
 .badge { font-size: 0.75rem; color: var(--muted); background: var(--bg); border: 1px solid var(--border); padding: 2px 8px; border-radius: 999px; }
 .badges { display: flex; gap: 6px; flex-wrap: wrap; }
 
+.card-body { display: flex; flex-direction: column; gap: 6px; }
+.card-thumb { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
+
+/* ---------- List view ---------- */
+.gallery--list { grid-template-columns: 1fr; gap: 8px; }
+.gallery--list .card { flex-direction: row; align-items: center; gap: 16px; padding: 12px 16px; }
+.gallery--list .card-thumb { width: 72px; aspect-ratio: 16 / 10; flex-shrink: 0; }
+.gallery--list .card-body { flex: 1; min-width: 0; }
+.gallery--list .card-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gallery--list .card-category { margin-top: 0; }
+.gallery--list .swatches { flex-shrink: 0; }
+.gallery--list .card-actions { margin-top: 0; opacity: 1; flex-shrink: 0; }
+
+/* sample image in the editor + detail */
+.sample-uploader { display: flex; flex-direction: column; gap: 8px; }
+.sample-preview:empty { display: none; }
+.sample-preview { display: flex; align-items: center; gap: 10px; }
+.sample-thumb { height: 64px; border-radius: 8px; border: 1px solid var(--border); }
+.detail-image { width: 100%; max-height: 360px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 16px; background: var(--bg); }
+
 /* ---------- Modals ---------- */
 .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(10, 12, 18, 0.5); padding: 20px; }
 .modal[hidden] { display: none; }
