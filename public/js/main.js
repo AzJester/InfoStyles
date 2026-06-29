@@ -3,6 +3,7 @@
 import { loadCatalog, getStyles, getCategories, kindOf } from "./catalog.js";
 import { buildCard, openDetail } from "./card.js";
 import { initCreator } from "./creator.js";
+import { initPrompts } from "./prompts.js";
 import { initAdmin, adminState } from "./admin.js";
 import { isFavorite, favoriteCount, getTheme, setTheme, getView, setView } from "./storage.js";
 import { toast, openModal, wireModalDismiss, closeModal, escapeHtml } from "./ui.js";
@@ -24,12 +25,42 @@ const els = {
   colorFilter: document.getElementById("colorFilter"),
   colorClear: document.getElementById("colorClear"),
   newStyleBtn: document.getElementById("newStyleBtn"),
+  newPromptBtn: document.getElementById("newPromptBtn"),
   themeBtn: document.getElementById("themeBtn"),
   viewBtn: document.getElementById("viewBtn"),
   activeFilters: document.getElementById("activeFilters"),
+  promptsView: document.getElementById("promptsView"),
+  secStyles: document.getElementById("secStyles"),
+  secPrompts: document.getElementById("secPrompts"),
 };
 
 let creator;
+let promptsUI;
+let section = "styles"; // "styles" | "prompts"
+
+// Toggle between the Styles catalog and the Prompts library.
+function setSection(next) {
+  section = next === "prompts" ? "prompts" : "styles";
+  const isPrompts = section === "prompts";
+  els.secStyles.classList.toggle("active", !isPrompts);
+  els.secPrompts.classList.toggle("active", isPrompts);
+  els.secStyles.setAttribute("aria-selected", String(!isPrompts));
+  els.secPrompts.setAttribute("aria-selected", String(isPrompts));
+
+  // Style-only controls + areas
+  for (const el of [els.category, els.sortSelect, els.favFilter, els.randomBtn, els.viewBtn, els.gallery, els.sentinel, els.activeFilters]) {
+    if (el) el.hidden = isPrompts;
+  }
+  document.querySelector(".color-filter").hidden = isPrompts;
+  els.colorClear.hidden = isPrompts || !state.color;
+  els.empty.hidden = true;
+  els.promptsView.hidden = !isPrompts;
+  els.newStyleBtn.hidden = isPrompts || !adminState().admin;
+  els.newPromptBtn.hidden = !isPrompts || !adminState().admin;
+  els.search.placeholder = isPrompts ? "Search prompts…   ( / )" : "Search styles…   ( / )";
+
+  if (isPrompts) promptsUI.show();
+}
 let pendingStyleId = null; // ?style=<id> from the initial URL, opened after first render
 
 // ---------- theme ----------
@@ -300,12 +331,18 @@ async function init() {
   openStyleFromURL();
 
   creator = initCreator(ctx);
+  promptsUI = initPrompts();
+
+  els.secStyles.addEventListener("click", () => setSection("styles"));
+  els.secPrompts.addEventListener("click", () => setSection("prompts"));
 
   await initAdmin({
     onChange: () => {
-      els.newStyleBtn.hidden = !adminState().admin;
-      // Re-render so cards show/hide admin-only controls (e.g. Delete).
-      applyFilters();
+      els.newStyleBtn.hidden = section === "prompts" || !adminState().admin;
+      els.newPromptBtn.hidden = section !== "prompts" || !adminState().admin;
+      // Re-render the active section so admin-only controls appear/disappear.
+      if (section === "prompts") promptsUI.rerender();
+      else applyFilters();
     },
   });
 
@@ -314,8 +351,12 @@ async function init() {
     clearTimeout(t);
     const v = e.target.value;
     t = setTimeout(() => {
-      state.query = v;
-      applyFilters();
+      if (section === "prompts") {
+        promptsUI.setQuery(v);
+      } else {
+        state.query = v;
+        applyFilters();
+      }
     }, 120);
   });
 
@@ -415,15 +456,34 @@ function initSettings() {
     openModal(modal);
   });
 
-  exportBtn.addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(getStyles(), null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
+  const download = (data, type, filename) => {
+    const url = URL.createObjectURL(new Blob([data], { type }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = "infostyles-catalog.json";
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    toast("Catalog exported");
+  };
+
+  exportBtn.addEventListener("click", () => {
+    download(JSON.stringify(getStyles(), null, 2), "application/json", "infostyles-catalog.json");
+    toast("Catalog exported (JSON)");
+  });
+
+  const exportCsvBtn = document.getElementById("exportCsvBtn");
+  exportCsvBtn?.addEventListener("click", () => {
+    const cell = (v) => {
+      const s = String(v == null ? "" : v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = ["Category", "Style", "Palette", "Type", "Icons", "Layout", "Charts", "Background", "Avoid", "Pasteable prompt"];
+    const rows = getStyles().map((s) =>
+      [s.category, s.style, (s.palette || []).join(" "), s.type, s.icons, s.layout, s.charts, s.background, s.avoid, s.notebookLMPrompt]
+        .map(cell)
+        .join(",")
+    );
+    download([header.join(","), ...rows].join("\n"), "text/csv", "infostyles-catalog.csv");
+    toast("Catalog exported (CSV)");
   });
 
   importInput?.addEventListener("change", async (e) => {
