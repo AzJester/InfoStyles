@@ -60,6 +60,20 @@ body {
 .seg.active { background: var(--accent); color: #fff; }
 .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .controls-utility { display: inline-flex; gap: 8px; align-items: center; margin-left: auto; }
+.controls-divider { width: 1px; align-self: stretch; min-height: 22px; background: var(--border); }
+
+/* tools popover */
+.popover { position: relative; display: inline-flex; }
+.popover-panel {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 30;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); padding: 14px; min-width: 248px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.tool-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.86rem; }
+.tool-row > span { color: var(--muted); }
+.tool-row .select { max-width: 150px; }
+.tool-color { display: inline-flex; gap: 6px; align-items: center; }
 
 .search, .select, .input {
   font: inherit; color: var(--text); background: var(--surface);

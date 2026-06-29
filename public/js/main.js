@@ -24,6 +24,8 @@ const els = {
   randomBtn: document.getElementById("randomBtn"),
   colorFilter: document.getElementById("colorFilter"),
   colorClear: document.getElementById("colorClear"),
+  toolsBtn: document.getElementById("toolsBtn"),
+  toolsPanel: document.getElementById("toolsPanel"),
   newStyleBtn: document.getElementById("newStyleBtn"),
   newPromptBtn: document.getElementById("newPromptBtn"),
   themeBtn: document.getElementById("themeBtn"),
@@ -38,6 +40,20 @@ let creator;
 let promptsUI;
 let section = "styles"; // "styles" | "prompts"
 
+// --- tools popover ---
+function closeTools() {
+  if (!els.toolsPanel) return;
+  els.toolsPanel.hidden = true;
+  els.toolsBtn.setAttribute("aria-expanded", "false");
+  els.toolsBtn.classList.remove("active");
+}
+function toggleTools() {
+  const open = els.toolsPanel.hidden;
+  els.toolsPanel.hidden = !open;
+  els.toolsBtn.setAttribute("aria-expanded", String(open));
+  els.toolsBtn.classList.toggle("active", open);
+}
+
 // Toggle between the Styles catalog and the Prompts library.
 function setSection(next) {
   section = next === "prompts" ? "prompts" : "styles";
@@ -47,12 +63,11 @@ function setSection(next) {
   els.secStyles.setAttribute("aria-selected", String(!isPrompts));
   els.secPrompts.setAttribute("aria-selected", String(isPrompts));
 
-  // Style-only controls + areas
-  for (const el of [els.category, els.sortSelect, els.favFilter, els.randomBtn, els.viewBtn, els.gallery, els.sentinel, els.activeFilters]) {
+  // Style-only controls + areas (sort/color/random live inside the tools popover).
+  for (const el of [els.category, els.favFilter, els.viewBtn, els.toolsBtn, els.gallery, els.sentinel, els.activeFilters]) {
     if (el) el.hidden = isPrompts;
   }
-  document.querySelector(".color-filter").hidden = isPrompts;
-  els.colorClear.hidden = isPrompts || !state.color;
+  closeTools();
   els.empty.hidden = true;
   els.promptsView.hidden = !isPrompts;
   els.newStyleBtn.hidden = isPrompts || !adminState().admin;
@@ -335,6 +350,18 @@ async function init() {
 
   els.secStyles.addEventListener("click", () => setSection("styles"));
   els.secPrompts.addEventListener("click", () => setSection("prompts"));
+
+  // Tools popover: toggle, close on outside click / Escape, close when a control inside is used.
+  els.toolsBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleTools();
+  });
+  els.toolsPanel.addEventListener("click", (e) => e.stopPropagation());
+  document.addEventListener("click", () => closeTools());
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeTools();
+  });
+  els.randomBtn.addEventListener("click", () => closeTools());
 
   await initAdmin({
     onChange: () => {
