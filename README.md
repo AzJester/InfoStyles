@@ -1,6 +1,6 @@
 # InfoStyles
 
-A clean, shareable web app for **1,530 infographic & slide styles** across 62 categories. Anyone can browse, search, and copy a ready-to-use prompt for **NotebookLM** or **OpenAI image generation**. A password-protected **admin** can create, edit, and AI-generate styles (and render preview images) with the API keys kept on the server, never in the browser.
+A clean, shareable web app for **1,530 infographic & slide styles** across 62 categories. Anyone can browse, search, and copy a ready-to-use prompt for **NotebookLM** or **OpenAI image generation**. A password-protected **admin** can create, edit, and AI-generate styles, with the API key kept on the server, never in the browser.
 
 Hosted on **Render**: one small Node/Express service that serves the static front end in `public/` and the `/api` routes. The keys live as Render environment variables, so sharing the public URL never exposes them.
 
@@ -17,7 +17,6 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - **AI-create** a style from a description (Claude), with a **category picker** (choose an existing one or add a new one).
 - **Edit any existing style** (built-in or custom) and **delete** styles. Changes save to the shared store and are visible to everyone.
 - **Remix** a style with AI ("make this darker, for finance").
-- **Generate a preview image** (OpenAI) inline and download it.
 - **Upload a sample image** to a style; it is stored on the Render persistent disk and served from `/uploads`, visible to everyone.
 - Bulk **import** styles from JSON.
 
@@ -39,11 +38,10 @@ You can use the included `render.yaml` Blueprint, or wire it up by hand:
    | `REDIS_URL` | The Key Value instance's **Internal** connection string (admin edits store). |
    | `UPLOAD_DIR` | `/var/data` — the disk mount path. Enables sample-image uploads. |
    | `ANTHROPIC_API_KEY` | Server-side key for AI style generation (Claude). |
-   | `OPENAI_API_KEY` | Optional. Server-side key for image generation; the button only appears if set. |
 
 5. Deploy. Pushes to `main` auto-deploy. Render sites are public by default. Open the app, click the **🔑** button, sign in, and the AI/edit/upload features unlock.
 
-> A paid web service stays warm (no cold starts) and supports the disk. `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` are only read on the server and never reach the browser. Uploaded images live on the disk and are served from `/uploads`.
+> A paid web service stays warm (no cold starts) and supports the disk. `ANTHROPIC_API_KEY` is only read on the server and never reaches the browser. Uploaded images live on the disk and are served from `/uploads`.
 
 ## Run locally
 
@@ -57,7 +55,7 @@ ADMIN_PASSWORD=dev AUTH_SECRET=dev-secret-please-change node server.js
 # open http://localhost:3000
 
 # Edits/persistence need a Redis: set REDIS_URL to a local or hosted instance.
-# AI features need ANTHROPIC_API_KEY (and OPENAI_API_KEY for images).
+# AI style generation needs ANTHROPIC_API_KEY.
 ```
 
 Without `REDIS_URL` the app still runs; admin edits just report that persistence isn't configured. Without the API keys, the AI buttons return a clear "not configured" error.
@@ -83,7 +81,7 @@ public/                         # static site (served at /)
   data/                         # generated JSON (committed)
 api/                            # request handlers (reused by server.js)
   login.js logout.js session.js catalog.js
-  generate-style.js generate-image.js styles.js upload-image.js
+  generate-style.js styles.js upload-image.js
 lib/                            # shared server code: auth.js, store.js (Redis), style.js
 test/                           # node:test unit tests
 ```

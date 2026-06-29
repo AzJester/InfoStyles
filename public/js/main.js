@@ -114,7 +114,6 @@ function matches(style, q) {
 
 const ctx = {
   admin: () => adminState().admin,
-  imageEnabled: () => adminState().imageEnabled,
   uploadEnabled: () => adminState().uploadEnabled,
   kindOf,
   getCategories,
