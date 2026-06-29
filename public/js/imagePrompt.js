@@ -55,3 +55,34 @@ export function toImagePrompt(style) {
 
   return parts.join(" ");
 }
+
+/**
+ * Build a terse, one-paragraph NotebookLM prompt from a style's fields.
+ * Used as a fallback when a style has no hand-written / AI-written prompt, so
+ * every style always has a pasteable NotebookLM prompt. Mirrors the terse,
+ * comma-joined phrasing of the original dataset.
+ * @param {object} style
+ * @returns {string}
+ */
+export function toNotebookLMPrompt(style) {
+  const name = clean(style.style);
+  const parts = [name ? `${name} infographic slide` : "Infographic slide"];
+
+  const add = (value) => {
+    const c = clause(value);
+    if (c) parts.push(c.toLowerCase());
+  };
+  add(style.type);
+  add(style.layout);
+  add(style.charts);
+  add(style.icons);
+  add(style.background);
+
+  const palette = Array.isArray(style.palette) ? style.palette.filter(Boolean) : [];
+  if (palette.length) parts.push("use only the given palette");
+
+  let out = parts.join(", ") + ".";
+  const avoid = clause(style.avoid);
+  if (avoid) out += ` Avoid ${avoid.toLowerCase()}.`;
+  return out;
+}

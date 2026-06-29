@@ -1,6 +1,6 @@
 // Style cards and the detail modal (palette, both prompts, admin image generation).
 import { escapeHtml, highlight, copyText, toast, openModal, wireModalDismiss } from "./ui.js";
-import { toImagePrompt } from "./imagePrompt.js";
+import { toImagePrompt, toNotebookLMPrompt } from "./imagePrompt.js";
 import { isFavorite, toggleFavorite } from "./storage.js";
 import * as api from "./api.js";
 
@@ -89,6 +89,7 @@ export function openDetail(style, ctx) {
     modal._dismissWired = true;
   }
   const imagePrompt = toImagePrompt(style);
+  const notebookPrompt = style.notebookLMPrompt || toNotebookLMPrompt(style);
 
   const adminBar =
     ctx.admin()
@@ -141,15 +142,11 @@ export function openDetail(style, ctx) {
       <pre class="prompt-text">${escapeHtml(imagePrompt)}</pre>
     </div>
 
-    ${
-      style.notebookLMPrompt
-        ? `<div class="prompt-block">
-             <div class="prompt-head"><span>NotebookLM prompt</span>
-               <button type="button" class="btn btn-sm" data-copy-nb>Copy</button></div>
-             <pre class="prompt-text">${escapeHtml(style.notebookLMPrompt)}</pre>
-           </div>`
-        : ""
-    }
+    <div class="prompt-block">
+      <div class="prompt-head"><span>NotebookLM prompt</span>
+        <button type="button" class="btn btn-sm" data-copy-nb>Copy</button></div>
+      <pre class="prompt-text">${escapeHtml(notebookPrompt)}</pre>
+    </div>
 
     ${adminBar}
   `;
@@ -157,7 +154,7 @@ export function openDetail(style, ctx) {
   // wire copies
   body.querySelector("[data-copy-img]").addEventListener("click", () => copyText(imagePrompt, "Image prompt copied"));
   body.querySelector("[data-copy-nb]")?.addEventListener("click", () =>
-    copyText(style.notebookLMPrompt, "NotebookLM prompt copied")
+    copyText(notebookPrompt, "NotebookLM prompt copied")
   );
   body.querySelectorAll(".swatch").forEach((sw) =>
     sw.addEventListener("click", () => copyText(sw.dataset.hex, sw.dataset.hex))

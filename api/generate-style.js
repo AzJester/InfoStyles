@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: chosenModel,
-        max_tokens: 1024,
+        max_tokens: 1536,
         tools: [STYLE_TOOL],
         tool_choice: { type: "tool", name: "emit_style" },
         messages: [{ role: "user", content: buildPrompt({ description, hintCategory, hintPalette, baseStyle }) }],

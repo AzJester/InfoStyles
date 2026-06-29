@@ -3,6 +3,7 @@
 import * as api from "./api.js";
 import { openModal, closeModal, wireModalDismiss, toast, escapeHtml } from "./ui.js";
 import { MODELS, getModel, setModel } from "./storage.js";
+import { toNotebookLMPrompt } from "./imagePrompt.js";
 
 const FIELD_IDS = {
   style: "fStyle",
@@ -118,6 +119,9 @@ export function initCreator(ctx) {
     out.category = refs.category.value === "__new__" ? refs.categoryNew.value.trim() : refs.category.value;
     out.palette = parsePalette(refs.palette.value);
     out.sampleImage = sampleImage;
+    // Guarantee a NotebookLM prompt: derive one from the fields if left blank
+    // (e.g. when the style was filled in by hand rather than AI-generated).
+    if (!out.notebookLMPrompt) out.notebookLMPrompt = toNotebookLMPrompt(out);
     return out;
   }
 

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { toImagePrompt } from "../public/js/imagePrompt.js";
+import { toImagePrompt, toNotebookLMPrompt } from "../public/js/imagePrompt.js";
 
 test("includes the palette as an exact-color instruction", () => {
   const p = toImagePrompt({ style: "Test", palette: ["#1F2537", "#FFFFFF"] });
@@ -23,4 +23,24 @@ test("skips empty fields cleanly", () => {
 test("names the style", () => {
   const p = toImagePrompt({ style: "Synthwave" });
   assert.match(p, /in the style of "Synthwave"/);
+});
+
+test("toNotebookLMPrompt builds a terse paragraph from fields", () => {
+  const p = toNotebookLMPrompt({
+    style: "PMO Status Board",
+    type: "Functional sans",
+    layout: "Workstream lanes",
+    charts: "Gantt; burn-up",
+    palette: ["#1F2537"],
+    avoid: "Over-decoration",
+  });
+  assert.match(p, /^PMO Status Board infographic slide, /);
+  assert.match(p, /functional sans/);
+  assert.match(p, /use only the given palette/);
+  assert.match(p, /Avoid over-decoration\.$/);
+});
+
+test("toNotebookLMPrompt handles a near-empty style", () => {
+  assert.equal(toNotebookLMPrompt({ style: "Bare" }), "Bare infographic slide.");
+  assert.match(toNotebookLMPrompt({}), /^Infographic slide\.?$/);
 });
