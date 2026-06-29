@@ -1,4 +1,5 @@
 // Shared UI helpers: toast, clipboard, HTML escaping, and accessible modals.
+import { extractVariables, applyVariables } from "./imagePrompt.js";
 
 export function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) =>
@@ -48,6 +49,34 @@ export async function copyText(text, label = "Copied") {
     }
     ta.remove();
   }
+}
+
+// Copy text, but if it contains {{variables}}, prompt to fill them first.
+export function copyWithVariables(text, label = "Copied") {
+  const vars = extractVariables(text);
+  const modal = document.getElementById("varModal");
+  const fields = document.getElementById("varFields");
+  const copyBtn = document.getElementById("varCopyBtn");
+  if (!vars.length || !modal || !fields || !copyBtn) return copyText(text, label);
+
+  fields.innerHTML = vars
+    .map(
+      (v) =>
+        `<label class="field"><span class="field-label">${escapeHtml(v)}</span>` +
+        `<input class="input" data-var="${escapeHtml(v)}" /></label>`
+    )
+    .join("");
+  if (!modal._dismissWired) {
+    wireModalDismiss(modal);
+    modal._dismissWired = true;
+  }
+  copyBtn.onclick = () => {
+    const values = {};
+    fields.querySelectorAll("[data-var]").forEach((i) => (values[i.dataset.var] = i.value));
+    closeModal(modal);
+    copyText(applyVariables(text, values), label);
+  };
+  openModal(modal);
 }
 
 // --- Modal management with a focus trap and a shared Escape handler ---
