@@ -166,6 +166,14 @@ export function initCreator(ctx) {
       refs.nl.placeholder = "e.g. make it darker and aimed at a finance audience";
       refs.nl.value = "";
       fillForm(style);
+    } else if (modeName === "duplicate") {
+      currentId = null;
+      currentKind = "custom";
+      refs.title.textContent = "Duplicate style";
+      refs.aiHint.textContent = "A copy of the style, prefilled below. Edit and Save as a new style.";
+      refs.nl.placeholder = "Optionally describe a tweak, then Generate.";
+      refs.nl.value = "";
+      fillForm({ ...style, style: `${style.style} (copy)` });
     } else {
       currentId = null;
       currentKind = "custom";
@@ -231,6 +239,7 @@ export function initCreator(ctx) {
     openCreate: () => open("create"),
     openEdit: (style) => open("edit", style),
     openRemix: (style) => open("remix", style),
+    openDuplicate: (style) => open("duplicate", style),
   };
 }
 

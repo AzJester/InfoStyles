@@ -41,6 +41,7 @@ export function buildCard(style, ctx, query = "") {
     ${style.palette?.length ? `<div class="swatches">${swatchRow(style.palette)}</div>` : ""}
     <div class="card-actions">
       <button type="button" class="btn btn-sm btn-ghost" data-img-prompt>Copy image prompt</button>
+      ${ctx.admin() ? `<button type="button" class="btn btn-sm btn-ghost btn-danger" data-card-delete title="Delete style">Delete</button>` : ""}
     </div>
   `;
 
@@ -59,6 +60,17 @@ export function buildCard(style, ctx, query = "") {
   card.querySelector("[data-img-prompt]").addEventListener("click", () =>
     copyText(toImagePrompt(style), "Image prompt copied")
   );
+  card.querySelector("[data-card-delete]")?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (!confirm(`Delete "${style.style}"? This affects everyone.`)) return;
+    try {
+      await api.deleteStyle({ id: style.id, kind: ctx.kindOf(style.id) });
+      toast("Deleted");
+      ctx.afterChange();
+    } catch (err) {
+      toast(err.message);
+    }
+  });
   card.querySelectorAll(".swatch").forEach((sw) =>
     sw.addEventListener("click", () => copyText(sw.dataset.hex, sw.dataset.hex))
   );
@@ -95,6 +107,7 @@ export function openDetail(style, ctx) {
     ctx.admin()
       ? `<div class="detail-admin">
            <button type="button" class="btn btn-sm" data-edit>Edit style</button>
+           <button type="button" class="btn btn-sm" data-duplicate>Duplicate</button>
            <button type="button" class="btn btn-sm" data-remix>Remix with AI</button>
            <button type="button" class="btn btn-sm btn-danger" data-delete>Delete</button>
          </div>`
@@ -169,6 +182,7 @@ export function openDetail(style, ctx) {
 
   // admin actions
   body.querySelector("[data-edit]")?.addEventListener("click", () => ctx.onEdit(style));
+  body.querySelector("[data-duplicate]")?.addEventListener("click", () => ctx.onDuplicate(style));
   body.querySelector("[data-remix]")?.addEventListener("click", () => ctx.onRemix(style));
   body.querySelector("[data-delete]")?.addEventListener("click", async () => {
     if (!confirm(`Delete "${style.style}"? This affects everyone.`)) return;
