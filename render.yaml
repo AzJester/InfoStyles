@@ -1,13 +1,20 @@
 # Render Blueprint. You can also wire this up by hand in the dashboard
-# (see README). A free Key Value (Redis) instance backs admin edits.
+# (see README). A Key Value (Redis) instance backs admin edits, and a small
+# persistent disk holds uploaded sample images.
 services:
   - type: web
     name: infostyles
     runtime: node
-    plan: free
+    plan: starter # paid: required for the persistent disk below
     buildCommand: npm install
     startCommand: node server.js
+    disk:
+      name: uploads
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
+      - key: UPLOAD_DIR
+        value: /var/data
       - key: ADMIN_PASSWORD
         sync: false
       - key: AUTH_SECRET

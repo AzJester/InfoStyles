@@ -18,9 +18,8 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - **Edit any existing style** (built-in or custom) and **delete** styles. Changes save to the shared store and are visible to everyone.
 - **Remix** a style with AI ("make this darker, for finance").
 - **Generate a preview image** (OpenAI) inline and download it.
+- **Upload a sample image** to a style; it is stored on the Render persistent disk and served from `/uploads`, visible to everyone.
 - Bulk **import** styles from JSON.
-
-Sample-image upload is currently deferred (no object storage wired up). Add Cloudflare R2 / S3 later to re-enable it; the editor field stays hidden until then.
 
 The AI features and the keys are gated server-side. Hiding the admin UI is only cosmetic; the real boundary is that `/api/generate-*` and `/api/styles` reject any request without a valid admin session.
 
@@ -29,20 +28,22 @@ The AI features and the keys are gated server-side. Hiding the admin UI is only 
 You can use the included `render.yaml` Blueprint, or wire it up by hand:
 
 1. **Web Service** → New → from this GitHub repo. Runtime **Node**, **Build Command** `npm install`, **Start Command** `node server.js`. (No Python needed at build; the data JSON is committed.)
-2. **Key Value** (Redis) → New → free plan. This is the store for admin edits.
-3. On the web service, add **Environment Variables**:
+2. Add a **Disk** to that web service: mount path `/var/data`, ~1 GB. This holds uploaded sample images (requires a paid instance).
+3. **Key Value** (Redis) → New. This is the store for admin edits.
+4. On the web service, add **Environment Variables**:
 
    | Variable | Purpose |
    | --- | --- |
    | `ADMIN_PASSWORD` | The password you type to sign in as admin. |
    | `AUTH_SECRET` | A long random string used to sign session cookies (e.g. `openssl rand -hex 32`). |
    | `REDIS_URL` | The Key Value instance's **Internal** connection string (admin edits store). |
+   | `UPLOAD_DIR` | `/var/data` — the disk mount path. Enables sample-image uploads. |
    | `ANTHROPIC_API_KEY` | Server-side key for AI style generation (Claude). |
    | `OPENAI_API_KEY` | Optional. Server-side key for image generation; the button only appears if set. |
 
-4. Deploy. Pushes to `main` auto-deploy. Render sites are public by default. Open the app, click the **🔑** button, sign in, and the AI/edit features unlock.
+5. Deploy. Pushes to `main` auto-deploy. Render sites are public by default. Open the app, click the **🔑** button, sign in, and the AI/edit/upload features unlock.
 
-> The free web service sleeps after inactivity and cold-starts (~30–60s) on the next request; a paid instance stays warm. `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` are only read on the server and never reach the browser.
+> A paid web service stays warm (no cold starts) and supports the disk. `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` are only read on the server and never reach the browser. Uploaded images live on the disk and are served from `/uploads`.
 
 ## Run locally
 

@@ -43,6 +43,11 @@ app.post("/api/generate-image", wrap(generateImage));
 app.post("/api/styles", wrap(styles));
 app.post("/api/upload-image", wrap(uploadImage));
 
+// Serve admin-uploaded sample images from the persistent disk, when configured.
+if (process.env.UPLOAD_DIR) {
+  app.use("/uploads", express.static(process.env.UPLOAD_DIR, { maxAge: "1h", index: false }));
+}
+
 // Static site (index.html served at /).
 app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));
 
