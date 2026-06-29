@@ -25,7 +25,14 @@
       <div class="controls">
         <input type="search" id="search" class="search" placeholder="Search styles…   ( / )" autocomplete="off" spellcheck="false" aria-label="Search styles" />
         <select id="categoryFilter" class="select" aria-label="Filter by category"></select>
+        <select id="sortSelect" class="select" aria-label="Sort styles">
+          <option value="">Sort: default</option>
+          <option value="name-asc">Name A→Z</option>
+          <option value="name-desc">Name Z→A</option>
+          <option value="category">Category</option>
+        </select>
         <button id="favFilter" class="btn btn-icon" aria-pressed="false" title="Show favorites" aria-label="Show favorites">☆</button>
+        <button id="randomBtn" class="btn btn-icon" title="Open a random style" aria-label="Open a random style">🎲</button>
         <button id="viewBtn" class="btn btn-icon" title="Switch to list view" aria-label="Switch to list view">☰</button>
         <label class="color-filter" title="Filter by color">
           <input type="color" id="colorFilter" value="#000000" aria-label="Filter by palette color" />
@@ -41,6 +48,15 @@
     </header>
 
     <main>
+      <section class="intro">
+        <h2>A library of infographic &amp; slide styles</h2>
+        <p>
+          Browse 1,500+ ready-made design styles. Open any one for its color palette and
+          copy-paste prompts for <strong>NotebookLM</strong> and <strong>OpenAI image generation</strong>.
+          Search, filter by category or color, and star your favorites.
+        </p>
+      </section>
+      <div id="activeFilters" class="active-filters" hidden></div>
       <div id="gallery" class="gallery"></div>
       <div id="empty" class="empty" hidden>No styles match your filters.</div>
       <div id="sentinel" class="sentinel"></div>

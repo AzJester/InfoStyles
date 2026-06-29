@@ -1,15 +1,15 @@
 // Boot + orchestration: load the merged catalog, render the gallery, and wire
 // search / filters / favorites / theme / admin / creator / detail.
 import { loadCatalog, getStyles, getCategories, kindOf } from "./catalog.js";
-import { buildCard } from "./card.js";
+import { buildCard, openDetail } from "./card.js";
 import { initCreator } from "./creator.js";
 import { initAdmin, adminState } from "./admin.js";
 import { isFavorite, favoriteCount, getTheme, setTheme, getView, setView } from "./storage.js";
-import { toast, openModal, wireModalDismiss, closeModal } from "./ui.js";
+import { toast, openModal, wireModalDismiss, closeModal, escapeHtml } from "./ui.js";
 
 const PAGE_SIZE = 60;
 
-const state = { query: "", category: "", favOnly: false, color: "", filtered: [], rendered: 0 };
+const state = { query: "", category: "", favOnly: false, color: "", sort: "", filtered: [], rendered: 0 };
 
 const els = {
   gallery: document.getElementById("gallery"),
@@ -17,16 +17,20 @@ const els = {
   sentinel: document.getElementById("sentinel"),
   search: document.getElementById("search"),
   category: document.getElementById("categoryFilter"),
+  sortSelect: document.getElementById("sortSelect"),
   resultCount: document.getElementById("resultCount"),
   favFilter: document.getElementById("favFilter"),
+  randomBtn: document.getElementById("randomBtn"),
   colorFilter: document.getElementById("colorFilter"),
   colorClear: document.getElementById("colorClear"),
   newStyleBtn: document.getElementById("newStyleBtn"),
   themeBtn: document.getElementById("themeBtn"),
   viewBtn: document.getElementById("viewBtn"),
+  activeFilters: document.getElementById("activeFilters"),
 };
 
 let creator;
+let pendingStyleId = null; // ?style=<id> from the initial URL, opened after first render
 
 // ---------- theme ----------
 function applyTheme(theme) {
@@ -133,20 +137,133 @@ const ctx = {
   afterSave: () => reloadAndRender(),
 };
 
+function sortStyles(arr) {
+  if (!state.sort) return arr;
+  const out = arr.slice();
+  const byName = (a, b) => (a.style || "").localeCompare(b.style || "");
+  if (state.sort === "name-asc") out.sort(byName);
+  else if (state.sort === "name-desc") out.sort((a, b) => byName(b, a));
+  else if (state.sort === "category")
+    out.sort((a, b) => (a.category || "").localeCompare(b.category || "") || byName(a, b));
+  return out;
+}
+
 function applyFilters() {
   const q = state.query.trim().toLowerCase();
-  state.filtered = getStyles().filter(
-    (s) =>
-      (!state.category || s.category === state.category) &&
-      (!state.favOnly || isFavorite(s.id)) &&
-      (!state.color || paletteHasColor(s.palette, state.color)) &&
-      matches(s, q)
+  state.filtered = sortStyles(
+    getStyles().filter(
+      (s) =>
+        (!state.category || s.category === state.category) &&
+        (!state.favOnly || isFavorite(s.id)) &&
+        (!state.color || paletteHasColor(s.palette, state.color)) &&
+        matches(s, q)
+    )
   );
   state.rendered = 0;
   els.gallery.innerHTML = "";
   els.empty.hidden = state.filtered.length > 0;
   els.resultCount.textContent = `${state.filtered.length.toLocaleString()} styles`;
   renderMore();
+  renderActiveFilters();
+  syncURL();
+}
+
+// ---------- active-filter chips ----------
+function renderActiveFilters() {
+  const chips = [];
+  if (state.query.trim()) chips.push(["search", `“${state.query.trim()}”`]);
+  if (state.category) chips.push(["category", state.category]);
+  if (state.color) chips.push(["color", state.color]);
+  if (state.favOnly) chips.push(["fav", "Favorites"]);
+  if (!chips.length) {
+    els.activeFilters.hidden = true;
+    els.activeFilters.innerHTML = "";
+    return;
+  }
+  els.activeFilters.hidden = false;
+  els.activeFilters.innerHTML =
+    chips
+      .map(
+        ([k, label]) =>
+          `<button type="button" class="chip" data-clear="${k}">` +
+          (k === "color" ? `<span class="chip-swatch" style="background:${escapeHtml(label)}"></span>` : "") +
+          `${escapeHtml(label)} <span class="chip-x">✕</span></button>`
+      )
+      .join("") + `<button type="button" class="chip chip-clear" data-clear="all">Clear all</button>`;
+}
+
+function clearFilter(which) {
+  if (which === "all" || which === "search") {
+    state.query = "";
+    els.search.value = "";
+  }
+  if (which === "all" || which === "category") {
+    state.category = "";
+    els.category.value = "";
+  }
+  if (which === "all" || which === "color") {
+    state.color = "";
+    els.colorClear.hidden = true;
+    els.colorFilter.value = "#000000";
+  }
+  if (which === "all" || which === "fav") {
+    state.favOnly = false;
+    els.favFilter.classList.remove("active");
+    els.favFilter.setAttribute("aria-pressed", "false");
+    els.favFilter.textContent = "☆";
+    els.favFilter.title = "Show favorites";
+  }
+  applyFilters();
+}
+
+// ---------- shareable URL state ----------
+function syncURL() {
+  const p = new URLSearchParams();
+  if (state.query.trim()) p.set("q", state.query.trim());
+  if (state.category) p.set("cat", state.category);
+  if (state.color) p.set("color", state.color);
+  if (state.favOnly) p.set("fav", "1");
+  if (state.sort) p.set("sort", state.sort);
+  if (!els.gallery.classList.contains("gallery--list")) p.set("view", "grid");
+  const qs = p.toString();
+  history.replaceState(null, "", qs ? `?${qs}` : location.pathname);
+}
+
+function readURLState() {
+  const p = new URLSearchParams(location.search);
+  state.query = p.get("q") || "";
+  state.color = p.get("color") || "";
+  state.favOnly = p.get("fav") === "1";
+  state.sort = p.get("sort") || "";
+
+  const cat = p.get("cat") || "";
+  state.category = cat && [...els.category.options].some((o) => o.value === cat) ? cat : "";
+
+  els.search.value = state.query;
+  els.category.value = state.category;
+  if (els.sortSelect) els.sortSelect.value = state.sort;
+  if (state.color) {
+    els.colorFilter.value = state.color;
+    els.colorClear.hidden = false;
+  }
+  if (state.favOnly) {
+    els.favFilter.classList.add("active");
+    els.favFilter.setAttribute("aria-pressed", "true");
+    els.favFilter.textContent = "★";
+    els.favFilter.title = `Showing favorites (${favoriteCount()})`;
+  }
+  const v = p.get("view");
+  if (v === "grid" || v === "list") applyView(v);
+
+  // Captured before applyFilters()->syncURL() rewrites the URL and drops it.
+  pendingStyleId = p.get("style") || null;
+}
+
+function openStyleFromURL() {
+  if (!pendingStyleId) return;
+  const s = getStyles().find((x) => x.id === pendingStyleId);
+  pendingStyleId = null;
+  if (s) openDetail(s, ctx);
 }
 
 function renderMore() {
@@ -170,7 +287,9 @@ async function init() {
 
   await loadCatalog();
   buildCategoryOptions();
+  readURLState();
   applyFilters();
+  openStyleFromURL();
 
   creator = initCreator(ctx);
 
@@ -195,6 +314,22 @@ async function init() {
   els.category.addEventListener("change", (e) => {
     state.category = e.target.value;
     applyFilters();
+  });
+
+  els.sortSelect.addEventListener("change", (e) => {
+    state.sort = e.target.value;
+    applyFilters();
+  });
+
+  els.randomBtn.addEventListener("click", () => {
+    const pool = state.filtered.length ? state.filtered : getStyles();
+    if (!pool.length) return;
+    openDetail(pool[Math.floor(Math.random() * pool.length)], ctx);
+  });
+
+  els.activeFilters.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-clear]");
+    if (btn) clearFilter(btn.dataset.clear);
   });
 
   els.favFilter.addEventListener("click", () => {
