@@ -10,7 +10,6 @@ import logout from "./api/logout.js";
 import session from "./api/session.js";
 import catalog from "./api/catalog.js";
 import generateStyle from "./api/generate-style.js";
-import generateImage from "./api/generate-image.js";
 import styles from "./api/styles.js";
 import uploadImage from "./api/upload-image.js";
 
@@ -39,7 +38,6 @@ app.post("/api/logout", wrap(logout));
 app.get("/api/session", wrap(session));
 app.get("/api/catalog", wrap(catalog));
 app.post("/api/generate-style", wrap(generateStyle));
-app.post("/api/generate-image", wrap(generateImage));
 app.post("/api/styles", wrap(styles));
 app.post("/api/upload-image", wrap(uploadImage));
 

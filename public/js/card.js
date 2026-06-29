@@ -95,7 +95,6 @@ export function openDetail(style, ctx) {
       ? `<div class="detail-admin">
            <button type="button" class="btn btn-sm" data-edit>Edit style</button>
            <button type="button" class="btn btn-sm" data-remix>Remix with AI</button>
-           ${ctx.imageEnabled() ? `<button type="button" class="btn btn-sm btn-primary" data-gen-image>Generate image</button>` : ""}
            <button type="button" class="btn btn-sm btn-danger" data-delete>Delete</button>
          </div>`
       : "";
@@ -153,7 +152,6 @@ export function openDetail(style, ctx) {
     }
 
     ${adminBar}
-    <div id="imageArea" class="image-area" hidden></div>
   `;
 
   // wire copies
@@ -186,26 +184,6 @@ export function openDetail(style, ctx) {
       toast(err.message);
     }
   });
-
-  const genBtn = body.querySelector("[data-gen-image]");
-  if (genBtn) {
-    genBtn.addEventListener("click", async () => {
-      const area = body.querySelector("#imageArea");
-      area.hidden = false;
-      area.innerHTML = `<div class="skeleton image-skeleton"></div><p class="muted">Generating image…</p>`;
-      genBtn.disabled = true;
-      try {
-        const { b64 } = await api.generateImage({ prompt: imagePrompt, size: "1536x1024" });
-        area.innerHTML = `
-          <img class="gen-image" alt="Generated preview of ${escapeHtml(style.style)}" src="data:image/png;base64,${b64}" />
-          <a class="btn btn-sm" download="${escapeHtml((style.id || "style"))}.png" href="data:image/png;base64,${b64}">Download image</a>`;
-      } catch (err) {
-        area.innerHTML = `<p class="status error">${escapeHtml(err.message)}</p>`;
-      } finally {
-        genBtn.disabled = false;
-      }
-    });
-  }
 
   openModal(modal);
 }
