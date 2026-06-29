@@ -3,7 +3,20 @@ import { escapeHtml, highlight, copyText, toast, openModal, wireModalDismiss } f
 import { toImagePrompt, toNotebookLMPrompt } from "./imagePrompt.js";
 import { isFavorite, toggleFavorite } from "./storage.js";
 import { openLightbox } from "./ui.js";
+import { bestTextColor, paletteFormats } from "./palette.js";
 import * as api from "./api.js";
+
+// Large detail swatches show an "Aa" in the most readable text color (contrast check).
+function detailSwatchRow(palette) {
+  return (palette || [])
+    .map((hex) => {
+      const fg = bestTextColor(hex);
+      return `<button type="button" class="swatch" style="background:${escapeHtml(hex)};color:${fg}" data-hex="${escapeHtml(
+        hex
+      )}" title="${escapeHtml(hex)} — copy" aria-label="Copy ${escapeHtml(hex)}"><span class="swatch-aa">Aa</span></button>`;
+    })
+    .join("");
+}
 
 // Example images for a style (back-compat: fall back to the legacy single sampleImage).
 function imagesOf(style) {
@@ -152,10 +165,14 @@ export function openDetail(style, ctx) {
     ${
       style.palette?.length
         ? `<div class="detail-palette">
-             <div class="swatches lg">${swatchRow(style.palette)}</div>
+             <div class="swatches lg">${detailSwatchRow(style.palette)}</div>
              <div class="palette-actions">
-               <button type="button" class="btn btn-sm" data-copy-hex>Copy all hex</button>
-               <button type="button" class="btn btn-sm" data-copy-css>Copy as CSS vars</button>
+               <span class="palette-actions-label">Copy palette:</span>
+               <button type="button" class="btn btn-sm" data-pal="hex">Hex</button>
+               <button type="button" class="btn btn-sm" data-pal="css">CSS</button>
+               <button type="button" class="btn btn-sm" data-pal="scss">SCSS</button>
+               <button type="button" class="btn btn-sm" data-pal="tailwind">Tailwind</button>
+               <button type="button" class="btn btn-sm" data-pal="json">JSON</button>
              </div>
            </div>`
         : ""
@@ -193,8 +210,9 @@ export function openDetail(style, ctx) {
   body.querySelectorAll(".swatch").forEach((sw) =>
     sw.addEventListener("click", () => copyText(sw.dataset.hex, sw.dataset.hex))
   );
-  body.querySelector("[data-copy-hex]")?.addEventListener("click", () =>
-    copyText((style.palette || []).join(" "), "Palette copied")
+  const pf = paletteFormats(style.palette);
+  body.querySelectorAll("[data-pal]").forEach((btn) =>
+    btn.addEventListener("click", () => copyText(pf[btn.dataset.pal], `Palette copied (${btn.dataset.pal})`))
   );
   body.querySelectorAll("[data-img]").forEach((el) =>
     el.addEventListener("click", () => openLightbox(imgs[Number(el.dataset.img)], el.alt))
@@ -202,10 +220,6 @@ export function openDetail(style, ctx) {
   body.querySelector("[data-copy-link]")?.addEventListener("click", () =>
     copyText(`${location.origin}${location.pathname}?style=${encodeURIComponent(style.id)}`, "Link copied")
   );
-  body.querySelector("[data-copy-css]")?.addEventListener("click", () => {
-    const css = ":root {\n" + (style.palette || []).map((h, i) => `  --color-${i + 1}: ${h};`).join("\n") + "\n}";
-    copyText(css, "CSS variables copied");
-  });
 
   // admin actions
   body.querySelector("[data-edit]")?.addEventListener("click", () => ctx.onEdit(style));
