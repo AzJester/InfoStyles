@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>InfoStyles — Infographic Style Library</title>
+    <meta
+      name="description"
+      content="Browse 1,500+ infographic & slide styles with NotebookLM and OpenAI image prompts. Admin-only AI style creator and editor."
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23111827'/%3E%3Crect x='22' y='24' width='24' height='24' rx='5' fill='%2338bdf8'/%3E%3Crect x='54' y='24' width='24' height='24' rx='5' fill='%238b5cf6'/%3E%3Crect x='22' y='56' width='24' height='24' rx='5' fill='%2322c55e'/%3E%3Crect x='54' y='56' width='24' height='24' rx='5' fill='%23facc15'/%3E%3C/svg%3E"
+    />
+    <script>
+      // Apply theme before paint to avoid a flash.
+      (function () {
+        try {
+          var t = localStorage.getItem("infostyles.theme");
+          if (t !== "light" && t !== "dark") {
+            t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          }
+          document.documentElement.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <h1>InfoStyles</h1>
+        <span class="count-badge" id="resultCount"></span>
+      </div>
+      <div class="controls">
+        <input type="search" id="search" class="search" placeholder="Search styles, fields, colors…   ( / )" autocomplete="off" spellcheck="false" aria-label="Search styles" />
+        <select id="categoryFilter" class="select" aria-label="Filter by category"></select>
+        <button id="favFilter" class="btn" aria-pressed="false">☆ Favorites</button>
+        <label class="color-filter" title="Filter by color">
+          <input type="color" id="colorFilter" value="#000000" aria-label="Filter by palette color" />
+          <button id="colorClear" class="color-clear" hidden aria-label="Clear color filter">✕</button>
+        </label>
+        <button id="newStyleBtn" class="btn btn-primary" hidden>+ New style</button>
+        <button id="themeBtn" class="btn btn-icon" aria-label="Toggle theme">☾</button>
+        <button id="settingsBtn" class="btn btn-icon" title="Settings" aria-label="Settings">⚙</button>
+        <button id="adminBtn" class="btn">Admin</button>
+      </div>
+    </header>
+
+    <main>
+      <div id="gallery" class="gallery"></div>
+      <div id="empty" class="empty" hidden>No styles match your filters.</div>
+      <div id="sentinel" class="sentinel"></div>
+    </main>
+
+    <!-- Login modal -->
+    <div id="loginModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+      <div class="modal-card">
+        <div class="modal-head"><h2 id="loginTitle">Admin sign in</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <form id="loginForm">
+          <label class="field">
+            <span class="field-label">Password</span>
+            <input type="password" id="adminPassword" class="input" autocomplete="current-password" />
+            <span class="field-help">The AI creator, image generation, and editing are available only after signing in. The password is checked on the server; API keys never reach the browser.</span>
+          </label>
+          <div class="modal-foot">
+            <span id="loginStatus" class="status"></span>
+            <button type="button" class="btn btn-danger" id="logoutBtn" hidden>Sign out</button>
+            <button type="submit" class="btn btn-primary">Sign in</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Detail modal -->
+    <div id="detailModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+      <div class="modal-card modal-wide" id="detailBody"></div>
+    </div>
+
+    <!-- Create / edit modal -->
+    <div id="createModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="createTitle">
+      <div class="modal-card modal-wide">
+        <div class="modal-head"><h2 id="createTitle">Create a new style</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+
+        <section class="ai-section">
+          <p id="aiHint" class="field-help"></p>
+          <textarea id="nlInput" class="input textarea" rows="2"></textarea>
+          <div class="ai-controls">
+            <select id="genModel" class="input" aria-label="Model"></select>
+            <button id="generateBtn" class="btn btn-primary">Generate</button>
+          </div>
+        </section>
+
+        <div class="editor-grid">
+          <label class="field"><span class="field-label">Style name</span><input id="fStyle" class="input" /></label>
+          <label class="field">
+            <span class="field-label">Category</span>
+            <select id="fCategory" class="input"></select>
+            <input id="fCategoryNew" class="input" placeholder="New category name" hidden />
+          </label>
+          <label class="field span-2">
+            <span class="field-label">Palette (hex, space-separated)</span>
+            <input id="fPalette" class="input" placeholder="#1F2537 #442C81 #FFFFFF" />
+            <span id="palettePreview" class="swatches sm-row"></span>
+          </label>
+          <label class="field"><span class="field-label">Type</span><input id="fType" class="input" /></label>
+          <label class="field"><span class="field-label">Icons</span><input id="fIcons" class="input" /></label>
+          <label class="field"><span class="field-label">Layout</span><input id="fLayout" class="input" /></label>
+          <label class="field"><span class="field-label">Charts</span><input id="fCharts" class="input" /></label>
+          <label class="field"><span class="field-label">Background</span><input id="fBackground" class="input" /></label>
+          <label class="field"><span class="field-label">Avoid</span><input id="fAvoid" class="input" /></label>
+          <label class="field span-2"><span class="field-label">NotebookLM prompt</span><textarea id="fNotebook" class="input textarea" rows="2"></textarea></label>
+        </div>
+
+        <div class="modal-foot">
+          <span id="createStatus" class="status"></span>
+          <button id="saveStyleBtn" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings modal -->
+    <div id="settingsModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-card">
+        <div class="modal-head"><h2 id="settingsTitle">Settings</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <div class="field">
+          <span class="field-label">Export</span>
+          <button id="exportBtn" class="btn">Download catalog as JSON</button>
+          <span class="field-help">Exports every style currently shown (built-in + edits + custom).</span>
+        </div>
+        <div class="field" id="importRow" hidden>
+          <span class="field-label">Import (admin)</span>
+          <input type="file" id="importInput" accept="application/json" class="input" />
+          <span class="field-help">Bulk-adds styles from a JSON array as custom styles (saved for everyone).</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" hidden></div>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

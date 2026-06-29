@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Deployment is handled by Vercel's GitHub integration; this workflow just
+# verifies the data builds and the unit tests pass.
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build styles.json from CSV
+        run: python build_styles.py
+      - name: Verify generated data is non-empty
+        run: |
+          python - <<'PY'
+          import json
+          styles = json.load(open("public/data/styles.json"))
+          cats = json.load(open("public/data/categories.json"))
+          assert len(styles) > 0, "no styles generated"
+          assert len(cats) > 0, "no categories generated"
+          print(f"OK: {len(styles)} styles, {len(cats)} categories")
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Unit tests
+        run: node --test

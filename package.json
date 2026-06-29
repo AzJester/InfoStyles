@@ -1,0 +1,17 @@
+{
+  "name": "infostyles",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Infographic & slide style library with NotebookLM / OpenAI image prompts and an admin-only AI style creator.",
+  "scripts": {
+    "build": "python3 build_styles.py",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@vercel/kv": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
