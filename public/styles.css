@@ -214,7 +214,11 @@ mark { background: none; color: inherit; font-weight: 600; }
 .detail-head-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 .detail-head h2 { margin: 0 0 6px; font-size: 1.0625rem; font-weight: 600; }
 .detail-palette { margin-bottom: 16px; }
-.palette-actions { display: flex; gap: 8px; margin-top: 8px; }
+.palette-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+.palette-actions-label { font-size: 0.8rem; color: var(--muted); }
+.swatches.lg .swatch { display: flex; align-items: center; justify-content: center; }
+.swatch-aa { font-size: 0.85rem; font-weight: 700; pointer-events: none; }
+.skeleton-card { height: 132px; }
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; margin-bottom: 16px; }
 .detail-field { font-size: 0.8125rem; display: flex; flex-direction: column; gap: 2px; }
 .detail-label { font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
@@ -230,6 +234,15 @@ mark { background: none; color: inherit; font-weight: 600; }
 .skeleton { background: linear-gradient(90deg, var(--border) 25%, var(--bg) 37%, var(--border) 63%); background-size: 400% 100%; animation: shimmer 1.3s ease infinite; border-radius: 10px; }
 .image-skeleton { width: 100%; aspect-ratio: 3 / 2; }
 @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
+/* ---------- Footer ---------- */
+.site-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 22px 20px;
+}
 
 /* ---------- Toast ---------- */
 .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 9px 16px; border-radius: 10px; font-size: 0.86rem; z-index: 60; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); }

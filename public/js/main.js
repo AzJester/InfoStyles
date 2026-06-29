@@ -274,6 +274,11 @@ function renderMore() {
   state.rendered += next.length;
 }
 
+// Placeholder cards shown while the catalog JSON loads.
+function renderSkeletons(n = 12) {
+  els.gallery.innerHTML = Array.from({ length: n }, () => `<div class="skeleton skeleton-card"></div>`).join("");
+}
+
 async function reloadAndRender() {
   await loadCatalog();
   buildCategoryOptions();
@@ -284,7 +289,10 @@ async function reloadAndRender() {
 async function init() {
   applyTheme(getTheme());
   applyView(getView());
+  const fy = document.getElementById("footerYear");
+  if (fy) fy.textContent = String(new Date().getFullYear());
 
+  renderSkeletons();
   await loadCatalog();
   buildCategoryOptions();
   readURLState();
@@ -378,6 +386,18 @@ async function init() {
     { rootMargin: "600px" }
   );
   io.observe(els.sentinel);
+
+  // Arrow-key navigation across cards (cards are focusable; Enter/Space opens).
+  els.gallery.addEventListener("keydown", (e) => {
+    if (!["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+    const cards = [...els.gallery.querySelectorAll(".card")];
+    const idx = cards.indexOf(document.activeElement);
+    if (idx === -1) return;
+    e.preventDefault();
+    const fwd = e.key === "ArrowRight" || e.key === "ArrowDown";
+    const next = cards[idx + (fwd ? 1 : -1)];
+    if (next) next.focus();
+  });
 
   initSettings();
 }
