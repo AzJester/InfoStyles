@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 CSV_PATH = ROOT / "Infographic & Slide Styles-Grid view.csv"
-OUT_DIR = ROOT / "app" / "data"
+OUT_DIR = ROOT / "public" / "data"
 
 HEX_RE = re.compile(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b")
 SLUG_RE = re.compile(r"[^a-z0-9]+")

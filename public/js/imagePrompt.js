@@ -48,8 +48,10 @@ export function toImagePrompt(style) {
     "Clean vector look, crisp typography, high readability, balanced whitespace, professional infographic composition."
   );
 
+  // Phrased as a positive constraint: image models tend to add things named in a
+  // bare "do not include X", so frame avoidance as something to keep the design free of.
   const avoid = clause(style.avoid);
-  if (avoid) parts.push(`Do NOT include: ${avoid}.`);
+  if (avoid) parts.push(`Style constraints to respect: keep the design free of ${avoid}.`);
 
   return parts.join(" ");
 }
