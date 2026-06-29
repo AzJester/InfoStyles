@@ -6,7 +6,7 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Deployment is handled by Vercel's GitHub integration; this workflow just
+# Deployment is handled by Render's GitHub integration; this workflow just
 # verifies the data builds and the unit tests pass.
 jobs:
   test:

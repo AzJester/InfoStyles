@@ -1,0 +1,28 @@
+# Render Blueprint. You can also wire this up by hand in the dashboard
+# (see README). A free Key Value (Redis) instance backs admin edits.
+services:
+  - type: web
+    name: infostyles
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: infostyles-kv
+          property: connectionString
+
+  - type: keyvalue
+    name: infostyles-kv
+    plan: free
+    ipAllowList: [] # internal access only

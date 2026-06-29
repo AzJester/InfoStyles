@@ -1,13 +1,13 @@
 # InfoStyles
 
-A clean, shareable web app for **1,530 infographic & slide styles** across 62 categories. Anyone can browse, search, and copy a ready-to-use prompt for **NotebookLM** or **OpenAI image generation**. A password-protected **admin** can create, edit, and AI-generate styles (and render preview images) — with the API keys kept on the server, never in the browser.
+A clean, shareable web app for **1,530 infographic & slide styles** across 62 categories. Anyone can browse, search, and copy a ready-to-use prompt for **NotebookLM** or **OpenAI image generation**. A password-protected **admin** can create, edit, and AI-generate styles (and render preview images) with the API keys kept on the server, never in the browser.
 
-Hosted on **Vercel**: a static front end plus a small serverless `/api`. The keys live as Vercel environment secrets, so sharing the public URL never exposes them.
+Hosted on **Render**: one small Node/Express service that serves the static front end in `public/` and the `/api` routes. The keys live as Render environment variables, so sharing the public URL never exposes them.
 
 ## What visitors can do (no login)
 
 - Browse, search, and filter by category (grouped, with counts), by **color**, or by **favorites** (saved in their browser).
-- Switch between **grid and list** views (remembered per browser).
+- Switch between **grid and list** views (defaults to list; remembered per browser).
 - Open any style for a detail view: full fields, a large palette (click swatches or "copy all hex" / "copy as CSS vars"), the sample image (if one was added), and both prompts.
 - Copy the **NotebookLM** prompt or the generated **OpenAI image** prompt.
 - Light/dark theme toggle, keyboard shortcuts (`/` to search, `Esc` to close).
@@ -18,71 +18,75 @@ Hosted on **Vercel**: a static front end plus a small serverless `/api`. The key
 - **Edit any existing style** (built-in or custom) and **delete** styles. Changes save to the shared store and are visible to everyone.
 - **Remix** a style with AI ("make this darker, for finance").
 - **Generate a preview image** (OpenAI) inline and download it.
-- **Upload a sample image** to a style (stored in Vercel Blob); shows on the card and in detail for everyone.
 - Bulk **import** styles from JSON.
+
+Sample-image upload is currently deferred (no object storage wired up). Add Cloudflare R2 / S3 later to re-enable it; the editor field stays hidden until then.
 
 The AI features and the keys are gated server-side. Hiding the admin UI is only cosmetic; the real boundary is that `/api/generate-*` and `/api/styles` reject any request without a valid admin session.
 
-## Deploy to Vercel
+## Deploy to Render
 
-1. Import the GitHub repo into Vercel (no framework / "Other"; no build command needed — the data JSON is committed). Vercel serves `public/` and runs `api/`.
-2. Add a **KV** store: Vercel dashboard → Storage → create KV → connect to the project. This sets `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically.
-3. Add a **Blob** store (for sample-image uploads): Storage → create Blob → connect to the project. This sets `BLOB_READ_WRITE_TOKEN` automatically. Optional — the upload field only appears if it's set.
-4. Set **Environment Variables** (Project → Settings → Environment Variables):
+You can use the included `render.yaml` Blueprint, or wire it up by hand:
+
+1. **Web Service** → New → from this GitHub repo. Runtime **Node**, **Build Command** `npm install`, **Start Command** `node server.js`. (No Python needed at build; the data JSON is committed.)
+2. **Key Value** (Redis) → New → free plan. This is the store for admin edits.
+3. On the web service, add **Environment Variables**:
 
    | Variable | Purpose |
    | --- | --- |
    | `ADMIN_PASSWORD` | The password you type to sign in as admin. |
-   | `AUTH_SECRET` | A long random string used to sign session cookies. |
+   | `AUTH_SECRET` | A long random string used to sign session cookies (e.g. `openssl rand -hex 32`). |
+   | `REDIS_URL` | The Key Value instance's **Internal** connection string (admin edits store). |
    | `ANTHROPIC_API_KEY` | Server-side key for AI style generation (Claude). |
-   | `OPENAI_API_KEY` | Server-side key for image generation. Optional — image button only appears if set. |
-   | `BLOB_READ_WRITE_TOKEN` | Set automatically when you connect a Vercel Blob store. Enables sample-image uploads. |
+   | `OPENAI_API_KEY` | Optional. Server-side key for image generation; the button only appears if set. |
 
-5. Deploy. Pushes to `main` auto-deploy. Open the app, click **Admin**, sign in, and the AI/edit features unlock.
+4. Deploy. Pushes to `main` auto-deploy. Render sites are public by default. Open the app, click the **🔑** button, sign in, and the AI/edit features unlock.
 
-> The `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` are only ever read inside the serverless functions. They are never sent to the browser and never appear in client code.
+> The free web service sleeps after inactivity and cold-starts (~30–60s) on the next request; a paid instance stays warm. `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` are only read on the server and never reach the browser.
 
 ## Run locally
 
 ```bash
-# Regenerate the data from the CSV (only if the CSV changed):
+# (Re)generate the data from the CSV — only if the CSV changed:
 python build_styles.py
 
-# Public, static-only preview (no API / no admin features):
-cd public && python -m http.server 8000   # http://localhost:8000
-
-# Full app incl. the API + admin (needs the Vercel CLI and the env vars above):
+# Install deps and run the full app (API + admin):
 npm install
-npx vercel dev
+ADMIN_PASSWORD=dev AUTH_SECRET=dev-secret-please-change node server.js
+# open http://localhost:3000
+
+# Edits/persistence need a Redis: set REDIS_URL to a local or hosted instance.
+# AI features need ANTHROPIC_API_KEY (and OPENAI_API_KEY for images).
 ```
 
-The static preview works without the API: AI/admin features simply stay hidden because `/api/session` is unavailable.
+Without `REDIS_URL` the app still runs; admin edits just report that persistence isn't configured. Without the API keys, the AI buttons return a clear "not configured" error.
 
 ## Tests & CI
 
 ```bash
-node --test       # unit tests for the image-prompt transform and the auth tokens
+node --test       # unit tests: image-prompt transform, auth tokens, style sanitize
 ```
 
-`.github/workflows/ci.yml` runs the data build and the unit tests on every push/PR. Deployment is Vercel's job, not the workflow's.
+`.github/workflows/ci.yml` runs the data build and the unit tests on every push/PR. Deployment is Render's job, not the workflow's.
 
 ## Project layout
 
 ```
+server.js                       # Express: serves public/ + mounts /api routes
+render.yaml                     # Render Blueprint (web service + Key Value)
 build_styles.py                 # CSV -> public/data/{styles,categories}.json
 Infographic & Slide Styles-...csv   # source of truth (1,530 styles)
 public/                         # static site (served at /)
   index.html  styles.css
   js/  main.js, catalog.js, card.js, creator.js, admin.js, api.js, ui.js, imagePrompt.js, storage.js
   data/                         # generated JSON (committed)
-api/                            # serverless functions
+api/                            # request handlers (reused by server.js)
   login.js logout.js session.js catalog.js
-  generate-style.js generate-image.js styles.js
-lib/                            # shared server code: auth.js, store.js (KV), style.js
+  generate-style.js generate-image.js styles.js upload-image.js
+lib/                            # shared server code: auth.js, store.js (Redis), style.js
 test/                           # node:test unit tests
-vercel.json                     # security headers
 ```
 
 ## Updating the base styles
 
-Edit the CSV, run `python build_styles.py`, commit the regenerated `public/data/*.json`. Admin edits made in the app live in KV and layer on top of the CSV styles, so they survive a rebuild.
+Edit the CSV, run `python build_styles.py`, commit the regenerated `public/data/*.json`. Admin edits made in the app live in the Key Value store and layer on top of the CSV styles, so they survive a rebuild.
