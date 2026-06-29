@@ -9,8 +9,9 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - Browse, search, and filter by category (grouped, with counts), by **color**, or by **favorites** (saved in their browser).
 - Switch between **grid and list** views (defaults to list; remembered per browser).
 - Open any style for a detail view: full fields, a large palette (click swatches or "copy all hex" / "copy as CSS vars"), any example images (click to view full size), and both prompts.
-- Copy the **NotebookLM** prompt or the generated **OpenAI image** prompt.
-- Light/dark theme toggle, keyboard shortcuts (`/` to search, `Esc` to close).
+- Copy the **NotebookLM** prompt or the generated **OpenAI image** prompt (with aspect-ratio and target-model variants), or roll a fresh palette.
+- Switch to the **Prompts** tab: a library of reusable LLM prompts (research, chat, coding…) to search and copy; `{{variables}}` are filled in at copy time.
+- Light/dark theme toggle, keyboard shortcuts (`/` to search, `Esc` to close). Export the catalog as **JSON or CSV**.
 
 ## What the admin can do (after login)
 
@@ -19,6 +20,7 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - **Remix** a style with AI ("make this darker, for finance").
 - **Upload example images** to a style (drag-and-drop or click; multiple per style). Stored on the Render persistent disk and served from `/uploads`, shown as thumbnails that open full size, visible to everyone.
 - Bulk **import** styles from JSON.
+- Manage an **LLM prompt library** in the Prompts tab: create/edit/delete reusable prompts (title, category, target models, tags, body with `{{variables}}`), or draft one with Claude. Stored in Vercel/Render Key Value, visible to everyone.
 
 The AI features and the keys are gated server-side. Hiding the admin UI is only cosmetic; the real boundary is that `/api/generate-*` and `/api/styles` reject any request without a valid admin session.
 

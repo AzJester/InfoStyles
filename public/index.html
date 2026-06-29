@@ -21,6 +21,10 @@
         <span class="brand-mark" aria-hidden="true"></span>
         <h1>InfoStyles</h1>
         <span class="count-badge" id="resultCount"></span>
+        <div class="section-toggle" role="tablist">
+          <button id="secStyles" class="seg active" role="tab" aria-selected="true">Styles</button>
+          <button id="secPrompts" class="seg" role="tab" aria-selected="false">Prompts</button>
+        </div>
       </div>
       <div class="controls">
         <input type="search" id="search" class="search" placeholder="Search styles…   ( / )" autocomplete="off" spellcheck="false" aria-label="Search styles" />
@@ -40,6 +44,7 @@
         <button id="colorClear" class="btn btn-icon" hidden aria-label="Clear color filter" title="Clear color filter">✕</button>
         <div class="controls-utility">
           <button id="newStyleBtn" class="btn btn-primary" hidden>+ New style</button>
+          <button id="newPromptBtn" class="btn btn-primary" hidden>+ New prompt</button>
           <button id="themeBtn" class="btn btn-icon" aria-label="Toggle theme">☾</button>
           <button id="settingsBtn" class="btn btn-icon" title="Settings" aria-label="Settings">⚙</button>
           <button id="adminBtn" class="btn btn-icon" title="Admin sign in" aria-label="Admin sign in">🔑</button>
@@ -60,6 +65,7 @@
       <div id="gallery" class="gallery"></div>
       <div id="empty" class="empty" hidden>No styles match your filters.</div>
       <div id="sentinel" class="sentinel"></div>
+      <div id="promptsView" hidden></div>
     </main>
 
     <footer class="site-footer">
@@ -147,7 +153,10 @@
         <div class="modal-head"><h2 id="settingsTitle">Settings</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
         <div class="field">
           <span class="field-label">Export</span>
-          <button id="exportBtn" class="btn">Download catalog as JSON</button>
+          <div class="ai-controls">
+            <button id="exportBtn" class="btn">Download JSON</button>
+            <button id="exportCsvBtn" class="btn">Download CSV</button>
+          </div>
           <span class="field-help">Exports every style currently shown (built-in + edits + custom).</span>
         </div>
         <div class="field" id="importRow" hidden>
@@ -155,6 +164,27 @@
           <input type="file" id="importInput" accept="application/json" class="input" />
           <span class="field-help">Bulk-adds styles from a JSON array as custom styles (saved for everyone).</span>
         </div>
+      </div>
+    </div>
+
+    <!-- Create / edit an LLM prompt (admin) -->
+    <div id="promptModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="pModalTitle">
+      <div class="modal-card modal-wide">
+        <div class="modal-head"><h2 id="pModalTitle">New prompt</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <section class="ai-section">
+          <p class="field-help">Optionally describe what you want and let Claude draft it.</p>
+          <textarea id="pNl" class="input textarea" rows="2" placeholder="e.g. a rigorous literature-review prompt that asks for sources and counterarguments"></textarea>
+          <div class="ai-controls"><button id="pGenerate" class="btn btn-primary">Draft with AI</button></div>
+        </section>
+        <div class="editor-grid">
+          <label class="field"><span class="field-label">Title</span><input id="pTitle" class="input" /></label>
+          <label class="field"><span class="field-label">Category</span><input id="pCategory" class="input" placeholder="Research, Chat, Coding…" /></label>
+          <label class="field"><span class="field-label">Models (comma-separated)</span><input id="pModels" class="input" placeholder="Claude, GPT-4o, Gemini" /></label>
+          <label class="field"><span class="field-label">Tags (comma-separated)</span><input id="pTags" class="input" placeholder="analysis, sources" /></label>
+          <label class="field span-2"><span class="field-label">Prompt body</span><textarea id="pBody" class="input textarea" rows="6" placeholder="Use {{variables}} for parts to fill in at copy time."></textarea></label>
+          <label class="field span-2"><span class="field-label">Notes (optional)</span><textarea id="pNotes" class="input textarea" rows="2"></textarea></label>
+        </div>
+        <div class="modal-foot"><span id="pStatus" class="status"></span><button id="pSave" class="btn btn-primary">Save</button></div>
       </div>
     </div>
 

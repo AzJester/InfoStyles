@@ -37,3 +37,16 @@ export const generateStyle = (payload) => post("/api/generate-style", payload);
 export const saveStyle = (payload) => post("/api/styles", { action: "save", ...payload });
 export const deleteStyle = (payload) => post("/api/styles", { action: "delete", ...payload });
 export const uploadImage = (dataUrl, filename) => post("/api/upload-image", { dataUrl, filename });
+
+export async function getPrompts() {
+  try {
+    const res = await fetch("/api/prompts", { headers: { "cache-control": "no-store" } });
+    if (!res.ok) return { prompts: [] };
+    return await res.json();
+  } catch {
+    return { prompts: [] };
+  }
+}
+export const savePrompt = (payload) => post("/api/prompts", { action: "save", ...payload });
+export const deletePromptApi = (id) => post("/api/prompts", { action: "delete", id });
+export const generatePrompt = (payload) => post("/api/generate-prompt", payload);

@@ -12,6 +12,8 @@ import catalog from "./api/catalog.js";
 import generateStyle from "./api/generate-style.js";
 import styles from "./api/styles.js";
 import uploadImage from "./api/upload-image.js";
+import prompts from "./api/prompts.js";
+import generatePrompt from "./api/generate-prompt.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -66,6 +68,9 @@ app.get("/api/catalog", wrap(catalog));
 app.post("/api/generate-style", wrap(generateStyle));
 app.post("/api/styles", wrap(styles));
 app.post("/api/upload-image", wrap(uploadImage));
+app.get("/api/prompts", wrap(prompts));
+app.post("/api/prompts", wrap(prompts));
+app.post("/api/generate-prompt", wrap(generatePrompt));
 
 // Serve admin-uploaded sample images from the persistent disk, when configured.
 if (process.env.UPLOAD_DIR) {

@@ -27,6 +27,8 @@
 }
 
 * { box-sizing: border-box; }
+/* Ensure the hidden attribute always wins over element display rules. */
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -53,6 +55,9 @@ body {
 .brand h1 { font-size: 1.0625rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
 .brand-mark { width: 20px; height: 20px; border-radius: 6px; background: var(--accent); }
 .count-badge { font-size: 0.75rem; color: var(--muted); }
+.section-toggle { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 999px; overflow: hidden; margin-left: 4px; }
+.seg { font: inherit; font-size: 0.82rem; cursor: pointer; border: none; background: transparent; color: var(--muted); padding: 5px 12px; }
+.seg.active { background: var(--accent); color: #fff; }
 .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .controls-utility { display: inline-flex; gap: 8px; align-items: center; margin-left: auto; }
 
@@ -131,6 +136,9 @@ mark { background: none; color: inherit; font-weight: 600; }
 
 /* Card actions: only Copy lives here, revealed on hover/focus (always shown on touch). */
 .card-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: auto; opacity: 0; transition: opacity 0.12s; }
+.card-actions.always { opacity: 1; }
+.prompt-card { cursor: default; }
+.prompt-preview { margin: 0; font-family: var(--mono); font-size: 0.78rem; color: var(--muted); white-space: pre-wrap; word-break: break-word; max-height: 130px; overflow: hidden; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
 .card:hover .card-actions, .card:focus-within .card-actions { opacity: 1; }
 @media (hover: none) { .card-actions { opacity: 1; } }
 
