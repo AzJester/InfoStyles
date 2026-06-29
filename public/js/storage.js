@@ -54,9 +54,9 @@ export function setModel(m) {
   localStorage.setItem(K_MODEL, m || DEFAULT_MODEL);
 }
 
-// --- gallery view ('grid' | 'list') ---
+// --- gallery view ('grid' | 'list'), defaults to list ---
 export function getView() {
-  return localStorage.getItem(K_VIEW) === "list" ? "list" : "grid";
+  return localStorage.getItem(K_VIEW) === "grid" ? "grid" : "list";
 }
 export function setView(v) {
   localStorage.setItem(K_VIEW, v === "list" ? "list" : "grid");
