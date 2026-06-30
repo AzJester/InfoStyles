@@ -31,13 +31,28 @@ function augment(body, opts) {
   return `${body}\n\nConstraints:\n${lines.join("\n")}`;
 }
 
+// Known AI models offered in the Models / "Model used" dropdowns. The list also
+// grows with whatever models appear on saved prompts (see allModels()).
+const BASE_MODELS = [
+  "ChatGPT (GPT-5.5)",
+  "Claude Opus 4.8",
+  "Claude Sonnet 4.6",
+  "Claude Haiku 4.5",
+  "Gemini",
+  "Grok",
+  "Llama",
+  "DeepSeek",
+  "Perplexity",
+];
+
 let list = [];
 let query = "";
 let loaded = false;
 let editId = null;
 let formResults = [];
+let formModels = []; // models attached to the prompt being edited
 let viewMode = "list"; // "grid" | "list"
-let activeTags = new Set(); // lowercased tag names; AND-combined
+let activeTag = ""; // lowercased tag name selected in the filter dropdown
 let view, refs;
 
 const byId = (id) => list.find((p) => p.id === id);
@@ -49,12 +64,28 @@ function allTags() {
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 }
 
+// Base models plus any model named on an existing prompt or saved output, deduped
+// (case-insensitive). New models added on a prompt show up here next time.
+function allModels() {
+  const seen = new Map(); // lowercase -> display label
+  const add = (m) => {
+    const k = String(m || "").trim();
+    if (k && !seen.has(k.toLowerCase())) seen.set(k.toLowerCase(), k);
+  };
+  BASE_MODELS.forEach(add);
+  for (const p of list) {
+    (p.models || []).forEach(add);
+    (p.results || []).forEach((r) => add(r.model));
+  }
+  return [...seen.values()];
+}
+
 function filtered() {
   const q = query.trim().toLowerCase();
   return list.filter((p) => {
-    if (activeTags.size) {
+    if (activeTag) {
       const tset = new Set((p.tags || []).map((t) => t.toLowerCase()));
-      for (const t of activeTags) if (!tset.has(t)) return false;
+      if (!tset.has(activeTag)) return false;
     }
     if (!q) return true;
     return [p.title, p.category, p.body, (p.tags || []).join(" "), (p.models || []).join(" ")]
@@ -89,24 +120,21 @@ function cardHTML(p, admin) {
 
 function controlsHTML() {
   const tags = allTags();
-  const chips = tags
-    .map(
-      ([t, n]) =>
-        `<button type="button" class="chip ${activeTags.has(t.toLowerCase()) ? "active" : ""}" data-tag="${escapeHtml(t)}">${escapeHtml(t)} <span class="chip-n">${n}</span></button>`
-    )
-    .join("");
+  // Tag options grow automatically as new tags are created on prompts.
+  const opts =
+    `<option value="">All tags${tags.length ? ` (${list.length})` : ""}</option>` +
+    tags
+      .map(
+        ([t, n]) =>
+          `<option value="${escapeHtml(t.toLowerCase())}" ${activeTag === t.toLowerCase() ? "selected" : ""}>${escapeHtml(t)} (${n})</option>`
+      )
+      .join("");
   return `<div class="prompts-controls">
     <div class="seg-group" role="group" aria-label="Prompt layout">
       <button type="button" class="seg ${viewMode === "list" ? "active" : ""}" data-pview="list" aria-pressed="${viewMode === "list"}" title="List view">☰ List</button>
       <button type="button" class="seg ${viewMode === "grid" ? "active" : ""}" data-pview="grid" aria-pressed="${viewMode === "grid"}" title="Grid view">▦ Grid</button>
     </div>
-    ${
-      tags.length
-        ? `<div class="prompt-tags" aria-label="Filter by tag">${chips}${
-            activeTags.size ? `<button type="button" class="chip chip-clear" data-tag-clear>Clear tags</button>` : ""
-          }</div>`
-        : ""
-    }
+    ${tags.length ? `<select id="pTagFilter" class="select" aria-label="Filter by tag">${opts}</select>` : ""}
   </div>`;
 }
 
@@ -114,7 +142,7 @@ function render() {
   if (!view) return;
   const admin = adminState().admin;
   const items = filtered();
-  const hasFilter = !!query.trim() || activeTags.size > 0;
+  const hasFilter = !!query.trim() || !!activeTag;
   const body = !items.length
     ? `<div class="empty">${
         !loaded ? "Loading…" : hasFilter ? "No prompts match your filters." : "No prompts yet."
@@ -129,16 +157,12 @@ function render() {
       render();
     })
   );
-  view.querySelectorAll("[data-tag]").forEach((b) =>
-    b.addEventListener("click", () => {
-      const t = b.dataset.tag.toLowerCase();
-      if (activeTags.has(t)) activeTags.delete(t);
-      else activeTags.add(t);
+  const tagSel = view.querySelector("#pTagFilter");
+  if (tagSel)
+    tagSel.addEventListener("change", (e) => {
+      activeTag = e.target.value;
       render();
-    })
-  );
-  const clr = view.querySelector("[data-tag-clear]");
-  if (clr) clr.addEventListener("click", () => { activeTags.clear(); render(); });
+    });
 
   view.querySelectorAll("[data-use]").forEach((b) => b.addEventListener("click", () => openUse(byId(b.dataset.use))));
   view.querySelectorAll("[data-results]").forEach((b) => b.addEventListener("click", () => openResults(byId(b.dataset.results))));
@@ -234,18 +258,67 @@ function setStatus(m, isErr = false) {
   refs.status.classList.toggle("error", isErr);
 }
 
+// ---------- model pickers (dropdown + chips) ----------
+function renderModelChips() {
+  refs.modelChips.innerHTML = formModels.length
+    ? formModels
+        .map(
+          (m, i) =>
+            `<span class="token">${escapeHtml(m)}<button type="button" class="token-x" data-mdel="${i}" aria-label="Remove ${escapeHtml(m)}">✕</button></span>`
+        )
+        .join("")
+    : `<span class="field-help">No models added yet.</span>`;
+  refs.modelChips.querySelectorAll("[data-mdel]").forEach((b) =>
+    b.addEventListener("click", () => {
+      formModels.splice(Number(b.dataset.mdel), 1);
+      renderModelChips();
+      fillModelPick();
+    })
+  );
+}
+
+// Populate the "add a model" dropdown with everything not already attached.
+function fillModelPick() {
+  const taken = new Set(formModels.map((m) => m.toLowerCase()));
+  const avail = allModels().filter((m) => !taken.has(m.toLowerCase()));
+  refs.modelPick.innerHTML =
+    `<option value="">Add a model…</option>` +
+    avail.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+}
+
+function addModel(name) {
+  const m = String(name || "").trim();
+  if (!m) return;
+  if (!formModels.some((s) => s.toLowerCase() === m.toLowerCase())) formModels.push(m);
+  renderModelChips();
+  fillModelPick();
+}
+
+// Populate the saved-output "Model used" dropdown (single choice + custom).
+function fillResultModel() {
+  refs.resultModel.innerHTML =
+    `<option value="">Model used…</option>` +
+    allModels().map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("") +
+    `<option value="__other__">➕ Other…</option>`;
+  refs.resultModelOther.hidden = true;
+  refs.resultModelOther.value = "";
+}
+
 function openForm(p) {
   editId = p?.id || null;
   refs.modalTitle.textContent = p ? "Edit prompt" : "New prompt";
   refs.title.value = p?.title || "";
   refs.category.value = p?.category || "";
-  refs.models.value = (p?.models || []).join(", ");
   refs.tags.value = (p?.tags || []).join(", ");
   refs.body.value = p?.body || "";
   refs.notes.value = p?.notes || "";
   refs.nl.value = "";
+  formModels = (p?.models || []).slice();
+  renderModelChips();
+  fillModelPick();
+  refs.modelNew.value = "";
   formResults = (p?.results || []).map((r) => ({ ...r }));
-  refs.resultModel.value = "";
+  fillResultModel();
   refs.resultOutput.value = "";
   renderFormResults();
   setStatus("");
@@ -258,8 +331,10 @@ function addFormResult() {
     setStatus("Paste the output before adding it.", true);
     return;
   }
-  formResults.unshift({ model: refs.resultModel.value.trim(), output, at: new Date().toISOString() });
-  refs.resultModel.value = "";
+  const model =
+    refs.resultModel.value === "__other__" ? refs.resultModelOther.value.trim() : refs.resultModel.value;
+  formResults.unshift({ model, output, at: new Date().toISOString() });
+  fillResultModel();
   refs.resultOutput.value = "";
   setStatus("");
   renderFormResults();
@@ -277,7 +352,9 @@ async function onGenerate() {
     const { prompt } = await api.generatePrompt({ description: d, model: "claude-opus-4-8" });
     refs.title.value = prompt.title;
     refs.category.value = prompt.category;
-    refs.models.value = (prompt.models || []).join(", ");
+    formModels = (prompt.models || []).slice();
+    renderModelChips();
+    fillModelPick();
     refs.tags.value = (prompt.tags || []).join(", ");
     refs.body.value = prompt.body;
     refs.notes.value = prompt.notes || "";
@@ -293,7 +370,7 @@ async function onSave() {
   const prompt = {
     title: refs.title.value.trim(),
     category: refs.category.value.trim(),
-    models: refs.models.value,
+    models: formModels,
     tags: refs.tags.value,
     body: refs.body.value.trim(),
     notes: refs.notes.value.trim(),
@@ -346,7 +423,6 @@ export function initPrompts() {
     modalTitle: el("pModalTitle"),
     title: el("pTitle"),
     category: el("pCategory"),
-    models: el("pModels"),
     tags: el("pTags"),
     body: el("pBody"),
     notes: el("pNotes"),
@@ -355,8 +431,14 @@ export function initPrompts() {
     save: el("pSave"),
     status: el("pStatus"),
     newBtn: el("newPromptBtn"),
+    // models picker (chips + dropdown + custom)
+    modelChips: el("pModelChips"),
+    modelPick: el("pModelPick"),
+    modelNew: el("pModelNew"),
+    modelAdd: el("pModelAdd"),
     results: el("pResults"),
     resultModel: el("pResultModel"),
+    resultModelOther: el("pResultModelOther"),
     resultOutput: el("pResultOutput"),
     resultAdd: el("pResultAdd"),
     // use (customize & copy) modal
@@ -384,6 +466,28 @@ export function initPrompts() {
   refs.gen.addEventListener("click", onGenerate);
   refs.save.addEventListener("click", onSave);
   refs.resultAdd.addEventListener("click", addFormResult);
+
+  // Models picker: pick from the dropdown, or type a new one and Add / Enter.
+  refs.modelPick.addEventListener("change", (e) => {
+    if (e.target.value) addModel(e.target.value);
+  });
+  refs.modelAdd.addEventListener("click", () => {
+    addModel(refs.modelNew.value);
+    refs.modelNew.value = "";
+  });
+  refs.modelNew.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addModel(refs.modelNew.value);
+      refs.modelNew.value = "";
+    }
+  });
+  // Saved-output model: reveal the custom field when "Other…" is chosen.
+  refs.resultModel.addEventListener("change", (e) => {
+    const other = e.target.value === "__other__";
+    refs.resultModelOther.hidden = !other;
+    if (other) refs.resultModelOther.focus();
+  });
 
   return {
     show: async () => {

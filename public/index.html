@@ -197,7 +197,15 @@
         <div class="editor-grid">
           <label class="field"><span class="field-label">Title</span><input id="pTitle" class="input" /></label>
           <label class="field"><span class="field-label">Category</span><input id="pCategory" class="input" placeholder="Research, Chat, Coding…" /></label>
-          <label class="field"><span class="field-label">Models (comma-separated)</span><input id="pModels" class="input" list="modelSuggestions" placeholder="Claude Opus 4.8, ChatGPT (GPT-5.5), Gemini" /></label>
+          <div class="field">
+            <span class="field-label">Models</span>
+            <div id="pModelChips" class="chip-tokens"></div>
+            <div class="chips-add">
+              <select id="pModelPick" class="input" aria-label="Add a model"></select>
+              <input id="pModelNew" class="input" placeholder="or type a new model" />
+              <button type="button" id="pModelAdd" class="btn btn-sm">Add</button>
+            </div>
+          </div>
           <label class="field"><span class="field-label">Tags (comma-separated)</span><input id="pTags" class="input" placeholder="analysis, sources" /></label>
           <label class="field span-2"><span class="field-label">Prompt body</span><textarea id="pBody" class="input textarea" rows="6" placeholder="Use {{variables}} for parts to fill in at copy time."></textarea></label>
           <label class="field span-2"><span class="field-label">Notes (optional)</span><textarea id="pNotes" class="input textarea" rows="2"></textarea></label>
@@ -206,7 +214,10 @@
             <span class="field-help">Keep what this prompt produced, and on which model, for later reference.</span>
             <div id="pResults" class="results-list"></div>
             <div class="result-add">
-              <input id="pResultModel" class="input" list="modelSuggestions" placeholder="Model used (e.g. ChatGPT (GPT-5.5), Claude Opus 4.8)" />
+              <div class="chips-add">
+                <select id="pResultModel" class="input" aria-label="Model used"></select>
+                <input id="pResultModelOther" class="input" placeholder="Model name" hidden />
+              </div>
               <textarea id="pResultOutput" class="input textarea" rows="3" placeholder="Paste the output this prompt generated…"></textarea>
               <button type="button" id="pResultAdd" class="btn btn-sm">+ Add output</button>
             </div>
@@ -215,19 +226,6 @@
         <div class="modal-foot"><span id="pStatus" class="status"></span><button id="pSave" class="btn btn-primary">Save</button></div>
       </div>
     </div>
-
-    <!-- Suggested AI model names for the prompt library (ChatGPT runs on GPT-5.5). -->
-    <datalist id="modelSuggestions">
-      <option value="ChatGPT (GPT-5.5)"></option>
-      <option value="Claude Opus 4.8"></option>
-      <option value="Claude Sonnet 4.6"></option>
-      <option value="Claude Haiku 4.5"></option>
-      <option value="Gemini"></option>
-      <option value="Grok"></option>
-      <option value="Llama"></option>
-      <option value="DeepSeek"></option>
-      <option value="Perplexity"></option>
-    </datalist>
 
     <!-- Customize & copy a prompt (end users): fill variables + pick tone/audience/length/format -->
     <div id="promptUseModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="puTitle">

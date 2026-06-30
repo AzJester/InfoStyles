@@ -160,9 +160,15 @@ mark { background: none; color: inherit; font-weight: 600; }
 .prompts-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
 .seg-group { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 999px; overflow: hidden; }
 .seg-group .seg { font-size: 0.82rem; padding: 6px 14px; }
-.prompt-tags { display: flex; gap: 8px; flex-wrap: wrap; }
-.chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.chip-n { opacity: 0.65; font-variant-numeric: tabular-nums; }
+.prompts-controls .select { max-width: 220px; }
+
+/* Models picker: selected tokens + a dropdown / custom-add row */
+.chip-tokens { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.token { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; background: var(--accent-soft); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); border-radius: 999px; padding: 3px 6px 3px 10px; }
+.token-x { font: inherit; cursor: pointer; border: none; background: none; color: inherit; opacity: 0.7; padding: 0 2px; line-height: 1; }
+.token-x:hover { opacity: 1; }
+.chips-add { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chips-add .input { flex: 1 1 140px; min-width: 0; }
 
 /* Saved-outputs list (prompt editor + viewer) */
 .results-list { display: flex; flex-direction: column; gap: 10px; }
