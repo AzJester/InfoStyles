@@ -26,7 +26,7 @@ const ASPECT_WORD = {
 /**
  * Build an image-generation prompt.
  * @param {object} style
- * @param {object} [opts] - { aspect: "16:9"|"1:1"|"4:5"|"9:16", model: "openai"|"midjourney"|"dalle"|"generic" }
+ * @param {object} [opts] - { aspect: "16:9"|"1:1"|"4:5"|"9:16", model: "openai"|"gemini"|"midjourney"|"dalle"|"generic" }
  */
 export function toImagePrompt(style, opts = {}) {
   const aspect = ASPECT_WORD[opts.aspect] ? opts.aspect : "16:9";

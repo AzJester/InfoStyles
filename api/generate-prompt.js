@@ -15,7 +15,7 @@ const TOOL = {
       title: { type: "string", description: "Short, descriptive title." },
       category: { type: "string", description: "Grouping, e.g. Research, Chat, Coding, Writing." },
       body: { type: "string", description: "The full prompt text. Use {{variable}} placeholders where the user should fill in specifics." },
-      models: { type: "array", items: { type: "string" }, description: "Models it suits, e.g. Claude, GPT-4o, Gemini." },
+      models: { type: "array", items: { type: "string" }, description: "Models it suits. Refer to ChatGPT as \"ChatGPT (GPT-5.5)\"; e.g. Claude Opus 4.8, ChatGPT (GPT-5.5), Gemini." },
       tags: { type: "array", items: { type: "string" }, description: "A few short tags." },
       notes: { type: "string", description: "Optional notes on usage or expected output." },
     },

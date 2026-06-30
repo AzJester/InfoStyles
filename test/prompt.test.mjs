@@ -18,6 +18,27 @@ test("sanitizePrompt defaults a missing title/body", () => {
   assert.deepEqual(p.models, []);
 });
 
+test("sanitizePrompt normalizes saved outputs and drops empty ones", () => {
+  const p = sanitizePrompt({
+    title: "X",
+    body: "Y",
+    results: [
+      { model: "Claude Opus 4.8", output: "hello", at: "2026-06-29T00:00:00.000Z" },
+      { model: "GPT-5.5", output: "" }, // dropped: no output
+      { output: "no model is fine" },
+    ],
+  });
+  assert.equal(p.results.length, 2);
+  assert.equal(p.results[0].model, "Claude Opus 4.8");
+  assert.equal(p.results[0].output, "hello");
+  assert.equal(p.results[1].output, "no model is fine");
+});
+
+test("sanitizePrompt tolerates a missing/invalid results field", () => {
+  assert.deepEqual(sanitizePrompt({ title: "X", body: "Y" }).results, []);
+  assert.deepEqual(sanitizePrompt({ title: "X", body: "Y", results: "nope" }).results, []);
+});
+
 test("slugify is url-safe", () => {
   assert.equal(slugify("Research", "My Prompt!"), "research-my-prompt");
 });

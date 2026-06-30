@@ -6,7 +6,7 @@
     <title>InfoStyles — Infographic Style Library</title>
     <meta
       name="description"
-      content="Browse 1,500+ infographic & slide styles with NotebookLM and OpenAI image prompts. Admin-only AI style creator and editor."
+      content="Browse 1,500+ infographic & slide styles with NotebookLM and image-generation prompts. Admin-only AI style creator and editor."
     />
     <link rel="stylesheet" href="styles.css" />
     <link
@@ -75,7 +75,7 @@
         <h2>A library of infographic &amp; slide styles</h2>
         <p>
           Browse 1,500+ ready-made design styles. Open any one for its color palette and
-          copy-paste prompts for <strong>NotebookLM</strong> and <strong>OpenAI image generation</strong>.
+          copy-paste prompts for <strong>NotebookLM</strong> and <strong>image generation</strong> (OpenAI, Gemini, Midjourney…).
           Search, filter by category or color, and star your favorites.
         </p>
       </section>
@@ -197,12 +197,58 @@
         <div class="editor-grid">
           <label class="field"><span class="field-label">Title</span><input id="pTitle" class="input" /></label>
           <label class="field"><span class="field-label">Category</span><input id="pCategory" class="input" placeholder="Research, Chat, Coding…" /></label>
-          <label class="field"><span class="field-label">Models (comma-separated)</span><input id="pModels" class="input" placeholder="Claude, GPT-4o, Gemini" /></label>
+          <label class="field"><span class="field-label">Models (comma-separated)</span><input id="pModels" class="input" list="modelSuggestions" placeholder="Claude Opus 4.8, ChatGPT (GPT-5.5), Gemini" /></label>
           <label class="field"><span class="field-label">Tags (comma-separated)</span><input id="pTags" class="input" placeholder="analysis, sources" /></label>
           <label class="field span-2"><span class="field-label">Prompt body</span><textarea id="pBody" class="input textarea" rows="6" placeholder="Use {{variables}} for parts to fill in at copy time."></textarea></label>
           <label class="field span-2"><span class="field-label">Notes (optional)</span><textarea id="pNotes" class="input textarea" rows="2"></textarea></label>
+          <div class="field span-2">
+            <span class="field-label">Saved outputs</span>
+            <span class="field-help">Keep what this prompt produced, and on which model, for later reference.</span>
+            <div id="pResults" class="results-list"></div>
+            <div class="result-add">
+              <input id="pResultModel" class="input" list="modelSuggestions" placeholder="Model used (e.g. ChatGPT (GPT-5.5), Claude Opus 4.8)" />
+              <textarea id="pResultOutput" class="input textarea" rows="3" placeholder="Paste the output this prompt generated…"></textarea>
+              <button type="button" id="pResultAdd" class="btn btn-sm">+ Add output</button>
+            </div>
+          </div>
         </div>
         <div class="modal-foot"><span id="pStatus" class="status"></span><button id="pSave" class="btn btn-primary">Save</button></div>
+      </div>
+    </div>
+
+    <!-- Suggested AI model names for the prompt library (ChatGPT runs on GPT-5.5). -->
+    <datalist id="modelSuggestions">
+      <option value="ChatGPT (GPT-5.5)"></option>
+      <option value="Claude Opus 4.8"></option>
+      <option value="Claude Sonnet 4.6"></option>
+      <option value="Claude Haiku 4.5"></option>
+      <option value="Gemini"></option>
+      <option value="Grok"></option>
+      <option value="Llama"></option>
+      <option value="DeepSeek"></option>
+      <option value="Perplexity"></option>
+    </datalist>
+
+    <!-- Customize & copy a prompt (end users): fill variables + pick tone/audience/length/format -->
+    <div id="promptUseModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="puTitle">
+      <div class="modal-card">
+        <div class="modal-head"><h2 id="puTitle">Customize &amp; copy</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <div id="puVars"></div>
+        <div class="editor-grid">
+          <label class="field"><span class="field-label">Tone</span><select id="puTone" class="input"></select></label>
+          <label class="field"><span class="field-label">Audience</span><select id="puAudience" class="input"></select></label>
+          <label class="field"><span class="field-label">Target length</span><select id="puLength" class="input"></select></label>
+          <label class="field"><span class="field-label">Format</span><select id="puFormat" class="input"></select></label>
+        </div>
+        <div class="modal-foot"><button class="btn btn-primary" id="puCopy">Copy</button></div>
+      </div>
+    </div>
+
+    <!-- View saved outputs for a prompt -->
+    <div id="promptResultsModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="prTitle">
+      <div class="modal-card modal-wide">
+        <div class="modal-head"><h2 id="prTitle">Saved outputs</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <div id="prBody" class="results-list"></div>
       </div>
     </div>
 

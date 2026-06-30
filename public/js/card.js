@@ -116,7 +116,7 @@ function toMarkdown(style, palette, imgPrompt, nbPrompt) {
   let md = `## ${style.style || "Untitled"}\n`;
   if (style.category) md += `**Category:** ${style.category}\n`;
   if (palette.length) md += `**Palette:** ${palette.join(" ")}\n`;
-  md += `\n### OpenAI image prompt\n${imgPrompt}\n\n### NotebookLM prompt\n${nbPrompt}\n`;
+  md += `\n### Image prompt\n${imgPrompt}\n\n### NotebookLM prompt\n${nbPrompt}\n`;
   return md;
 }
 
@@ -188,7 +188,7 @@ export function openDetail(style, ctx) {
 
     <div class="prompt-block">
       <div class="prompt-head">
-        <span>OpenAI image prompt</span>
+        <span>Image prompt</span>
         <span class="prompt-opts">
           <select id="aspectSel" class="select" aria-label="Aspect ratio">
             <option value="16:9">16:9</option>
@@ -198,6 +198,7 @@ export function openDetail(style, ctx) {
           </select>
           <select id="modelSel" class="select" aria-label="Target model">
             <option value="openai">OpenAI</option>
+            <option value="gemini">Gemini</option>
             <option value="dalle">DALL·E 3</option>
             <option value="midjourney">Midjourney</option>
             <option value="generic">Generic</option>
