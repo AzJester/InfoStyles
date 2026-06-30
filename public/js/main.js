@@ -34,6 +34,7 @@ const els = {
   promptsView: document.getElementById("promptsView"),
   secStyles: document.getElementById("secStyles"),
   secPrompts: document.getElementById("secPrompts"),
+  intro: document.querySelector(".intro"),
 };
 
 let creator;
@@ -69,6 +70,7 @@ function setSection(next) {
   }
   closeTools();
   els.empty.hidden = true;
+  if (els.intro) els.intro.hidden = isPrompts; // intro is styles-specific
   els.promptsView.hidden = !isPrompts;
   els.newStyleBtn.hidden = isPrompts || !adminState().admin;
   els.newPromptBtn.hidden = !isPrompts || !adminState().admin;

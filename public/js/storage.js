@@ -5,6 +5,7 @@ const K_FAVORITES = "infostyles.favorites";
 const K_THEME = "infostyles.theme";
 const K_MODEL = "infostyles.model";
 const K_VIEW = "infostyles.view";
+const K_PVIEW = "infostyles.promptView";
 
 export const DEFAULT_MODEL = "claude-sonnet-4-6";
 export const MODELS = [
@@ -60,4 +61,12 @@ export function getView() {
 }
 export function setView(v) {
   localStorage.setItem(K_VIEW, v === "list" ? "list" : "grid");
+}
+
+// --- prompts view ('grid' | 'list'), defaults to list ---
+export function getPromptView() {
+  return localStorage.getItem(K_PVIEW) === "grid" ? "grid" : "list";
+}
+export function setPromptView(v) {
+  localStorage.setItem(K_PVIEW, v === "grid" ? "grid" : "list");
 }
