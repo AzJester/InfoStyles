@@ -205,6 +205,15 @@ mark { background: none; color: inherit; font-weight: 600; }
 .gallery--list .swatches { flex-shrink: 0; }
 .gallery--list .card-actions { margin-top: 0; opacity: 1; flex-shrink: 0; }
 
+/* Prompt cards: keep a tidy column in grid, a uniform single row in list */
+.prompt-card .card-body { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.gallery--list .prompt-card { align-items: center; }
+.gallery--list .prompt-card .card-body { gap: 4px; }
+.gallery--list .prompt-card .card-head { justify-content: flex-start; gap: 8px; }
+.gallery--list .prompt-card .card-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gallery--list .prompt-card .prompt-preview,
+.gallery--list .prompt-card .badges { display: none; }
+
 /* example-image uploader (editor) */
 .dropzone {
   border: 1.5px dashed var(--border-strong); border-radius: 10px;
@@ -307,4 +316,31 @@ mark { background: none; color: inherit; font-weight: 600; }
   .controls { width: 100%; }
   .controls-utility { margin-left: 0; }
   .editor-grid, .detail-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- First-run hint ---------- */
+.first-run { display: flex; align-items: flex-start; gap: 12px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 18px; }
+.first-run p { margin: 0; font-size: 0.9rem; }
+.first-run .first-run-x { margin-left: auto; flex: none; }
+.first-run[hidden] { display: none; }
+
+/* ---------- Command palette ---------- */
+.cmdk { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 70; display: flex; align-items: flex-start; justify-content: center; padding: 12vh 16px 16px; }
+.cmdk[hidden] { display: none; }
+.cmdk-card { background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; width: 100%; max-width: 560px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+.cmdk-input { width: 100%; border: none; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); font: inherit; font-size: 1rem; padding: 14px 16px; outline: none; }
+.cmdk-list { list-style: none; margin: 0; padding: 6px; max-height: 50vh; overflow: auto; }
+.cmdk-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
+.cmdk-item .cmdk-kind { font-size: 0.7rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; flex: none; }
+.cmdk-item .cmdk-sub { color: var(--muted); font-size: 0.8rem; margin-left: auto; }
+.cmdk-item.active, .cmdk-item:hover { background: var(--accent-soft); }
+.cmdk-empty { padding: 16px; color: var(--muted); font-size: 0.88rem; text-align: center; }
+
+/* ---------- Print: a clean single-style spec sheet ---------- */
+@media print {
+  html.printing body > *:not(#detailModal) { display: none !important; }
+  html.printing #detailModal { position: static !important; display: block !important; background: #fff; padding: 0; }
+  html.printing #detailModal .modal-card { box-shadow: none; border: none; max-width: none; width: auto; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html.printing .detail-head-actions, html.printing .prompt-opts, html.printing [data-close], html.printing .card-actions, html.printing .detail-actions, html.printing [data-roll], html.printing [data-reset] { display: none !important; }
+  html.printing .prompt-text, html.printing .prompt-preview { white-space: pre-wrap; max-height: none; overflow: visible; }
 }

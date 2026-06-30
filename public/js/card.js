@@ -160,6 +160,7 @@ export function openDetail(style, ctx) {
       </div>
       <div class="detail-head-actions">
         <button type="button" class="btn btn-sm" data-copy-link>Copy link</button>
+        <button type="button" class="btn btn-sm" data-print>Print</button>
         <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
       </div>
     </div>
@@ -293,6 +294,16 @@ export function openDetail(style, ctx) {
   body.querySelector("[data-copy-link]")?.addEventListener("click", () =>
     copyText(`${location.origin}${location.pathname}?style=${encodeURIComponent(style.id)}`, "Link copied")
   );
+  // Print just the open style as a clean spec sheet (see @media print in styles.css).
+  body.querySelector("[data-print]")?.addEventListener("click", () => {
+    document.documentElement.classList.add("printing");
+    const cleanup = () => {
+      document.documentElement.classList.remove("printing");
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+  });
 
   // admin actions
   body.querySelector("[data-edit]")?.addEventListener("click", () => ctx.onEdit(style));

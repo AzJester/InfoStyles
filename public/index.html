@@ -68,6 +68,14 @@
     </header>
 
     <main>
+      <div id="firstRun" class="first-run" hidden>
+        <p>
+          <strong>Welcome.</strong> Open any style for its color palette and copy-ready prompts
+          (NotebookLM + image generation). Switch to <strong>Prompts</strong> for reusable LLM prompts.
+          Star ☆ to save favorites, 🎲 opens a random style, and <kbd>⌘/Ctrl</kbd>+<kbd>K</kbd> jumps to anything.
+        </p>
+        <button type="button" class="btn btn-icon first-run-x" id="firstRunClose" aria-label="Dismiss">✕</button>
+      </div>
       <section class="intro">
         <h2>A library of infographic &amp; slide styles</h2>
         <p>
@@ -174,6 +182,14 @@
           </div>
           <span class="field-help">Exports every style currently shown (built-in + edits + custom).</span>
         </div>
+        <div class="field">
+          <span class="field-label">Export favorites</span>
+          <div class="ai-controls">
+            <button id="exportFavBtn" class="btn">Download JSON</button>
+            <button id="exportFavCsvBtn" class="btn">Download CSV</button>
+          </div>
+          <span class="field-help">Exports only the styles you've starred. <span id="favCountHint"></span></span>
+        </div>
         <div class="field" id="importRow" hidden>
           <span class="field-label">Import (admin)</span>
           <input type="file" id="importInput" accept="application/json" class="input" />
@@ -267,6 +283,14 @@
         <p class="field-help">This prompt has placeholders. Fill them in, then copy.</p>
         <div id="varFields"></div>
         <div class="modal-foot"><button class="btn btn-primary" id="varCopyBtn">Copy</button></div>
+      </div>
+    </div>
+
+    <!-- Command palette (⌘/Ctrl+K): jump to any style or prompt -->
+    <div id="cmdk" class="cmdk" hidden role="dialog" aria-modal="true" aria-label="Quick jump">
+      <div class="cmdk-card">
+        <input type="text" id="cmdkInput" class="cmdk-input" placeholder="Jump to a style or prompt…" autocomplete="off" spellcheck="false" aria-label="Search styles and prompts" />
+        <ul id="cmdkList" class="cmdk-list"></ul>
       </div>
     </div>
 

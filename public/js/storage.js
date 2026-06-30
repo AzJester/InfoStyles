@@ -7,6 +7,7 @@ const K_THEME = "infostyles.theme";
 const K_MODEL = "infostyles.model";
 const K_VIEW = "infostyles.view";
 const K_PVIEW = "infostyles.promptView";
+const K_SEEN = "infostyles.seenIntro";
 
 export const DEFAULT_MODEL = "claude-sonnet-4-6";
 export const MODELS = [
@@ -93,4 +94,12 @@ export function getPromptView() {
 }
 export function setPromptView(v) {
   localStorage.setItem(K_PVIEW, v === "grid" ? "grid" : "list");
+}
+
+// --- first-run hint (shown once) ---
+export function hasSeenIntro() {
+  return localStorage.getItem(K_SEEN) === "1";
+}
+export function markIntroSeen() {
+  localStorage.setItem(K_SEEN, "1");
 }
