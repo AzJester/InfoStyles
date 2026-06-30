@@ -65,7 +65,7 @@ function setSection(next) {
   els.secPrompts.setAttribute("aria-selected", String(isPrompts));
 
   // Style-only controls + areas (sort/color/random live inside the tools popover).
-  for (const el of [els.category, els.favFilter, els.viewBtn, els.toolsBtn, els.gallery, els.sentinel, els.activeFilters]) {
+  for (const el of [els.category, els.favFilter, els.viewBtn, els.toolsBtn, els.randomBtn, els.gallery, els.sentinel, els.activeFilters]) {
     if (el) el.hidden = isPrompts;
   }
   closeTools();
@@ -365,7 +365,6 @@ async function init() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeTools();
   });
-  els.randomBtn.addEventListener("click", () => closeTools());
 
   await initAdmin({
     onChange: () => {
