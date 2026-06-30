@@ -130,13 +130,15 @@ function cardHTML(p, admin) {
   const nResults = (p.results || []).length;
   const fav = isPromptFavorite(p.id);
   return `<article class="card prompt-card">
-    <div class="card-head">
-      <div class="card-title">${escapeHtml(p.title)}</div>
-      <button type="button" class="fav ${fav ? "on" : ""}" data-fav="${escapeHtml(p.id)}" aria-pressed="${fav}" title="${fav ? "Remove from favorites" : "Add to favorites"}" aria-label="Favorite">${fav ? "★" : "☆"}</button>
+    <div class="card-body">
+      <div class="card-head">
+        <div class="card-title">${escapeHtml(p.title)}</div>
+        <button type="button" class="fav ${fav ? "on" : ""}" data-fav="${escapeHtml(p.id)}" aria-pressed="${fav}" title="${fav ? "Remove from favorites" : "Add to favorites"}" aria-label="Favorite">${fav ? "★" : "☆"}</button>
+      </div>
+      <div class="card-category">${escapeHtml(p.category)}${models ? ` · ${escapeHtml(models)}` : ""}</div>
+      ${tags ? `<div class="badges">${tags}</div>` : ""}
+      <pre class="prompt-preview">${escapeHtml(preview)}</pre>
     </div>
-    <div class="card-category">${escapeHtml(p.category)}${models ? ` · ${escapeHtml(models)}` : ""}</div>
-    ${tags ? `<div class="badges">${tags}</div>` : ""}
-    <pre class="prompt-preview">${escapeHtml(preview)}</pre>
     <div class="card-actions always">
       <button type="button" class="btn btn-sm btn-primary" data-use="${escapeHtml(p.id)}">Copy</button>
       ${nResults ? `<button type="button" class="btn btn-sm" data-results="${escapeHtml(p.id)}">Outputs (${nResults})</button>` : ""}

@@ -5,7 +5,8 @@ import { buildCard, openDetail } from "./card.js";
 import { initCreator } from "./creator.js";
 import { initPrompts } from "./prompts.js";
 import { initAdmin, adminState } from "./admin.js";
-import { isFavorite, favoriteCount, getTheme, setTheme, getView, setView } from "./storage.js";
+import { isFavorite, favoriteCount, getTheme, setTheme, getView, setView, hasSeenIntro, markIntroSeen } from "./storage.js";
+import { getPrompts } from "./api.js";
 import { toast, openModal, wireModalDismiss, closeModal, escapeHtml } from "./ui.js";
 
 const PAGE_SIZE = 60;
@@ -35,6 +36,11 @@ const els = {
   secStyles: document.getElementById("secStyles"),
   secPrompts: document.getElementById("secPrompts"),
   intro: document.querySelector(".intro"),
+  firstRun: document.getElementById("firstRun"),
+  firstRunClose: document.getElementById("firstRunClose"),
+  cmdk: document.getElementById("cmdk"),
+  cmdkInput: document.getElementById("cmdkInput"),
+  cmdkList: document.getElementById("cmdkList"),
 };
 
 let creator;
@@ -470,6 +476,15 @@ async function init() {
     if (next) next.focus();
   });
 
+  // First-run hint (shown once).
+  if (!hasSeenIntro() && els.firstRun) els.firstRun.hidden = false;
+  els.firstRunClose?.addEventListener("click", () => {
+    els.firstRun.hidden = true;
+    markIntroSeen();
+  });
+
+  initCmdk();
+
   // ?prompt=<id> deep link: jump to the Prompts section and open that prompt.
   if (pendingPromptId) {
     const id = pendingPromptId;
@@ -481,6 +496,123 @@ async function init() {
   initSettings();
 }
 
+// ---------- command palette (⌘/Ctrl+K): jump to any style or prompt ----------
+function initCmdk() {
+  if (!els.cmdk) return;
+  let promptsCache = null;
+  let items = [];
+  let active = 0;
+
+  const open = async () => {
+    if (!els.cmdk.hidden) return;
+    els.cmdk.hidden = false;
+    els.cmdk._return = document.activeElement;
+    els.cmdkInput.value = "";
+    if (!promptsCache) {
+      try {
+        promptsCache = (await getPrompts()).prompts || [];
+      } catch {
+        promptsCache = [];
+      }
+    }
+    filter("");
+    els.cmdkInput.focus();
+  };
+  const close = () => {
+    if (els.cmdk.hidden) return;
+    els.cmdk.hidden = true;
+    if (els.cmdk._return?.focus) els.cmdk._return.focus();
+  };
+
+  // Match when every term appears; rank by where the first term lands.
+  const score = (text, terms) => {
+    const t = text.toLowerCase();
+    if (!terms.every((term) => t.includes(term))) return -1;
+    return t.indexOf(terms[0]);
+  };
+
+  const filter = (raw) => {
+    const q = raw.trim().toLowerCase();
+    const terms = q.split(/\s+/).filter(Boolean);
+    const results = [];
+    if (terms.length) {
+      for (const s of getStyles()) {
+        const sc = score(`${s.style} ${s.category}`, terms);
+        if (sc >= 0) results.push({ kind: "Style", title: s.style, sub: s.category, sc, style: s });
+      }
+      for (const p of promptsCache) {
+        const sc = score(`${p.title} ${p.category}`, terms);
+        if (sc >= 0) results.push({ kind: "Prompt", id: p.id, title: p.title, sub: p.category, sc });
+      }
+      results.sort((a, b) => a.sc - b.sc || a.title.localeCompare(b.title));
+    } else {
+      for (const s of getStyles().slice(0, 8))
+        results.push({ kind: "Style", title: s.style, sub: s.category, style: s });
+    }
+    items = results.slice(0, 25);
+    active = 0;
+    renderList();
+  };
+
+  const renderList = () => {
+    els.cmdkList.innerHTML = items.length
+      ? items
+          .map(
+            (it, i) =>
+              `<li class="cmdk-item ${i === active ? "active" : ""}" data-i="${i}"><span class="cmdk-kind">${it.kind}</span><span>${escapeHtml(it.title)}</span><span class="cmdk-sub">${escapeHtml(it.sub || "")}</span></li>`
+          )
+          .join("")
+      : `<li class="cmdk-empty">No matches.</li>`;
+    els.cmdkList.querySelectorAll("[data-i]").forEach((li) => li.addEventListener("click", () => choose(Number(li.dataset.i))));
+  };
+
+  const scrollActive = () => {
+    const el = els.cmdkList.querySelector(".cmdk-item.active");
+    if (el) el.scrollIntoView({ block: "nearest" });
+  };
+
+  const choose = (i) => {
+    const it = items[i];
+    if (!it) return;
+    close();
+    if (it.kind === "Style") openDetail(it.style, ctx);
+    else {
+      setSection("prompts");
+      promptsUI.openById(it.id);
+    }
+  };
+
+  els.cmdkInput.addEventListener("input", (e) => filter(e.target.value));
+  els.cmdkInput.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      active = Math.min(active + 1, items.length - 1);
+      renderList();
+      scrollActive();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      active = Math.max(active - 1, 0);
+      renderList();
+      scrollActive();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      choose(active);
+    }
+  });
+  els.cmdk.addEventListener("click", (e) => {
+    if (e.target === els.cmdk) close();
+  });
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+      e.preventDefault();
+      open();
+    } else if (e.key === "Escape" && !els.cmdk.hidden) {
+      e.preventDefault();
+      close();
+    }
+  });
+}
+
 // ---------- settings: export (all) + import (admin) ----------
 function initSettings() {
   const modal = document.getElementById("settingsModal");
@@ -488,9 +620,12 @@ function initSettings() {
   const exportBtn = document.getElementById("exportBtn");
   const importInput = document.getElementById("importInput");
   if (!modal) return;
+  const favHint = document.getElementById("favCountHint");
   wireModalDismiss(modal);
   open.addEventListener("click", () => {
     document.getElementById("importRow").hidden = !adminState().admin;
+    const n = favoriteCount();
+    if (favHint) favHint.textContent = n ? `${n} starred.` : "No favorites yet.";
     openModal(modal);
   });
 
@@ -503,6 +638,21 @@ function initSettings() {
     URL.revokeObjectURL(url);
   };
 
+  const toCsv = (styles) => {
+    const cell = (v) => {
+      const s = String(v == null ? "" : v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = ["Category", "Style", "Palette", "Type", "Icons", "Layout", "Charts", "Background", "Avoid", "Pasteable prompt"];
+    const rows = styles.map((s) =>
+      [s.category, s.style, (s.palette || []).join(" "), s.type, s.icons, s.layout, s.charts, s.background, s.avoid, s.notebookLMPrompt]
+        .map(cell)
+        .join(",")
+    );
+    return [header.join(","), ...rows].join("\n");
+  };
+  const favorites = () => getStyles().filter((s) => isFavorite(s.id));
+
   exportBtn.addEventListener("click", () => {
     download(JSON.stringify(getStyles(), null, 2), "application/json", "infostyles-catalog.json");
     toast("Catalog exported (JSON)");
@@ -510,18 +660,21 @@ function initSettings() {
 
   const exportCsvBtn = document.getElementById("exportCsvBtn");
   exportCsvBtn?.addEventListener("click", () => {
-    const cell = (v) => {
-      const s = String(v == null ? "" : v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const header = ["Category", "Style", "Palette", "Type", "Icons", "Layout", "Charts", "Background", "Avoid", "Pasteable prompt"];
-    const rows = getStyles().map((s) =>
-      [s.category, s.style, (s.palette || []).join(" "), s.type, s.icons, s.layout, s.charts, s.background, s.avoid, s.notebookLMPrompt]
-        .map(cell)
-        .join(",")
-    );
-    download([header.join(","), ...rows].join("\n"), "text/csv", "infostyles-catalog.csv");
+    download(toCsv(getStyles()), "text/csv", "infostyles-catalog.csv");
     toast("Catalog exported (CSV)");
+  });
+
+  document.getElementById("exportFavBtn")?.addEventListener("click", () => {
+    const fav = favorites();
+    if (!fav.length) return toast("No favorites to export");
+    download(JSON.stringify(fav, null, 2), "application/json", "infostyles-favorites.json");
+    toast(`Exported ${fav.length} favorites (JSON)`);
+  });
+  document.getElementById("exportFavCsvBtn")?.addEventListener("click", () => {
+    const fav = favorites();
+    if (!fav.length) return toast("No favorites to export");
+    download(toCsv(fav), "text/csv", "infostyles-favorites.csv");
+    toast(`Exported ${fav.length} favorites (CSV)`);
   });
 
   importInput?.addEventListener("change", async (e) => {
