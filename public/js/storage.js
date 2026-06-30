@@ -2,6 +2,7 @@
 // No API keys are ever stored client-side (they live as server env secrets).
 
 const K_FAVORITES = "infostyles.favorites";
+const K_PFAVORITES = "infostyles.promptFavorites";
 const K_THEME = "infostyles.theme";
 const K_MODEL = "infostyles.model";
 const K_VIEW = "infostyles.view";
@@ -35,6 +36,29 @@ export function toggleFavorite(id) {
 }
 export function favoriteCount() {
   return favs.size;
+}
+
+// --- prompt favorites (set of prompt ids) ---
+function readPFavs() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(K_PFAVORITES) || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+let pfavs = readPFavs();
+
+export function isPromptFavorite(id) {
+  return pfavs.has(id);
+}
+export function togglePromptFavorite(id) {
+  if (pfavs.has(id)) pfavs.delete(id);
+  else pfavs.add(id);
+  localStorage.setItem(K_PFAVORITES, JSON.stringify([...pfavs]));
+  return pfavs.has(id);
+}
+export function promptFavoriteCount() {
+  return pfavs.size;
 }
 
 // --- theme ('light' | 'dark') ---

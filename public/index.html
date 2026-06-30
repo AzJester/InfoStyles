@@ -51,18 +51,15 @@
                 <button id="colorClear" class="btn btn-icon" hidden aria-label="Clear color filter" title="Clear color filter">✕</button>
               </span>
             </div>
-            <div class="tool-row">
-              <span>Surprise me</span>
-              <button id="randomBtn" class="btn btn-sm" title="Open a random style">🎲 Random</button>
-            </div>
           </div>
         </div>
 
         <span class="controls-divider" aria-hidden="true"></span>
 
         <div class="controls-utility">
-          <button id="newStyleBtn" class="btn btn-primary" hidden>+ New style</button>
-          <button id="newPromptBtn" class="btn btn-primary" hidden>+ New prompt</button>
+          <button id="randomBtn" class="btn btn-icon" title="Surprise me — open a random style" aria-label="Open a random style">🎲</button>
+          <button id="newStyleBtn" class="btn btn-icon" title="New style" aria-label="New style" hidden>+</button>
+          <button id="newPromptBtn" class="btn btn-icon" title="New prompt" aria-label="New prompt" hidden>+</button>
           <button id="themeBtn" class="btn btn-icon" aria-label="Toggle theme">☾</button>
           <button id="settingsBtn" class="btn btn-icon" title="Settings" aria-label="Settings">⚙</button>
           <button id="adminBtn" class="btn btn-icon" title="Admin sign in" aria-label="Admin sign in">🔑</button>
@@ -237,6 +234,19 @@
           <label class="field"><span class="field-label">Audience</span><select id="puAudience" class="input"></select></label>
           <label class="field"><span class="field-label">Target length</span><select id="puLength" class="input"></select></label>
           <label class="field"><span class="field-label">Format</span><select id="puFormat" class="input"></select></label>
+        </div>
+        <div class="field">
+          <span class="field-label">Preview <span id="puCount" class="field-help"></span></span>
+          <pre class="prompt-text" id="puPreview"></pre>
+        </div>
+        <div class="field">
+          <span class="field-label">Open in a tool (copies first)</span>
+          <div class="tool-links">
+            <button type="button" class="btn btn-sm" data-open-tool="chatgpt">ChatGPT</button>
+            <button type="button" class="btn btn-sm" data-open-tool="claude">Claude</button>
+            <button type="button" class="btn btn-sm" data-open-tool="gemini">Gemini</button>
+            <button type="button" class="btn btn-sm" data-open-tool="notebooklm">NotebookLM</button>
+          </div>
         </div>
         <div class="modal-foot"><button class="btn btn-primary" id="puCopy">Copy</button></div>
       </div>

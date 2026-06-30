@@ -65,7 +65,7 @@ function setSection(next) {
   els.secPrompts.setAttribute("aria-selected", String(isPrompts));
 
   // Style-only controls + areas (sort/color/random live inside the tools popover).
-  for (const el of [els.category, els.favFilter, els.viewBtn, els.toolsBtn, els.gallery, els.sentinel, els.activeFilters]) {
+  for (const el of [els.category, els.favFilter, els.viewBtn, els.toolsBtn, els.randomBtn, els.gallery, els.sentinel, els.activeFilters]) {
     if (el) el.hidden = isPrompts;
   }
   closeTools();
@@ -79,6 +79,7 @@ function setSection(next) {
   if (isPrompts) promptsUI.show();
 }
 let pendingStyleId = null; // ?style=<id> from the initial URL, opened after first render
+let pendingPromptId = null; // ?prompt=<id> from the initial URL
 
 // ---------- theme ----------
 function applyTheme(theme) {
@@ -305,6 +306,7 @@ function readURLState() {
 
   // Captured before applyFilters()->syncURL() rewrites the URL and drops it.
   pendingStyleId = p.get("style") || null;
+  pendingPromptId = p.get("prompt") || null;
 }
 
 function openStyleFromURL() {
@@ -363,7 +365,6 @@ async function init() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeTools();
   });
-  els.randomBtn.addEventListener("click", () => closeTools());
 
   await initAdmin({
     onChange: () => {
@@ -468,6 +469,14 @@ async function init() {
     const next = cards[idx + (fwd ? 1 : -1)];
     if (next) next.focus();
   });
+
+  // ?prompt=<id> deep link: jump to the Prompts section and open that prompt.
+  if (pendingPromptId) {
+    const id = pendingPromptId;
+    pendingPromptId = null;
+    setSection("prompts");
+    promptsUI.openById(id);
+  }
 
   initSettings();
 }

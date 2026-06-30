@@ -4,7 +4,16 @@ import * as api from "./api.js";
 import { adminState } from "./admin.js";
 import { extractVariables, applyVariables } from "./imagePrompt.js";
 import { escapeHtml, copyText, toast, openModal, closeModal, wireModalDismiss } from "./ui.js";
-import { getPromptView, setPromptView } from "./storage.js";
+import { getPromptView, setPromptView, isPromptFavorite, togglePromptFavorite, promptFavoriteCount } from "./storage.js";
+
+// External tools an end user might paste a prompt into. We can't pre-fill them,
+// so the flow is: copy the (customized) prompt, then open the tool in a new tab.
+const TOOL_URLS = {
+  chatgpt: ["https://chatgpt.com/", "ChatGPT"],
+  claude: ["https://claude.ai/new", "Claude"],
+  gemini: ["https://gemini.google.com/app", "Gemini"],
+  notebooklm: ["https://notebooklm.google.com/", "NotebookLM"],
+};
 
 // Copy-time customization knobs end users may want. value = instruction text.
 const KNOBS = {
@@ -53,6 +62,9 @@ let formResults = [];
 let formModels = []; // models attached to the prompt being edited
 let viewMode = "list"; // "grid" | "list"
 let activeTag = ""; // lowercased tag name selected in the filter dropdown
+let activeCategory = ""; // category selected in the filter dropdown
+let sort = ""; // "" newest | "title" | "outputs"
+let favOnly = false;
 let view, refs;
 
 const byId = (id) => list.find((p) => p.id === id);
@@ -62,6 +74,16 @@ function allTags() {
   const counts = new Map();
   for (const p of list) for (const t of p.tags || []) counts.set(t, (counts.get(t) || 0) + 1);
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+
+// Categories across all prompts, with counts, alphabetical.
+function allCategories() {
+  const counts = new Map();
+  for (const p of list) {
+    const c = p.category || "General";
+    counts.set(c, (counts.get(c) || 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
 // Base models plus any model named on an existing prompt or saved output, deduped
@@ -82,7 +104,9 @@ function allModels() {
 
 function filtered() {
   const q = query.trim().toLowerCase();
-  return list.filter((p) => {
+  const out = list.filter((p) => {
+    if (favOnly && !isPromptFavorite(p.id)) return false;
+    if (activeCategory && (p.category || "General") !== activeCategory) return false;
     if (activeTag) {
       const tset = new Set((p.tags || []).map((t) => t.toLowerCase()));
       if (!tset.has(activeTag)) return false;
@@ -93,6 +117,10 @@ function filtered() {
       .toLowerCase()
       .includes(q);
   });
+  // Default order is the stored order (newest first, since saves unshift).
+  if (sort === "title") out.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+  else if (sort === "outputs") out.sort((a, b) => (b.results || []).length - (a.results || []).length);
+  return out;
 }
 
 function cardHTML(p, admin) {
@@ -100,14 +128,19 @@ function cardHTML(p, admin) {
   const models = (p.models || []).join(", ");
   const preview = p.body.length > 240 ? p.body.slice(0, 240) + "…" : p.body;
   const nResults = (p.results || []).length;
+  const fav = isPromptFavorite(p.id);
   return `<article class="card prompt-card">
-    <div class="card-title">${escapeHtml(p.title)}</div>
+    <div class="card-head">
+      <div class="card-title">${escapeHtml(p.title)}</div>
+      <button type="button" class="fav ${fav ? "on" : ""}" data-fav="${escapeHtml(p.id)}" aria-pressed="${fav}" title="${fav ? "Remove from favorites" : "Add to favorites"}" aria-label="Favorite">${fav ? "★" : "☆"}</button>
+    </div>
     <div class="card-category">${escapeHtml(p.category)}${models ? ` · ${escapeHtml(models)}` : ""}</div>
     ${tags ? `<div class="badges">${tags}</div>` : ""}
     <pre class="prompt-preview">${escapeHtml(preview)}</pre>
     <div class="card-actions always">
       <button type="button" class="btn btn-sm btn-primary" data-use="${escapeHtml(p.id)}">Copy</button>
       ${nResults ? `<button type="button" class="btn btn-sm" data-results="${escapeHtml(p.id)}">Outputs (${nResults})</button>` : ""}
+      <button type="button" class="btn btn-sm btn-ghost" data-link="${escapeHtml(p.id)}" title="Copy a shareable link">Link</button>
       ${
         admin
           ? `<button type="button" class="btn btn-sm" data-edit="${escapeHtml(p.id)}">Edit</button>
@@ -118,23 +151,47 @@ function cardHTML(p, admin) {
   </article>`;
 }
 
+function promptLink(id) {
+  return `${location.origin}${location.pathname}?prompt=${encodeURIComponent(id)}`;
+}
+
 function controlsHTML() {
   const tags = allTags();
-  // Tag options grow automatically as new tags are created on prompts.
-  const opts =
-    `<option value="">All tags${tags.length ? ` (${list.length})` : ""}</option>` +
+  const cats = allCategories();
+  // Tag / category options grow automatically as prompts are created.
+  const tagOpts =
+    `<option value="">All tags</option>` +
     tags
       .map(
         ([t, n]) =>
           `<option value="${escapeHtml(t.toLowerCase())}" ${activeTag === t.toLowerCase() ? "selected" : ""}>${escapeHtml(t)} (${n})</option>`
       )
       .join("");
+  const catOpts =
+    `<option value="">All categories (${list.length})</option>` +
+    cats
+      .map(
+        ([c, n]) =>
+          `<option value="${escapeHtml(c)}" ${activeCategory === c ? "selected" : ""}>${escapeHtml(c)} (${n})</option>`
+      )
+      .join("");
+  const sortOpts = [
+    ["", "Newest"],
+    ["title", "Title A→Z"],
+    ["outputs", "Most outputs"],
+  ]
+    .map(([v, label]) => `<option value="${v}" ${sort === v ? "selected" : ""}>${label}</option>`)
+    .join("");
+  const favCount = promptFavoriteCount();
   return `<div class="prompts-controls">
     <div class="seg-group" role="group" aria-label="Prompt layout">
       <button type="button" class="seg ${viewMode === "list" ? "active" : ""}" data-pview="list" aria-pressed="${viewMode === "list"}" title="List view">☰ List</button>
       <button type="button" class="seg ${viewMode === "grid" ? "active" : ""}" data-pview="grid" aria-pressed="${viewMode === "grid"}" title="Grid view">▦ Grid</button>
     </div>
-    ${tags.length ? `<select id="pTagFilter" class="select" aria-label="Filter by tag">${opts}</select>` : ""}
+    ${cats.length ? `<select id="pCatFilter" class="select" aria-label="Filter by category">${catOpts}</select>` : ""}
+    ${tags.length ? `<select id="pTagFilter" class="select" aria-label="Filter by tag">${tagOpts}</select>` : ""}
+    <select id="pSort" class="select" aria-label="Sort prompts">${sortOpts}</select>
+    <button type="button" id="pFav" class="btn btn-icon ${favOnly ? "active" : ""}" aria-pressed="${favOnly}" title="${favOnly ? `Showing favorites (${favCount})` : "Show favorites"}" aria-label="Show favorite prompts">${favOnly ? "★" : "☆"}</button>
   </div>`;
 }
 
@@ -142,10 +199,10 @@ function render() {
   if (!view) return;
   const admin = adminState().admin;
   const items = filtered();
-  const hasFilter = !!query.trim() || !!activeTag;
+  const hasFilter = !!query.trim() || !!activeTag || !!activeCategory || favOnly;
   const body = !items.length
     ? `<div class="empty">${
-        !loaded ? "Loading…" : hasFilter ? "No prompts match your filters." : "No prompts yet."
+        !loaded ? "Loading…" : favOnly ? "No favorite prompts yet — tap ☆ on a prompt." : hasFilter ? "No prompts match your filters." : "No prompts yet."
       }${loaded && admin && !hasFilter ? ' Use "+ New prompt" to add one.' : ""}</div>`
     : `<div class="gallery ${viewMode === "list" ? "gallery--list" : ""}">${items.map((p) => cardHTML(p, admin)).join("")}</div>`;
   view.innerHTML = controlsHTML() + body;
@@ -157,15 +214,26 @@ function render() {
       render();
     })
   );
+  const catSel = view.querySelector("#pCatFilter");
+  if (catSel) catSel.addEventListener("change", (e) => { activeCategory = e.target.value; render(); });
   const tagSel = view.querySelector("#pTagFilter");
-  if (tagSel)
-    tagSel.addEventListener("change", (e) => {
-      activeTag = e.target.value;
-      render();
-    });
+  if (tagSel) tagSel.addEventListener("change", (e) => { activeTag = e.target.value; render(); });
+  const sortSel = view.querySelector("#pSort");
+  if (sortSel) sortSel.addEventListener("change", (e) => { sort = e.target.value; render(); });
+  const favBtn = view.querySelector("#pFav");
+  if (favBtn) favBtn.addEventListener("click", () => { favOnly = !favOnly; render(); });
 
   view.querySelectorAll("[data-use]").forEach((b) => b.addEventListener("click", () => openUse(byId(b.dataset.use))));
   view.querySelectorAll("[data-results]").forEach((b) => b.addEventListener("click", () => openResults(byId(b.dataset.results))));
+  view.querySelectorAll("[data-link]").forEach((b) =>
+    b.addEventListener("click", () => copyText(promptLink(b.dataset.link), "Link copied"))
+  );
+  view.querySelectorAll("[data-fav]").forEach((b) =>
+    b.addEventListener("click", () => {
+      togglePromptFavorite(b.dataset.fav);
+      render();
+    })
+  );
   view.querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => openForm(byId(b.dataset.edit))));
   view.querySelectorAll("[data-del]").forEach((b) =>
     b.addEventListener("click", async () => {
@@ -183,6 +251,11 @@ function render() {
 }
 
 // ---------- customize & copy ----------
+function countWords(s) {
+  const t = s.trim();
+  return t ? t.split(/\s+/).length : 0;
+}
+
 function openUse(p) {
   const vars = extractVariables(p.body);
   refs.useTitle.textContent = p.title;
@@ -195,19 +268,44 @@ function openUse(p) {
         )
         .join("")
     : "";
-  refs.useCopy.onclick = () => {
+
+  // Assemble the final prompt text from the current variable + knob values.
+  const compute = () => {
     const values = {};
     refs.useVars.querySelectorAll("[data-uvar]").forEach((i) => (values[i.dataset.uvar] = i.value));
     const lengthInstr = (KNOBS.length.find((l) => l[0] === refs.useLength.value) || ["", ""])[1];
-    const text = augment(applyVariables(p.body, values), {
+    return augment(applyVariables(p.body, values), {
       tone: refs.useTone.value,
       audience: refs.useAudience.value,
       length: lengthInstr,
       format: refs.useFormat.value,
     });
-    closeModal(refs.useModal);
-    copyText(text, "Prompt copied");
   };
+  const refresh = () => {
+    const text = compute();
+    refs.usePreview.textContent = text;
+    refs.useCount.textContent = `${countWords(text).toLocaleString()} words · ${text.length.toLocaleString()} chars`;
+  };
+
+  // Live-update the preview as the user edits variables or knobs.
+  [refs.useTone, refs.useAudience, refs.useLength, refs.useFormat].forEach((s) => (s.onchange = refresh));
+  refs.useVars.querySelectorAll("[data-uvar]").forEach((i) => (i.oninput = refresh));
+
+  refs.useCopy.onclick = () => {
+    closeModal(refs.useModal);
+    copyText(compute(), "Prompt copied");
+  };
+  // Open-in-tool: copy the current text, then open the chosen tool in a new tab.
+  refs.useModal.querySelectorAll("[data-open-tool]").forEach((b) => {
+    b.onclick = () => {
+      const [url, name] = TOOL_URLS[b.dataset.openTool] || [];
+      if (!url) return;
+      copyText(compute(), `Copied — paste into ${name}`);
+      window.open(url, "_blank", "noopener");
+    };
+  });
+
+  refresh();
   openModal(refs.useModal);
 }
 
@@ -450,6 +548,8 @@ export function initPrompts() {
     useLength: el("puLength"),
     useFormat: el("puFormat"),
     useCopy: el("puCopy"),
+    usePreview: el("puPreview"),
+    useCount: el("puCount"),
     // results viewer modal
     resModal: el("promptResultsModal"),
     resTitle: el("prTitle"),
@@ -498,6 +598,14 @@ export function initPrompts() {
     setQuery: (q) => {
       query = q;
       if (view && !view.hidden) render();
+    },
+    // Deep link (?prompt=<id>): open that prompt's Customize & copy view.
+    openById: async (id) => {
+      await ensureLoaded();
+      render();
+      const p = byId(id);
+      if (p) openUse(p);
+      return !!p;
     },
   };
 }
