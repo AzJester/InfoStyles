@@ -98,6 +98,7 @@ body {
 .btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border-strong)); }
 .btn-danger:hover { border-color: var(--danger); }
 .btn-icon { padding: 8px 10px; font-size: 1rem; line-height: 1; }
+#newStyleBtn, #newPromptBtn { font-size: 1.25rem; font-weight: 600; }
 .btn-sm { padding: 5px 10px; font-size: 0.82rem; }
 .btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .btn:disabled { opacity: 0.6; cursor: default; }
