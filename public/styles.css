@@ -1,12 +1,12 @@
 /* InfoStyles — minimalist design system. Theme is driven by [data-theme] on <html>. */
 :root,
 :root[data-theme="light"] {
-  --bg: #f7f7f8;
-  --surface: #ffffff;
+  --bg: #e8eaef;
+  --surface: #f8f9fb;
   --text: #16181d;
-  --muted: #6b7280;
-  --border: #e7e8ec;
-  --border-strong: #d3d5db;
+  --muted: #66707e;
+  --border: #dcdee4;
+  --border-strong: #c9ccd4;
   --accent: #4f46e5;
   --accent-soft: #eef2ff;
   --danger: #dc2626;

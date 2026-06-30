@@ -709,3 +709,10 @@ init().catch((err) => {
   els.empty.hidden = false;
   els.empty.textContent = "Failed to load styles. Try a hard refresh.";
 });
+
+// Register the service worker for offline use + installability.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
