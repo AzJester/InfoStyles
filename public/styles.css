@@ -170,6 +170,11 @@ mark { background: none; color: inherit; font-weight: 600; }
 .chips-add { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .chips-add .input { flex: 1 1 140px; min-width: 0; }
 
+/* Customize & copy: live preview + open-in-tool links */
+#puPreview { max-height: 220px; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+#puCount { font-weight: 400; }
+.tool-links { display: flex; gap: 8px; flex-wrap: wrap; }
+
 /* Saved-outputs list (prompt editor + viewer) */
 .results-list { display: flex; flex-direction: column; gap: 10px; }
 .result-item { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }

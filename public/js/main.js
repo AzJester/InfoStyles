@@ -79,6 +79,7 @@ function setSection(next) {
   if (isPrompts) promptsUI.show();
 }
 let pendingStyleId = null; // ?style=<id> from the initial URL, opened after first render
+let pendingPromptId = null; // ?prompt=<id> from the initial URL
 
 // ---------- theme ----------
 function applyTheme(theme) {
@@ -305,6 +306,7 @@ function readURLState() {
 
   // Captured before applyFilters()->syncURL() rewrites the URL and drops it.
   pendingStyleId = p.get("style") || null;
+  pendingPromptId = p.get("prompt") || null;
 }
 
 function openStyleFromURL() {
@@ -468,6 +470,14 @@ async function init() {
     const next = cards[idx + (fwd ? 1 : -1)];
     if (next) next.focus();
   });
+
+  // ?prompt=<id> deep link: jump to the Prompts section and open that prompt.
+  if (pendingPromptId) {
+    const id = pendingPromptId;
+    pendingPromptId = null;
+    setSection("prompts");
+    promptsUI.openById(id);
+  }
 
   initSettings();
 }

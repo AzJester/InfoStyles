@@ -238,6 +238,19 @@
           <label class="field"><span class="field-label">Target length</span><select id="puLength" class="input"></select></label>
           <label class="field"><span class="field-label">Format</span><select id="puFormat" class="input"></select></label>
         </div>
+        <div class="field">
+          <span class="field-label">Preview <span id="puCount" class="field-help"></span></span>
+          <pre class="prompt-text" id="puPreview"></pre>
+        </div>
+        <div class="field">
+          <span class="field-label">Open in a tool (copies first)</span>
+          <div class="tool-links">
+            <button type="button" class="btn btn-sm" data-open-tool="chatgpt">ChatGPT</button>
+            <button type="button" class="btn btn-sm" data-open-tool="claude">Claude</button>
+            <button type="button" class="btn btn-sm" data-open-tool="gemini">Gemini</button>
+            <button type="button" class="btn btn-sm" data-open-tool="notebooklm">NotebookLM</button>
+          </div>
+        </div>
         <div class="modal-foot"><button class="btn btn-primary" id="puCopy">Copy</button></div>
       </div>
     </div>
