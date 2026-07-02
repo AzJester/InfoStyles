@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { sanitizePrompt, slugify } from "../lib/prompt.js";
+import { sanitizePrompt, slugify, mergePrompts } from "../lib/prompt.js";
 
 test("sanitizePrompt fills defaults and splits comma lists", () => {
   const p = sanitizePrompt({ title: "Lit review", body: "Find sources on {{topic}}", models: "Claude, GPT-4o , Claude", tags: "research,sources" });
@@ -41,4 +41,29 @@ test("sanitizePrompt tolerates a missing/invalid results field", () => {
 
 test("slugify is url-safe", () => {
   assert.equal(slugify("Research", "My Prompt!"), "research-my-prompt");
+});
+
+test("mergePrompts puts saved prompts first, then unshadowed seeds", () => {
+  const seeds = [{ id: "s1", title: "Seed 1" }, { id: "s2", title: "Seed 2" }];
+  const saved = [{ id: "new", title: "Admin" }, { id: "s2", title: "Seed 2 (edited)" }];
+  const merged = mergePrompts(seeds, saved, []);
+  assert.deepEqual(
+    merged.map((p) => p.id),
+    ["new", "s2", "s1"]
+  );
+  assert.equal(merged.find((p) => p.id === "s2").title, "Seed 2 (edited)"); // saved wins
+});
+
+test("mergePrompts drops tombstoned ids from both layers", () => {
+  const seeds = [{ id: "s1" }, { id: "s2" }];
+  const saved = [{ id: "new" }];
+  assert.deepEqual(
+    mergePrompts(seeds, saved, ["s1", "new"]).map((p) => p.id),
+    ["s2"]
+  );
+});
+
+test("mergePrompts handles missing arguments", () => {
+  assert.deepEqual(mergePrompts(), []);
+  assert.deepEqual(mergePrompts([{ id: "s1" }]).map((p) => p.id), ["s1"]);
 });

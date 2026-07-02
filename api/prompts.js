@@ -1,15 +1,21 @@
 import { requireAdmin } from "../lib/auth.js";
-import { kvAvailable, getPrompts, savePrompt, deletePrompt } from "../lib/store.js";
-import { sanitizePrompt, slugify } from "../lib/prompt.js";
+import { kvAvailable, getPrompts, savePrompt, deletePrompt, getDeletedPromptIds } from "../lib/store.js";
+import { sanitizePrompt, slugify, mergePrompts } from "../lib/prompt.js";
+import { seedPrompts } from "../lib/promptSeeds.js";
 
-// GET: public list of prompts. POST (admin): save / delete.
+// GET: public list of prompts — the baked-in seeds (from the Airtable CSV)
+// merged with admin edits/creations from Redis. POST (admin): save / delete.
 export default async function handler(req, res) {
   if (req.method === "GET") {
     res.setHeader("Cache-Control", "no-store");
     try {
-      return res.status(200).json({ prompts: await getPrompts() });
+      const [saved, deleted] = await Promise.all([getPrompts(), getDeletedPromptIds()]);
+      return res.status(200).json({ prompts: mergePrompts(seedPrompts(), saved, deleted) });
     } catch (err) {
-      return res.status(200).json({ prompts: [], error: String(err?.message || err) });
+      // Seeds still work when Redis is down; only admin edits go missing.
+      // Don't echo backend errors (host/auth details) to public visitors.
+      console.error("prompts store read failed:", err);
+      return res.status(200).json({ prompts: seedPrompts(), error: "Saved prompts are temporarily unavailable." });
     }
   }
 

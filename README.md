@@ -10,7 +10,7 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - Switch between **grid and list** views (defaults to list; remembered per browser).
 - Open any style for a detail view: full fields, a large palette (click swatches or "copy all hex" / "copy as CSS vars"), any example images (click to view full size), and both prompts.
 - Copy the **NotebookLM** prompt or the generated **OpenAI image** prompt (with aspect-ratio and target-model variants), or roll a fresh palette.
-- Switch to the **Prompts** tab: a library of reusable LLM prompts (research, chat, coding…) to search and copy; `{{variables}}` are filled in at copy time.
+- Switch to the **Prompts** tab: a library of reusable LLM prompts (project management, competitive intel, business dev…) to search and copy; `{{variables}}` are filled in at copy time. It ships with 137 prompts baked in from the Airtable prompt-database export, and admins can add more.
 - Light/dark theme toggle, keyboard shortcuts (`/` to search, `Esc` to close). Export the catalog as **JSON or CSV**.
 
 ## What the admin can do (after login)
@@ -20,7 +20,7 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - **Remix** a style with AI ("make this darker, for finance").
 - **Upload example images** to a style (drag-and-drop or click; multiple per style). Stored on the Render persistent disk and served from `/uploads`, shown as thumbnails that open full size, visible to everyone.
 - Bulk **import** styles from JSON.
-- Manage an **LLM prompt library** in the Prompts tab: create/edit/delete reusable prompts (title, category, target models, tags, body with `{{variables}}`), or draft one with Claude. Stored in Vercel/Render Key Value, visible to everyone.
+- Manage an **LLM prompt library** in the Prompts tab: create/edit/delete reusable prompts (title, category, target models, tags, body with `{{variables}}`), or draft one with Claude. Admin changes are stored in Vercel/Render Key Value and layered over the baked-in seed prompts (edits shadow a seed by id; deletes are tombstoned), so they survive a data rebuild and are visible to everyone.
 
 The AI features and the keys are gated server-side. Hiding the admin UI is only cosmetic; the real boundary is that `/api/generate-*` and `/api/styles` reject any request without a valid admin session.
 
@@ -76,7 +76,9 @@ node --test       # unit tests: image-prompt transform, auth tokens, style sanit
 server.js                       # Express: serves public/ + mounts /api routes
 render.yaml                     # Render Blueprint (web service + Key Value)
 build_styles.py                 # CSV -> public/data/{styles,categories}.json
+build_prompts.py                # CSV -> public/data/prompts.json (seed prompts)
 Infographic & Slide Styles-...csv   # source of truth (1,530 styles)
+Prompt Database-All Prompts.csv     # source of truth (137 seed prompts, Airtable export)
 public/                         # static site (served at /)
   index.html  styles.css
   js/  main.js, catalog.js, card.js, creator.js, admin.js, api.js, ui.js, imagePrompt.js, storage.js
@@ -88,6 +90,6 @@ lib/                            # shared server code: auth.js, store.js (Redis),
 test/                           # node:test unit tests
 ```
 
-## Updating the base styles
+## Updating the base styles and prompts
 
-Edit the CSV, run `python build_styles.py`, commit the regenerated `public/data/*.json`. Admin edits made in the app live in the Key Value store and layer on top of the CSV styles, so they survive a rebuild.
+Edit the styles CSV and run `python build_styles.py`, or re-export the Airtable prompt database over `Prompt Database-All Prompts.csv` and run `python build_prompts.py`. Commit the regenerated `public/data/*.json`. Admin edits made in the app live in the Key Value store and layer on top of the CSV data (keyed by id, which is derived from category + title), so they survive a rebuild. One caveat: renaming a style or prompt in the CSV changes its id, so any admin edit or delete of the old record no longer applies.
