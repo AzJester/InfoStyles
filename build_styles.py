@@ -42,8 +42,20 @@ def parse_palette(raw: str) -> list[str]:
     return out
 
 
+def fix_mojibake(s: str) -> str:
+    """Repair UTF-8 text that was decoded as cp1252 somewhere upstream
+    (e.g. 'â€“' instead of '–'). Only rows that look damaged are touched, and
+    only when the round-trip decodes cleanly."""
+    if "â" not in s and "Ã" not in s:
+        return s
+    try:
+        return s.encode("cp1252").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return s
+
+
 def clean(value: str | None) -> str:
-    return (value or "").strip()
+    return fix_mojibake((value or "").strip())
 
 
 def main() -> None:

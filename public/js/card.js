@@ -24,11 +24,12 @@ function imagesOf(style) {
   return style.sampleImage ? [style.sampleImage] : [];
 }
 
-function swatchRow(palette) {
+// Card face: the palette as a full-width band of clickable segments.
+function bandRow(palette) {
   return (palette || [])
     .map(
       (hex) =>
-        `<button type="button" class="swatch" style="background:${escapeHtml(hex)}" data-hex="${escapeHtml(
+        `<button type="button" class="band-c" style="background:${escapeHtml(hex)}" data-hex="${escapeHtml(
           hex
         )}" title="${escapeHtml(hex)} — copy" aria-label="Copy ${escapeHtml(hex)}"></button>`
     )
@@ -50,16 +51,23 @@ export function buildCard(style, ctx, query = "") {
   card.setAttribute("aria-label", `Open ${style.style}`);
 
   const thumb = imagesOf(style)[0];
+  const teaser = style.layout || style.type || "";
   card.innerHTML = `
-    ${thumb ? `<img class="card-thumb" loading="lazy" alt="" src="${escapeHtml(thumb)}" />` : ""}
+    ${
+      thumb
+        ? `<img class="card-thumb" loading="lazy" alt="" src="${escapeHtml(thumb)}" />`
+        : style.palette?.length
+          ? `<div class="card-band">${bandRow(style.palette)}</div>`
+          : ""
+    }
     <div class="card-body">
       <div class="card-head">
         <div class="card-title">${highlight(style.style || "Untitled style", query)}</div>
         ${favBtn(style)}
       </div>
       ${style.category ? `<div class="card-category">${highlight(style.category, query)}</div>` : ""}
+      ${teaser ? `<div class="card-teaser">${highlight(teaser, query)}</div>` : ""}
     </div>
-    ${style.palette?.length ? `<div class="swatches">${swatchRow(style.palette)}</div>` : ""}
     <div class="card-actions">
       <button type="button" class="btn btn-sm btn-ghost" data-img-prompt>Copy image prompt</button>
       ${ctx.admin() ? `<button type="button" class="btn btn-sm btn-ghost btn-danger" data-card-delete title="Delete style">Delete</button>` : ""}
@@ -92,7 +100,7 @@ export function buildCard(style, ctx, query = "") {
       toast(err.message);
     }
   });
-  card.querySelectorAll(".swatch").forEach((sw) =>
+  card.querySelectorAll("[data-hex]").forEach((sw) =>
     sw.addEventListener("click", () => copyText(sw.dataset.hex, sw.dataset.hex))
   );
   const fav = card.querySelector("[data-fav]");
@@ -159,6 +167,7 @@ export function openDetail(style, ctx) {
         </div>
       </div>
       <div class="detail-head-actions">
+        ${favBtn(style)}
         <button type="button" class="btn btn-sm" data-copy-link>Copy link</button>
         <button type="button" class="btn btn-sm" data-print>Print</button>
         <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
@@ -244,7 +253,7 @@ export function openDetail(style, ctx) {
         <button type="button" class="btn btn-sm" data-pal="scss">SCSS</button>
         <button type="button" class="btn btn-sm" data-pal="tailwind">Tailwind</button>
         <button type="button" class="btn btn-sm" data-pal="json">JSON</button>
-        <button type="button" class="btn btn-sm" data-roll title="Generate a different palette">🎲 Shuffle palette</button>
+        <button type="button" class="btn btn-sm" data-roll title="Generate a different palette">Shuffle palette</button>
         ${same ? "" : `<button type="button" class="btn btn-sm" data-reset>Reset</button>`}
       </div>`;
     el.querySelectorAll(".swatch").forEach((sw) =>
@@ -258,7 +267,7 @@ export function openDetail(style, ctx) {
       palette = randomPalette(original.length || 5);
       renderPalette();
       renderImagePrompt();
-      toast("New palette rolled 🎲");
+      toast("New palette rolled");
     });
     el.querySelector("[data-reset]")?.addEventListener("click", () => {
       palette = original.slice();
@@ -303,6 +312,15 @@ export function openDetail(style, ctx) {
     };
     window.addEventListener("afterprint", cleanup);
     window.print();
+  });
+
+  const dFav = body.querySelector("[data-fav]");
+  dFav?.addEventListener("click", () => {
+    const on = toggleFavorite(style.id);
+    dFav.classList.toggle("on", on);
+    dFav.textContent = on ? "★" : "☆";
+    dFav.setAttribute("aria-pressed", String(on));
+    document.dispatchEvent(new CustomEvent("favorites-changed"));
   });
 
   // admin actions

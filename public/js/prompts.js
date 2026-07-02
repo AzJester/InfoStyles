@@ -3,7 +3,7 @@
 import * as api from "./api.js";
 import { adminState } from "./admin.js";
 import { extractVariables, applyVariables } from "./imagePrompt.js";
-import { escapeHtml, copyText, toast, openModal, closeModal, wireModalDismiss } from "./ui.js";
+import { escapeHtml, copyText, toast, openModal, closeModal, wireModalDismiss, ICONS } from "./ui.js";
 import { getPromptView, setPromptView, isPromptFavorite, togglePromptFavorite, promptFavoriteCount } from "./storage.js";
 
 // External tools an end user might send a prompt to. ChatGPT and Claude accept
@@ -204,13 +204,13 @@ function controlsHTML() {
   const favCount = promptFavoriteCount();
   return `<div class="prompts-controls">
     <div class="seg-group" role="group" aria-label="Prompt layout">
-      <button type="button" class="seg ${viewMode === "list" ? "active" : ""}" data-pview="list" aria-pressed="${viewMode === "list"}" title="List view">☰ List</button>
-      <button type="button" class="seg ${viewMode === "grid" ? "active" : ""}" data-pview="grid" aria-pressed="${viewMode === "grid"}" title="Grid view">▦ Grid</button>
+      <button type="button" class="seg ${viewMode === "list" ? "active" : ""}" data-pview="list" aria-pressed="${viewMode === "list"}" title="List view">${ICONS.list} List</button>
+      <button type="button" class="seg ${viewMode === "grid" ? "active" : ""}" data-pview="grid" aria-pressed="${viewMode === "grid"}" title="Grid view">${ICONS.grid} Grid</button>
     </div>
     ${cats.length ? `<select id="pCatFilter" class="select" aria-label="Filter by category">${catOpts}</select>` : ""}
     ${tags.length ? `<select id="pTagFilter" class="select" aria-label="Filter by tag">${tagOpts}</select>` : ""}
     <select id="pSort" class="select" aria-label="Sort prompts">${sortOpts}</select>
-    <button type="button" id="pFav" class="btn btn-icon ${favOnly ? "active" : ""}" aria-pressed="${favOnly}" title="${favOnly ? `Showing favorites (${favCount})` : "Show favorites"}" aria-label="Show favorite prompts">${favOnly ? "★" : "☆"}</button>
+    <button type="button" id="pFav" class="btn btn-icon ${favOnly ? "active" : ""}" aria-pressed="${favOnly}" title="${favOnly ? `Showing favorites (${favCount})` : "Show favorites"}" aria-label="Show favorite prompts">${favOnly ? ICONS.starFill : ICONS.star}</button>
   </div>`;
 }
 
@@ -220,9 +220,11 @@ function render() {
   const items = filtered();
   const hasFilter = !!query.trim() || !!activeTag || !!activeCategory || favOnly;
   const body = !items.length
-    ? `<div class="empty">${
-        !loaded ? "Loading…" : favOnly ? "No favorite prompts yet — tap ☆ on a prompt." : hasFilter ? "No prompts match your filters." : "No prompts yet."
-      }${loaded && admin && !hasFilter ? ' Use "+ New prompt" to add one.' : ""}</div>`
+    ? !loaded
+      ? `<div class="gallery gallery--list">${Array.from({ length: 8 }, () => '<div class="skeleton skeleton-card"></div>').join("")}</div>`
+      : `<div class="empty">${
+          favOnly ? "No favorite prompts yet — tap ☆ on a prompt." : hasFilter ? "No prompts match your filters." : "No prompts yet."
+        }${admin && !hasFilter ? ' Use "+ New prompt" to add one.' : ""}</div>`
     : `<div class="gallery ${viewMode === "list" ? "gallery--list" : ""}">${items.map((p) => cardHTML(p, admin)).join("")}</div>`;
   view.innerHTML = controlsHTML() + body;
 

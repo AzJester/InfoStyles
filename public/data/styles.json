@@ -1463,7 +1463,7 @@
 "icons": "Camel silhouette, canteen, compass, dunes",
 "layout": "Horizon bands; waypoint callouts",
 "charts": "Rounded bars; route-line timelines",
-"background": "Dune-wave texture (3â€“5%)",
+"background": "Dune-wave texture (3–5%)",
 "avoid": "Photoreal faces; busy patterns behind text",
 "notebookLMPrompt": "Camel caravan desert infographic, warm sand/terracotta palette with oasis teal, horizon bands, waypoint callouts, subtle dune texture, clean readable charts, crisp vector, minimal text."
 },
@@ -1521,7 +1521,7 @@
 "icons": "Canyon layers, saguaro, sun rays, route marker, topo contour, compass",
 "layout": "Horizontal strata-band sections; horizon header; map-box callouts",
 "charts": "Strata-like layered areas; route timelines; warm comparison bars",
-"background": "Sandstone grain + faint contours (3â€“4%)",
+"background": "Sandstone grain + faint contours (3–4%)",
 "avoid": "Busy patterns; low-contrast tan-on-tan text",
 "notebookLMPrompt": "Arizona Grand Canyon strata infographic, canyon layer bands, saguaro/topo icons, subtle sandstone grain and contour background, strata-style area charts and route timelines, crisp vector, minimal text."
 },
@@ -1581,7 +1581,7 @@
 "icons": "Diamond motifs, sun rays, stepped shapes, cactus outline (simple)",
 "layout": "Symmetric grid; geometric section containers; motif separators",
 "charts": "Geometry-driven bars/dots; minimal gridlines",
-"background": "Very light geometric weave pattern (2â€“3%)",
+"background": "Very light geometric weave pattern (2–3%)",
 "avoid": "Sacred/specific tribal symbols; busy patterns behind text",
 "notebookLMPrompt": "Arizona southwest geometric infographic, subtle weave pattern, geometric containers, clean sans typography, cactus/sun icons, geometric charts, crisp vector, minimal text, high contrast."
 },
@@ -1599,7 +1599,7 @@
 ],
 "type": "Modern sans; bold section headers",
 "icons": "Saguaro, sun disk, mesa silhouette, compass, route marker (line)",
-"layout": "Horizon header band; 2â€“3 column blocks; rounded callouts",
+"layout": "Horizon header band; 2–3 column blocks; rounded callouts",
 "charts": "Warm bars; dotted route timelines; simple donuts",
 "background": "Sand grain + faint contour lines (3%)",
 "avoid": "Dense southwestern patterns; low contrast",
@@ -3065,7 +3065,7 @@
 {
 "id": "art-cultural-japanese-wabi-sabi-minimal",
 "category": "Art & Cultural",
-"style": "Japanese Wabiâ€‘Sabi Minimal",
+"style": "Japanese Wabi‑Sabi Minimal",
 "palette": [
 "#FAF7F0",
 "#1F2937",
@@ -3103,7 +3103,7 @@
 {
 "id": "art-cultural-ukiyo-e-woodblock-print",
 "category": "Art & Cultural",
-"style": "Ukiyoâ€‘e Woodblock Print",
+"style": "Ukiyo‑e Woodblock Print",
 "palette": [
 "#1E3A8A",
 "#0B3C5D",
@@ -7238,7 +7238,7 @@
 "charts": "Chunky bars; simple donuts; big number badges",
 "background": "Subtle notebook dot-grid (3%)",
 "avoid": "Dense text; tiny labels; dark moody palettes",
-"notebookLMPrompt": "Kâ€“12 classroom infographic slide, bright friendly palette, rounded typography, sticker callouts, big readable charts with chunky bars, simple school icons, subtle dot-grid background, minimal text, crisp vector."
+"notebookLMPrompt": "K–12 classroom infographic slide, bright friendly palette, rounded typography, sticker callouts, big readable charts with chunky bars, simple school icons, subtle dot-grid background, minimal text, crisp vector."
 },
 {
 "id": "education-learning-stem-lab-notebook-annotated",
@@ -7379,7 +7379,7 @@
 {
 "id": "energy-utilities-hydrogen-storage-high-tech-lab",
 "category": "Energy & Utilities",
-"style": "Hydrogen & Storage (Highâ€‘Tech Lab)",
+"style": "Hydrogen & Storage (High‑Tech Lab)",
 "palette": [
 "#0B1220",
 "#F8FAFC",
@@ -7819,7 +7819,7 @@
 {
 "id": "finance-banking-risk-compliance-audit-ready",
 "category": "Finance & Banking",
-"style": "Risk & Compliance (Auditâ€‘Ready)",
+"style": "Risk & Compliance (Audit‑Ready)",
 "palette": [
 "#FFFFFF",
 "#F5F5F4",
@@ -7935,7 +7935,7 @@
 {
 "id": "futuristic-space-sci-fi-hud-neon-interface",
 "category": "Futuristic & Space",
-"style": "Sciâ€‘Fi HUD (Neon Interface)",
+"style": "Sci‑Fi HUD (Neon Interface)",
 "palette": [
 "#05070A",
 "#00E5FF",
@@ -7954,7 +7954,7 @@
 {
 "id": "futuristic-space-retro-futurism-mid-century-space-age",
 "category": "Futuristic & Space",
-"style": "Retro Futurism (Midâ€‘Century Space Age)",
+"style": "Retro Futurism (Mid‑Century Space Age)",
 "palette": [
 "#FFF1D6",
 "#2DD4BF",
@@ -7973,7 +7973,7 @@
 {
 "id": "futuristic-space-space-mission-control-nasa-inspired",
 "category": "Futuristic & Space",
-"style": "Space Mission Control (NASAâ€‘Inspired)",
+"style": "Space Mission Control (NASA‑Inspired)",
 "palette": [
 "#030712",
 "#1F2937",
@@ -8070,7 +8070,7 @@
 {
 "id": "gaming-esports-tactical-strategy-map-top-down-planning",
 "category": "Gaming & Esports",
-"style": "Tactical Strategy Map (Topâ€‘Down Planning)",
+"style": "Tactical Strategy Map (Top‑Down Planning)",
 "palette": [
 "#0B1220",
 "#111827",
@@ -8169,7 +8169,7 @@
 {
 "id": "handcrafted-illustration-pixel-retro-8-bit-dashboard",
 "category": "Handcrafted & Illustration",
-"style": "Pixel Retro (8â€‘bit Dashboard)",
+"style": "Pixel Retro (8‑bit Dashboard)",
 "palette": [
 "#0B0F19",
 "#F9FAFB",
@@ -12695,7 +12695,7 @@
 {
 "id": "military-navy-carrier-flight-deck-board-high-tempo-ops",
 "category": "Military - NAVY",
-"style": "Carrier Flight Deck Board (Highâ€‘Tempo Ops)",
+"style": "Carrier Flight Deck Board (High‑Tempo Ops)",
 "palette": [
 "#111827",
 "#F8FAFC",
@@ -14752,7 +14752,7 @@
 "icons": "Building blocks, route arrows, objective markers, issue tags",
 "layout": "3-column AAR; map inset; lessons learned callouts",
 "charts": "Timeline; issue frequency bars; readiness meter",
-"background": "Light city-grid watermark (2â€“3%)",
+"background": "Light city-grid watermark (2–3%)",
 "avoid": "Realistic combat imagery; official patches",
 "notebookLMPrompt": "USMC urban training AAR infographic, clean three-column lessons layout with city-grid watermark, map inset and objective markers, timelines and issue bars, crisp vector, minimal text, no realistic combat imagery."
 },
@@ -14779,7 +14779,7 @@
 {
 "id": "military-usmc-usmc-amphibious-planning-shore-to-objective",
 "category": "Military - USMC",
-"style": "USMC Amphibious Planning (Shoreâ€‘toâ€‘Objective)",
+"style": "USMC Amphibious Planning (Shore‑to‑Objective)",
 "palette": [
 "#2F3E2B",
 "#F3E7D3",
@@ -17737,7 +17737,7 @@
 "icons": "Gift, ribbon, calendar, megaphone, star",
 "layout": "Offer panels; countdown timeline; channel mix grid",
 "charts": "Lift bars; budget donuts; schedule timeline",
-"background": "Subtle confetti (2â€“3%)",
+"background": "Subtle confetti (2–3%)",
 "avoid": "Overwhelming patterns; unreadable offer text",
 "notebookLMPrompt": "Seasonal retail campaign infographic, bold offer panels and countdown timeline, lift and budget charts, subtle confetti texture, clean hierarchy, high readability."
 },
@@ -17833,14 +17833,14 @@
 "icons": "DNA helix, pipette, microscope, molecule nodes",
 "layout": "Clinical cards; figure captions; sample pipeline steps",
 "charts": "Scatter plots; dose-response curves; clean axes",
-"background": "Very subtle sterile gradient + soft lab-grid 2â€“3%",
+"background": "Very subtle sterile gradient + soft lab-grid 2–3%",
 "avoid": "Grunge textures; warm vintage paper",
 "notebookLMPrompt": "Biotech cleanroom infographic, sterile palette, lab panels with captions, DNA icons, precise plots, subtle lab-grid background, crisp and trustworthy."
 },
 {
 "id": "science-research-scientific-journal-peer-reviewed",
 "category": "Science & Research",
-"style": "Scientific Journal (Peerâ€‘Reviewed)",
+"style": "Scientific Journal (Peer‑Reviewed)",
 "palette": [
 "#111827",
 "#FAFAF9",
@@ -18694,7 +18694,7 @@
 "icons": "Thin-line 2px geometric icons",
 "layout": "12-column grid; sharp corners; generous whitespace",
 "charts": "Light gridlines; solid fills; clear axes/labels",
-"background": "White/light gray; subtle micro-grid 3â€“5%",
+"background": "White/light gray; subtle micro-grid 3–5%",
 "avoid": "Inconsistent icon strokes; clutter; heavy textures",
 "notebookLMPrompt": "Technical documentation infographic, 12-column grid, thin-line icons 2px, mono code callouts, slate/steel with blue-cyan accents, subtle micro-grid background, crisp charts, minimal text."
 },
@@ -24470,7 +24470,7 @@
 "icons": "Molecule nodes, factory, chip, rocket (generic), lab flask",
 "layout": "Modular cards; pipeline flow; KPI tiles",
 "charts": "Pipeline funnel; trend lines; priority heatmap",
-"background": "Light micro-grid on white (2â€“3%)",
+"background": "Light micro-grid on white (2–3%)",
 "avoid": "Sci-fi neon overload; cluttered icon sets",
 "notebookLMPrompt": "USA innovation lab infographic, clean modular cards, pipeline flow and KPIs, modern sans with mono IDs, crisp charts and heatmaps, subtle micro-grid background, minimal text."
 },

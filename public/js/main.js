@@ -7,7 +7,7 @@ import { initPrompts } from "./prompts.js";
 import { initAdmin, adminState } from "./admin.js";
 import { isFavorite, favoriteCount, getTheme, setTheme, getView, setView, hasSeenIntro, markIntroSeen } from "./storage.js";
 import { getPrompts } from "./api.js";
-import { toast, openModal, wireModalDismiss, closeModal, escapeHtml } from "./ui.js";
+import { toast, openModal, wireModalDismiss, closeModal, escapeHtml, ICONS } from "./ui.js";
 
 const PAGE_SIZE = 60;
 
@@ -94,7 +94,7 @@ let pendingPromptId = null; // ?prompt=<id> from the initial URL
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   if (els.themeBtn) {
-    els.themeBtn.textContent = theme === "dark" ? "☀" : "☾";
+    els.themeBtn.innerHTML = theme === "dark" ? ICONS.sun : ICONS.moon;
     els.themeBtn.setAttribute("aria-label", theme === "dark" ? "Switch to light theme" : "Switch to dark theme");
   }
 }
@@ -104,7 +104,7 @@ function applyView(view) {
   const list = view === "list";
   els.gallery.classList.toggle("gallery--list", list);
   if (els.viewBtn) {
-    els.viewBtn.textContent = list ? "▦" : "☰";
+    els.viewBtn.innerHTML = list ? ICONS.grid : ICONS.list;
     const label = list ? "Switch to grid view" : "Switch to list view";
     els.viewBtn.title = label;
     els.viewBtn.setAttribute("aria-label", label);
@@ -234,6 +234,9 @@ function updateLanding() {
   const hide = section === "prompts" || hasFilter;
   if (els.featured) els.featured.hidden = hide;
   if (els.how) els.how.hidden = hide;
+  // While filtering, the hero collapses to just its headline so results start
+  // near the top of the page.
+  if (els.intro) els.intro.classList.toggle("hero--compact", hasFilter && section !== "prompts");
 }
 
 // ---------- landing (hero stats, palette strip, featured categories) ----------
@@ -340,7 +343,7 @@ function clearFilter(which) {
     state.favOnly = false;
     els.favFilter.classList.remove("active");
     els.favFilter.setAttribute("aria-pressed", "false");
-    els.favFilter.textContent = "☆";
+    els.favFilter.innerHTML = ICONS.star;
     els.favFilter.title = "Show favorites";
   }
   applyFilters();
@@ -379,7 +382,7 @@ function readURLState() {
   if (state.favOnly) {
     els.favFilter.classList.add("active");
     els.favFilter.setAttribute("aria-pressed", "true");
-    els.favFilter.textContent = "★";
+    els.favFilter.innerHTML = ICONS.starFill;
     els.favFilter.title = `Showing favorites (${favoriteCount()})`;
   }
   const v = p.get("view");
@@ -421,6 +424,30 @@ async function reloadAndRender() {
 async function init() {
   applyTheme(getTheme());
   applyView(getView());
+  // Static toolbar icons (SVG, not platform emoji).
+  els.randomBtn.innerHTML = ICONS.dice;
+  els.toolsBtn.innerHTML = ICONS.dots;
+  document.getElementById("settingsBtn").innerHTML = ICONS.gear;
+  document.getElementById("adminBtn").innerHTML = ICONS.key;
+  els.favFilter.innerHTML = ICONS.star;
+
+  // On phones the toolbar stack is tall: hide it while scrolling down, bring
+  // it back on the first upward scroll (desktop keeps it always visible).
+  const topbar = document.querySelector(".topbar");
+  let lastY = window.scrollY;
+  window.addEventListener(
+    "scroll",
+    () => {
+      const y = window.scrollY;
+      if (window.matchMedia("(max-width: 760px)").matches) {
+        topbar.classList.toggle("topbar--hidden", y > lastY && y > 180);
+      } else {
+        topbar.classList.remove("topbar--hidden");
+      }
+      lastY = y;
+    },
+    { passive: true }
+  );
   const fy = document.getElementById("footerYear");
   if (fy) fy.textContent = String(new Date().getFullYear());
 
@@ -515,7 +542,7 @@ async function init() {
     state.favOnly = !state.favOnly;
     els.favFilter.classList.toggle("active", state.favOnly);
     els.favFilter.setAttribute("aria-pressed", String(state.favOnly));
-    els.favFilter.textContent = state.favOnly ? "★" : "☆";
+    els.favFilter.innerHTML = state.favOnly ? ICONS.starFill : ICONS.star;
     els.favFilter.title = state.favOnly ? `Showing favorites (${favoriteCount()})` : "Show favorites";
     applyFilters();
   });
