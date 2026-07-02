@@ -336,6 +336,14 @@ mark { background: none; color: inherit; font-weight: 600; }
 /* ---------- Detail modal ---------- */
 .detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
 .detail-head-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+/* prompt detail modal */
+.pd-badges { margin: 8px 0 0; }
+.pd-section { margin: 12px 0 0; display: flex; flex-direction: column; gap: 4px; }
+.pd-notes { margin: 0; font-size: 0.85rem; color: var(--muted); white-space: pre-wrap; line-height: 1.55; max-height: 180px; overflow: auto; }
+#pdBody .prompt-block { margin-top: 14px; }
+.pd-text { max-height: 46vh; overflow: auto; }
+.pd-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin-top: 12px; }
 .detail-head h2 { margin: 0 0 6px; font-size: 1.0625rem; font-weight: 600; }
 .detail-palette { margin-bottom: 16px; }
 .palette-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; }

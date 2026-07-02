@@ -146,7 +146,7 @@ function cardHTML(p, admin) {
   const preview = p.body.length > 240 ? p.body.slice(0, 240) + "…" : p.body;
   const nResults = (p.results || []).length;
   const fav = isPromptFavorite(p.id);
-  return `<article class="card prompt-card">
+  return `<article class="card prompt-card" data-id="${escapeHtml(p.id)}" tabindex="0" role="button" aria-label="Open ${escapeHtml(p.title)}">
     <div class="card-body">
       <div class="card-head">
         <div class="card-title">${escapeHtml(p.title)}</div>
@@ -253,6 +253,23 @@ function render() {
       render();
     })
   );
+  // Clicking anywhere on a card (except its buttons/links) opens the detail view.
+  view.querySelectorAll(".prompt-card").forEach((card) => {
+    const open = () => {
+      const p = byId(card.dataset.id);
+      if (p) openPromptDetail(p);
+    };
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("button, a")) return;
+      open();
+    });
+    card.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && e.target === card) {
+        e.preventDefault();
+        open();
+      }
+    });
+  });
   view.querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => openForm(byId(b.dataset.edit))));
   view.querySelectorAll("[data-del]").forEach((b) =>
     b.addEventListener("click", async () => {
@@ -267,6 +284,73 @@ function render() {
       }
     })
   );
+}
+
+// ---------- prompt detail (click a card) ----------
+function openPromptDetail(p) {
+  const admin = adminState().admin;
+  const fav = isPromptFavorite(p.id);
+  const models = (p.models || []).map((m) => `<span class="badge">${escapeHtml(m)}</span>`).join("");
+  const tags = (p.tags || []).map((t) => `<span class="badge">${escapeHtml(t)}</span>`).join("");
+  const nResults = (p.results || []).length;
+  refs.detailBody.innerHTML = `
+    <div class="modal-head">
+      <h2 id="pdTitle">${escapeHtml(p.title)}</h2>
+      <div class="detail-head-actions">
+        <button type="button" class="btn btn-icon fav ${fav ? "on" : ""}" data-pd-fav aria-pressed="${fav}" title="${fav ? "Remove from favorites" : "Add to favorites"}">${fav ? "★" : "☆"}</button>
+        <button type="button" class="btn" data-pd-link title="Copy a shareable link">Copy link</button>
+        <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="card-category">${escapeHtml(p.category)}</div>
+    ${models || tags ? `<div class="badges pd-badges">${models}${tags}</div>` : ""}
+    ${p.notes ? `<div class="pd-section"><span class="detail-label">Notes</span><p class="pd-notes">${escapeHtml(p.notes)}</p></div>` : ""}
+    <div class="prompt-block">
+      <div class="prompt-head"><span>Prompt</span><button type="button" class="btn btn-sm" data-pd-copy>Copy</button></div>
+      <pre class="prompt-text pd-text">${escapeHtml(p.body)}</pre>
+    </div>
+    <div class="pd-actions">
+      <button type="button" class="btn btn-primary" data-pd-use>Customize &amp; copy</button>
+      ${nResults ? `<button type="button" class="btn" data-pd-results>Saved outputs (${nResults})</button>` : ""}
+      ${admin ? `<button type="button" class="btn" data-pd-edit>Edit</button><button type="button" class="btn btn-ghost btn-danger" data-pd-del>Delete</button>` : ""}
+    </div>`;
+
+  const q = (sel) => refs.detailBody.querySelector(sel);
+  q("[data-pd-fav]").onclick = (e) => {
+    togglePromptFavorite(p.id);
+    const on = isPromptFavorite(p.id);
+    e.currentTarget.classList.toggle("on", on);
+    e.currentTarget.textContent = on ? "★" : "☆";
+    e.currentTarget.setAttribute("aria-pressed", String(on));
+    render();
+  };
+  q("[data-pd-link]").onclick = () => copyText(promptLink(p.id), "Link copied");
+  q("[data-pd-copy]").onclick = () => copyText(p.body, "Prompt copied");
+  q("[data-pd-use]").onclick = () => {
+    closeModal(refs.detailModal);
+    openUse(p);
+  };
+  q("[data-pd-results]")?.addEventListener("click", () => {
+    closeModal(refs.detailModal);
+    openResults(p);
+  });
+  q("[data-pd-edit]")?.addEventListener("click", () => {
+    closeModal(refs.detailModal);
+    openForm(p);
+  });
+  q("[data-pd-del]")?.addEventListener("click", async () => {
+    if (!confirm(`Delete prompt "${p.title}"?`)) return;
+    try {
+      await api.deletePromptApi(p.id);
+      closeModal(refs.detailModal);
+      toast("Deleted");
+      await refresh();
+    } catch (e) {
+      toast(e.message);
+    }
+  });
+
+  openModal(refs.detailModal);
 }
 
 // ---------- customize & copy ----------
@@ -579,10 +663,14 @@ export function initPrompts() {
     resModal: el("promptResultsModal"),
     resTitle: el("prTitle"),
     resBody: el("prBody"),
+    // detail modal
+    detailModal: el("promptDetailModal"),
+    detailBody: el("pdBody"),
   };
   wireModalDismiss(refs.modal);
   wireModalDismiss(refs.useModal);
   wireModalDismiss(refs.resModal);
+  wireModalDismiss(refs.detailModal);
   fillKnob(refs.useTone, KNOBS.tone);
   fillKnob(refs.useAudience, KNOBS.audience);
   fillKnob(refs.useLength, KNOBS.length);
@@ -624,12 +712,12 @@ export function initPrompts() {
       query = q;
       if (view && !view.hidden) render();
     },
-    // Deep link (?prompt=<id>): open that prompt's Customize & copy view.
+    // Deep link (?prompt=<id>): open that prompt's detail view.
     openById: async (id) => {
       await ensureLoaded();
       render();
       const p = byId(id);
-      if (p) openUse(p);
+      if (p) openPromptDetail(p);
       return !!p;
     },
   };
