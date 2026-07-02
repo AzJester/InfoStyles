@@ -318,13 +318,14 @@
           <pre class="prompt-text" id="puPreview"></pre>
         </div>
         <div class="field">
-          <span class="field-label">Open in a tool (copies first)</span>
+          <span class="field-label">Send to a tool</span>
           <div class="tool-links">
-            <button type="button" class="btn btn-sm" data-open-tool="chatgpt">ChatGPT</button>
-            <button type="button" class="btn btn-sm" data-open-tool="claude">Claude</button>
-            <button type="button" class="btn btn-sm" data-open-tool="gemini">Gemini</button>
-            <button type="button" class="btn btn-sm" data-open-tool="notebooklm">NotebookLM</button>
+            <a class="btn btn-sm" data-open-tool="chatgpt" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT</a>
+            <a class="btn btn-sm" data-open-tool="claude" href="https://claude.ai/new" target="_blank" rel="noopener">Claude</a>
+            <a class="btn btn-sm" data-open-tool="gemini" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini</a>
+            <a class="btn btn-sm" data-open-tool="notebooklm" href="https://notebooklm.google.com/" target="_blank" rel="noopener">NotebookLM</a>
           </div>
+          <span class="field-help">ChatGPT and Claude open with the prompt filled in. Gemini and NotebookLM don't support that, so the prompt is copied — just paste.</span>
         </div>
         <div class="modal-foot"><button class="btn btn-primary" id="puCopy">Copy</button></div>
       </div>
