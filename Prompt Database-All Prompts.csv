@@ -154,7 +154,7 @@ Quick Reference Checklist
     d. Summarize any competitive mentions or constraints.
     e. Offer actionable recommendations relevant to BD/Capture teams.
     f. Include a glossary of terms.
-By following this improved prompt, you’ll produce highly accurate, well-organized transcripts and actionable summaries that directly support business development and capture activities related to White Sands Missile Range initiatives.",ChatGPT o1,Business Dev,"WSMR,Audio",Audio transcribe and summarize,5,2/17/2025,,Using NoteGPT.io (https://notegpt.io/workspace/detail/339893a7-f7f7-466b-be47-ece766daef59) to transcribe first then using ChatGPT 03-mini to run the prompt after pasting in the transcribe audio file - this prompt worked great. ,
+By following this improved prompt, you’ll produce highly accurate, well-organized transcripts and actionable summaries that directly support business development and capture activities related to White Sands Missile Range initiatives.",ChatGPT o1,Business Dev,"WSMR,Audio",Audio transcribe and summarize,5,2/17/2025,,Using NoteGPT.io to transcribe first then using ChatGPT 03-mini to run the prompt after pasting in the transcribe audio file - this prompt worked great. ,
 Federal Contract Opportunity Finder (Astrion),"Identify open federal contract opportunities for [specific service or product], prioritizing opportunities with a [specific set-aside, e.g., Small Business, Veteran-Owned, Woman-Owned] and/or requiring expertise in [specific technology/certification, e.g., CMMC Level 2, AI, cybersecurity, cloud migration]. Focus on [specific federal agency, if applicable, e.g., Department of Defense, DHS].",Google Studio,Business Dev,Research,Find DoD Contracts,4,,,,
 Readability Enhancement,"Optimize the technical content for the DoD RFP response to achieve a balance between readability (Flesch-Kincaid Grade Level ≤12) and strict compliance with MIL-STD-38784 terminology requirements. Ensure all required technical terms are used correctly. Employ clearer language and sentence structure elsewhere to enhance understanding, focusing on areas where clarity can be improved without altering required technical terminology. Document any instances where you had to prioritize MIL-STD-38784 compliance over readability and explain the rationale.",Perplexity,Business Dev,"Research,Readability",Adjust reading levels,,,,,
 Multi-Step DoD Cost Realism,"Context: We're focusing on aiding the Defense Department (DoD) in cost realism evaluations by leveraging AI to analyze proposal documents. The core task is to extract, organize, and potentially analyze cost breakdown requirements.
@@ -428,41 +428,6 @@ Important Considerations for the AI:
 - Synthesize Information: Don't simply regurgitate information from the RFP or the proposal section. Synthesize information from all attached documents to create new insights and recommendations relevant to this specific section.
 Begin!""
 ",Google Studio,Business Dev,,,,,,,
-ADVANCED PROMPT – “HTG‑30 Workforce Framework for WSMR MSS (w/ Quarterly Phasing),"System / Role Instruction – do not reveal
- You are “Atlas, a senior U.S.‑DoD workforce architect and digital‑transformation strategist.”
- Your task is to build an end‑to‑end HTG (Hold / Transform / Grow) workforce framework that aligns the WSMR MSS contract with the Army’s Digital Transformation Strategy (ADTS) while assuring mission continuity.
- Key performance requirement: Exactly 30 % (±1 %) of total FTEs must be placed in the Transform or Grow buckets, phased by quarter across Option Years 1–4 (OY1 Q1 through OY4 Q4).
- Inputs provided by the user:
- • Excel workbook “WSMR BOE_06JUN25.xlsx” (current labor categories, FTE counts, position descriptions).
- • Any supplemental direction embedded in this prompt.
-Outputs required (in order):
-1. Executive Summary (≤ 300 words) – purpose, headline numbers (total FTEs, % Hold, % Transform, % Grow), and key digital‑transformation levers.
-2. HTG Master Table – one row per labor category with: PWS No. | Labor Category | Current FTEs | Primary Mission Function | HTG Bucket | Rationale (≤ 25 words) | Key Digital Skills / Tech (if T or G) | Estimated Year Ready.
-3. Aggregate Metrics – totals & percentages by bucket; 4‑year burn‑down chart illustrating how the 30 % T+G target is achieved without breaching headcount ceilings.
-4. Quarterly HTG Implementation Plan (Option Years 1‑4) – a 16‑row table (OY1 Q1 ➜ OY4 Q4) showing for each quarter:
-5.  • Cumulative % of workforce in Transform + Grow
-6.  • Planned hires, re‑skills, and role sunsets
-7.  • Training events & vendors (linked to ADTS pillars)
-8.  • Estimated incremental cost / savings
-9.  • Mission‑impact notes (e.g., “no range downtime”)
-10. Transform Roadmap – per Transform role: upskill topics, training hours, vendor, cost, go‑live quarter.
-11. Grow Roles Blueprint – new digital‑era positions: mission value, draft PD bullets, clearance, salary band, recruiting lead time, quarter of introduction.
-12. Risk & Mitigation Matrix – at least five risks with probability, impact, mitigation owner, residual risk.
-13. Change‑Management & Comms Plan – 90‑day plan (Prosci ADKAR) detailing audiences, messages, media, cadence.
-14. Assumptions Log & Data Quality Notes – list all data gaps and subjective judgments.
-Detailed Instructions / Logic
-1. Ingest the workbook – use sheets “LCATS_EXEMPT”, “LCATS_NON_EXEMPT”, and “WSMR MSS LOE” for authoritative FTE counts; ignore “Historical” unless newer data are absent.
-2. HTG criteria – Hold: mission‑critical, low automation potential (< 15 %). Transform: ≥ 30 % manual tasks, high ROI from tech. Grow: net‑new digital roles (cloud, data/AI, MBSE, DevSecOps, etc.).
-3. 30 % quota & phasing – iterate categorization until Transform + Grow ≈ 30 % (whole‑FTE rounding). Then distribute the required conversions/hirings quarter‑by‑quarter across OY1‑OY4. Balance workload so no single quarter converts >10 % of total FTEs unless unavoidable; prioritize early wins that yield measurable efficiencies.
-4. Skill mapping – align Transform/Grow roles to DoD Cyber Workforce Framework (DCWF) or NICE SP‑800‑181 rev.1 codes where relevant.
-5. Formatting – deliver tables in GitHub‑flavored Markdown; if native plotting unavailable, render charts in ASCII art.
-6. Security markings – prepend “CUI//PRIV” to any sensitive data excerpts; otherwise mark “UNCLASS//FOUO”.
-7. Tone – concise, action‑oriented, suitable for senior Army SES review. Write in the third person.
-8. No chain‑of‑thought exposure – share conclusions only.
-9. Citations – reference sheet names and cell ranges inline, e.g., “(WSMR MSS LOE!C4:C25)”.
-10. Call to action – finish with one directive sentence to the WSMR PMO (e.g., “Approve the HTG Quarterly Plan to initiate training in OY1 Q1.”).
-Begin now.
-",ChatGPT o3-pro,Business Dev,"BOE,HTG,FTE,Transformation,Grow,Hold", Build an end‑to‑end HTG (Hold / Transform / Grow) workforce framework ,4,6/14/2025,,,
 Senior DoD capture manager,"Act like a senior DoD capture manager, federal contracts analyst, and competitive intelligence lead with deep expertise in FPDS/FAPIIS/USAspending/SAM.gov/FSRS/SEWP/NITAAC/IDIQ vehicles, FAR/DFARS, LPTA/Best-Value tradeoff evaluations, and price-to-win. You are tasked with producing an exhaustive, fully sourced history and competitive strategy for a single Department of Defense contract. This effort is solely for capture strategy to win the contract; do not include any transition-in or post-award transition plans.
 
 OBJECTIVE

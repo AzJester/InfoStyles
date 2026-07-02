@@ -10,7 +10,7 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - Switch between **grid and list** views (defaults to list; remembered per browser).
 - Open any style for a detail view: full fields, a large palette (click swatches or "copy all hex" / "copy as CSS vars"), any example images (click to view full size), and both prompts.
 - Copy the **NotebookLM** prompt or the generated **OpenAI image** prompt (with aspect-ratio and target-model variants), or roll a fresh palette.
-- Switch to the **Prompts** tab: a library of reusable LLM prompts (project management, competitive intel, business dev…) to search and copy; `{{variables}}` are filled in at copy time. It ships with 137 prompts baked in from the Airtable prompt-database export, and admins can add more.
+- Switch to the **Prompts** tab: a library of reusable LLM prompts (project management, competitive intel, business dev…) to search and copy; `{{variables}}` are filled in at copy time. It ships with 136 prompts baked in from the Airtable prompt-database export, and admins can add more.
 - Light/dark theme toggle, keyboard shortcuts (`/` to search, `Esc` to close). Export the catalog as **JSON or CSV**.
 
 ## What the admin can do (after login)
@@ -78,7 +78,7 @@ render.yaml                     # Render Blueprint (web service + Key Value)
 build_styles.py                 # CSV -> public/data/{styles,categories}.json
 build_prompts.py                # CSV -> public/data/prompts.json (seed prompts)
 Infographic & Slide Styles-...csv   # source of truth (1,530 styles)
-Prompt Database-All Prompts.csv     # source of truth (137 seed prompts, Airtable export)
+Prompt Database-All Prompts.csv     # source of truth (136 seed prompts, Airtable export)
 public/                         # static site (served at /)
   index.html  styles.css
   js/  main.js, catalog.js, card.js, creator.js, admin.js, api.js, ui.js, imagePrompt.js, storage.js
