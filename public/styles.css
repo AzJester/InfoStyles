@@ -108,11 +108,74 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
 .empty { text-align: center; color: var(--muted); padding: 60px 0; }
 
-/* intro banner */
-.intro { margin: 0 0 22px; max-width: 760px; }
-.intro h2 { margin: 0 0 6px; font-size: 1.15rem; font-weight: 650; letter-spacing: -0.01em; }
-.intro p { margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.55; }
-.intro strong { color: var(--text); font-weight: 600; }
+/* ---------- Landing: hero ---------- */
+.hero {
+  position: relative; overflow: hidden;
+  margin: 0 0 26px; padding: 36px 30px 30px;
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 16px;
+}
+.hero-strip {
+  position: absolute; top: 0; left: 0; right: 0; height: 5px;
+  background: linear-gradient(90deg, #4f46e5, #38bdf8, #22c55e, #facc15, #8b5cf6);
+}
+.hero h2 {
+  margin: 0 0 10px; max-width: 720px;
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem); font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1.15;
+}
+.hero-sub { margin: 0 0 18px; max-width: 680px; color: var(--muted); font-size: 0.98rem; line-height: 1.6; }
+.hero-sub strong { color: var(--text); font-weight: 600; }
+.hero-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.stat {
+  font-size: 0.8rem; color: var(--muted);
+  background: var(--bg); border: 1px solid var(--border-strong);
+  border-radius: 999px; padding: 4px 12px;
+}
+.stat strong { color: var(--text); font-weight: 650; }
+.hero-ctas { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- Landing: featured categories ---------- */
+.featured { margin: 0 0 26px; }
+.featured h3 {
+  margin: 0 0 12px; font-size: 0.78rem; font-weight: 650;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+}
+.featured-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.featured-card {
+  font: inherit; text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; gap: 8px; padding: 14px;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: 12px;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.featured-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); }
+.featured-swatches { display: flex; height: 16px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+.featured-swatches span { flex: 1; }
+.featured-name { font-size: 0.9rem; font-weight: 600; line-height: 1.3; }
+.featured-count { font-size: 0.75rem; color: var(--muted); }
+
+/* ---------- Landing: how it works ---------- */
+.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 0 30px; }
+.how-step {
+  display: flex; gap: 12px; align-items: flex-start; padding: 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+}
+.how-icon {
+  flex: none; display: grid; place-items: center;
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--accent-soft); color: var(--accent);
+}
+.how-step h4 { margin: 0 0 3px; font-size: 0.9rem; font-weight: 650; }
+.how-step p { margin: 0; font-size: 0.83rem; color: var(--muted); line-height: 1.5; }
+@media (max-width: 760px) {
+  .how { grid-template-columns: 1fr; }
+  .hero { padding: 26px 20px 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .featured-card { transition: none; }
+  .skeleton { animation: none; }
+}
 
 /* active-filter chips */
 .active-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
@@ -304,8 +367,12 @@ mark { background: none; color: inherit; font-weight: 600; }
   color: var(--muted);
   font-size: 0.8rem;
   text-align: center;
-  padding: 22px 20px;
+  padding: 26px 20px;
 }
+.footer-inner { max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.footer-brand { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 0.9rem; }
+.footer-tag { margin: 0; max-width: 560px; line-height: 1.5; }
+.footer-legal { margin: 4px 0 0; opacity: 0.8; }
 
 /* ---------- Toast ---------- */
 .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 9px 16px; border-radius: 10px; font-size: 0.86rem; z-index: 60; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); }

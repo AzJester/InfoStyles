@@ -6,10 +6,11 @@
   "description": "Infographic & slide style library with NotebookLM / OpenAI image prompts and an admin-only AI style creator.",
   "scripts": {
     "start": "node server.js",
-    "build": "python3 build_styles.py",
+    "build": "python3 build_styles.py && python3 build_prompts.py",
     "test": "node --test"
   },
   "dependencies": {
+    "compression": "^1.8.1",
     "express": "^4.21.2",
     "ioredis": "^5.4.2"
   },

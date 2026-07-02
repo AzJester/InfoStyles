@@ -2,6 +2,7 @@
 // mounts the /api routes. The api/*.js handlers use the (req, res) shape that
 // works under both Express and serverless, so they're reused as-is.
 import express from "express";
+import compression from "compression";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -18,6 +19,8 @@ import generatePrompt from "./api/generate-prompt.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
+// Gzip responses; /api/prompts alone is ~330 KB of JSON uncompressed.
+app.use(compression());
 app.use(express.json({ limit: "1mb" }));
 
 // Baseline security headers. CSP keeps scripts to same-origin (the theme-init

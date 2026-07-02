@@ -35,7 +35,9 @@ const els = {
   promptsView: document.getElementById("promptsView"),
   secStyles: document.getElementById("secStyles"),
   secPrompts: document.getElementById("secPrompts"),
-  intro: document.querySelector(".intro"),
+  intro: document.querySelector(".hero"),
+  featured: document.getElementById("featured"),
+  how: document.getElementById("how"),
   firstRun: document.getElementById("firstRun"),
   firstRunClose: document.getElementById("firstRunClose"),
   cmdk: document.getElementById("cmdk"),
@@ -76,7 +78,8 @@ function setSection(next) {
   }
   closeTools();
   els.empty.hidden = true;
-  if (els.intro) els.intro.hidden = isPrompts; // intro is styles-specific
+  if (els.intro) els.intro.hidden = isPrompts; // hero + landing sections are styles-specific
+  updateLanding();
   els.promptsView.hidden = !isPrompts;
   els.newStyleBtn.hidden = isPrompts || !adminState().admin;
   els.newPromptBtn.hidden = !isPrompts || !adminState().admin;
@@ -220,7 +223,79 @@ function applyFilters() {
   els.resultCount.textContent = `${state.filtered.length.toLocaleString()} styles`;
   renderMore();
   renderActiveFilters();
+  updateLanding();
   syncURL();
+}
+
+// The featured-categories and how-it-works sections are landing furniture:
+// shown only on a pristine Styles view, hidden once the user filters.
+function updateLanding() {
+  const hasFilter = !!(state.query.trim() || state.category || state.color || state.favOnly);
+  const hide = section === "prompts" || hasFilter;
+  if (els.featured) els.featured.hidden = hide;
+  if (els.how) els.how.hidden = hide;
+}
+
+// ---------- landing (hero stats, palette strip, featured categories) ----------
+function buildLanding() {
+  const styles = getStyles();
+  const cats = getCategories();
+
+  const stats = document.getElementById("heroStats");
+  if (stats) {
+    stats.innerHTML =
+      `<span class="stat"><strong>${styles.length.toLocaleString()}</strong> styles</span>` +
+      `<span class="stat"><strong>${cats.length}</strong> categories</span>` +
+      `<span class="stat" id="statPrompts">Prompt library</span>`;
+  }
+
+  // Color the hero strip with hues sampled from real style palettes.
+  const strip = document.getElementById("heroStrip");
+  if (strip) {
+    const pals = styles.filter((s) => (s.palette || []).length >= 4);
+    const step = Math.max(1, Math.floor(pals.length / 24));
+    const colors = [];
+    for (let i = 0; i < pals.length && colors.length < 24; i += step) {
+      colors.push(pals[i].palette[1] || pals[i].palette[0]);
+    }
+    if (colors.length > 1) {
+      const seg = 100 / colors.length;
+      const stops = colors.map((c, i) => `${c} ${(i * seg).toFixed(2)}% ${((i + 1) * seg).toFixed(2)}%`);
+      strip.style.background = `linear-gradient(90deg, ${stops.join(", ")})`;
+    }
+  }
+
+  const grid = document.getElementById("featuredGrid");
+  if (grid) {
+    const byCat = new Map();
+    for (const s of styles) {
+      if (!byCat.has(s.category)) byCat.set(s.category, []);
+      byCat.get(s.category).push(s);
+    }
+    const top = cats.filter((c) => byCat.has(c.name)).slice(0, 8); // cats are sorted by count
+    grid.innerHTML = top
+      .map((c) => {
+        const rep = byCat.get(c.name).find((s) => (s.palette || []).length >= 4) || byCat.get(c.name)[0];
+        const sw = (rep?.palette || [])
+          .slice(0, 5)
+          .map((h) => `<span style="background:${escapeHtml(h)}"></span>`)
+          .join("");
+        return `<button type="button" class="featured-card" data-cat="${escapeHtml(c.name)}">
+          <span class="featured-swatches" aria-hidden="true">${sw}</span>
+          <span class="featured-name">${escapeHtml(c.name.replace(/^\*/, ""))}</span>
+          <span class="featured-count">${c.count} styles</span>
+        </button>`;
+      })
+      .join("");
+    grid.querySelectorAll("[data-cat]").forEach((b) =>
+      b.addEventListener("click", () => {
+        state.category = b.dataset.cat;
+        els.category.value = state.category;
+        applyFilters();
+        els.gallery.scrollIntoView({ behavior: "smooth", block: "start" });
+      })
+    );
+  }
 }
 
 // ---------- active-filter chips ----------
@@ -338,6 +413,7 @@ function renderSkeletons(n = 12) {
 async function reloadAndRender() {
   await loadCatalog();
   buildCategoryOptions();
+  buildLanding();
   applyFilters();
 }
 
@@ -351,9 +427,27 @@ async function init() {
   renderSkeletons();
   await loadCatalog();
   buildCategoryOptions();
+  buildLanding();
   readURLState();
   applyFilters();
   openStyleFromURL();
+
+  document.getElementById("ctaStyles")?.addEventListener("click", () => {
+    els.gallery.scrollIntoView({ behavior: "smooth", block: "start" });
+    els.search.focus({ preventScroll: true });
+  });
+  document.getElementById("ctaPrompts")?.addEventListener("click", () => setSection("prompts"));
+
+  // Fill the prompt count into the hero once the landing has painted.
+  setTimeout(async () => {
+    try {
+      const n = ((await getPrompts()).prompts || []).length;
+      const el = document.getElementById("statPrompts");
+      if (el && n) el.innerHTML = `<strong>${n.toLocaleString()}</strong> prompts`;
+    } catch {
+      /* leave the plain label */
+    }
+  }, 1200);
 
   creator = initCreator(ctx);
   promptsUI = initPrompts();

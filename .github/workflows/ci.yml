@@ -19,16 +19,24 @@ jobs:
           python-version: "3.12"
       - name: Build styles.json from CSV
         run: python build_styles.py
+      - name: Build prompts.json from CSV
+        run: python build_prompts.py
       - name: Verify generated data is non-empty
         run: |
           python - <<'PY'
           import json
           styles = json.load(open("public/data/styles.json"))
           cats = json.load(open("public/data/categories.json"))
+          prompts = json.load(open("public/data/prompts.json"))
           assert len(styles) > 0, "no styles generated"
           assert len(cats) > 0, "no categories generated"
-          print(f"OK: {len(styles)} styles, {len(cats)} categories")
+          assert len(prompts) > 0, "no prompts generated"
+          print(f"OK: {len(styles)} styles, {len(cats)} categories, {len(prompts)} prompts")
           PY
+      # Production serves the committed JSON (Render never runs the builds),
+      # so fail if someone edited a CSV without regenerating the data.
+      - name: Committed data matches the CSVs
+        run: git diff --exit-code -- public/data/
 
       - uses: actions/setup-node@v4
         with:
