@@ -66,7 +66,7 @@ export function promptFavoriteCount() {
 export function getTheme() {
   const saved = localStorage.getItem(K_THEME);
   if (saved === "light" || saved === "dark") return saved;
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "dark"; // dark is the site's primary look (see theme-init.js)
 }
 export function setTheme(theme) {
   localStorage.setItem(K_THEME, theme);
