@@ -6,14 +6,31 @@ import { extractVariables, applyVariables } from "./imagePrompt.js";
 import { escapeHtml, copyText, toast, openModal, closeModal, wireModalDismiss } from "./ui.js";
 import { getPromptView, setPromptView, isPromptFavorite, togglePromptFavorite, promptFavoriteCount } from "./storage.js";
 
-// External tools an end user might paste a prompt into. We can't pre-fill them,
-// so the flow is: copy the (customized) prompt, then open the tool in a new tab.
-const TOOL_URLS = {
-  chatgpt: ["https://chatgpt.com/", "ChatGPT"],
-  claude: ["https://claude.ai/new", "Claude"],
-  gemini: ["https://gemini.google.com/app", "Gemini"],
-  notebooklm: ["https://notebooklm.google.com/", "NotebookLM"],
+// External tools an end user might send a prompt to. ChatGPT and Claude accept
+// the prompt text in the URL (?q=), so those open pre-filled; Gemini and
+// NotebookLM have no prefill URL, so for them the flow is copy-then-paste.
+// The buttons are real <a target="_blank"> links (not window.open) so popup
+// blockers and installed-PWA windows can't swallow the navigation.
+const TOOLS = {
+  chatgpt: { name: "ChatGPT", url: "https://chatgpt.com/", prefill: (t) => `https://chatgpt.com/?q=${encodeURIComponent(t)}` },
+  claude: { name: "Claude", url: "https://claude.ai/new", prefill: (t) => `https://claude.ai/new?q=${encodeURIComponent(t)}` },
+  gemini: { name: "Gemini", url: "https://gemini.google.com/app" },
+  notebooklm: { name: "NotebookLM", url: "https://notebooklm.google.com/" },
 };
+// Both prefill targets sit behind Cloudflare (rejects URLs past ~32k); stay
+// well under. Longer prompts fall back to the tool's plain URL and rely on
+// the clipboard copy.
+const MAX_PREFILL_URL = 24000;
+
+function toolHref(key, text) {
+  const t = TOOLS[key];
+  if (!t) return null;
+  if (t.prefill) {
+    const u = t.prefill(text);
+    if (u.length <= MAX_PREFILL_URL) return u;
+  }
+  return t.url;
+}
 
 // Copy-time customization knobs end users may want. value = instruction text.
 const KNOBS = {
@@ -287,6 +304,11 @@ function openUse(p) {
     const text = compute();
     refs.usePreview.textContent = text;
     refs.useCount.textContent = `${countWords(text).toLocaleString()} words · ${text.length.toLocaleString()} chars`;
+    // Keep the tool links pointing at the current text so ChatGPT/Claude open
+    // with the prompt already filled in.
+    refs.useModal.querySelectorAll("[data-open-tool]").forEach((a) => {
+      a.href = toolHref(a.dataset.openTool, text) || a.href;
+    });
   };
 
   // Live-update the preview as the user edits variables or knobs.
@@ -297,13 +319,14 @@ function openUse(p) {
     closeModal(refs.useModal);
     copyText(compute(), "Prompt copied");
   };
-  // Open-in-tool: copy the current text, then open the chosen tool in a new tab.
-  refs.useModal.querySelectorAll("[data-open-tool]").forEach((b) => {
-    b.onclick = () => {
-      const [url, name] = TOOL_URLS[b.dataset.openTool] || [];
-      if (!url) return;
-      copyText(compute(), `Copied — paste into ${name}`);
-      window.open(url, "_blank", "noopener");
+  // Open-in-tool: the anchor itself navigates (new tab); we just copy as a
+  // safety net, since some tools can't prefill and long prompts fall back.
+  refs.useModal.querySelectorAll("[data-open-tool]").forEach((a) => {
+    a.onclick = () => {
+      const t = TOOLS[a.dataset.openTool];
+      if (!t) return;
+      const prefilled = a.getAttribute("href")?.includes("?q=");
+      copyText(compute(), prefilled ? `Opening ${t.name} pre-filled (copied too)` : `Copied — paste into ${t.name}`);
     };
   });
 

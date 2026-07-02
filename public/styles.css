@@ -89,6 +89,7 @@ body {
 
 /* ---------- Buttons ---------- */
 .btn { font: inherit; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); border-radius: 8px; padding: 8px 13px; transition: background 0.15s, border-color 0.15s, transform 0.05s; }
+a.btn { display: inline-block; text-decoration: none; }
 .btn:hover { border-color: var(--accent); }
 .btn:active { transform: translateY(1px); }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
