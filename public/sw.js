@@ -2,7 +2,7 @@
 // - Navigations: network-first, falling back to the cached shell when offline.
 // - Static assets (JS/CSS/JSON/icons): cache-first with a background refresh.
 // - /api/* and /uploads/*: always go to the network (must stay fresh / dynamic).
-const CACHE = "infostyles-v3";
+const CACHE = "infostyles-v4";
 const PRECACHE = [
   "/",
   "/index.html",
