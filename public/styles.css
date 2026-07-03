@@ -503,6 +503,10 @@ mark { background: none; color: inherit; font-weight: 650; }
 .sd-resource summary > span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sd-resource .sd-codebody { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); margin-bottom: 10px; max-height: 36vh; }
 
+/* "Updated" gets its own line so card meta never word-wraps mid-line. */
+.card-updated { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+.gallery--list .prompt-card .card-updated { display: none; }
+
 /* Curator rating: read-only stars on cards/detail + the picker in the editor. */
 .rating { color: var(--warn); letter-spacing: 1px; white-space: nowrap; }
 .rating .rating-off { color: var(--border-strong); }

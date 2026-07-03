@@ -81,7 +81,8 @@ let formRating = 0; // curator rating (0 = unrated) for the prompt being edited
 let viewMode = "list"; // "grid" | "list"
 let activeTag = ""; // lowercased tag name selected in the filter dropdown
 let activeCategory = ""; // category selected in the filter dropdown
-let sort = ""; // "" newest | "title" | "outputs"
+let minRating = ""; // "" any | "1".."5" (at least N stars) | "unrated"
+let sort = ""; // "" newest | "rating" | "title" | "outputs"
 let favOnly = false;
 let view, refs;
 
@@ -125,6 +126,8 @@ function filtered() {
   const out = list.filter((p) => {
     if (favOnly && !isPromptFavorite(p.id)) return false;
     if (activeCategory && (p.category || "General") !== activeCategory) return false;
+    if (minRating === "unrated" && p.rating) return false;
+    if (minRating && minRating !== "unrated" && (p.rating || 0) < Number(minRating)) return false;
     if (activeTag) {
       const tset = new Set((p.tags || []).map((t) => t.toLowerCase()));
       if (!tset.has(activeTag)) return false;
@@ -169,7 +172,8 @@ function cardHTML(p, admin) {
         <div class="card-title">${escapeHtml(p.title)}</div>
         <button type="button" class="fav ${fav ? "on" : ""}" data-fav="${escapeHtml(p.id)}" aria-pressed="${fav}" title="${fav ? "Remove from favorites" : "Add to favorites"}" aria-label="Favorite">${fav ? "★" : "☆"}</button>
       </div>
-      <div class="card-category">${ratingHTML(p.rating)}${p.rating ? " · " : ""}${escapeHtml(p.category)}${models ? ` · ${escapeHtml(models)}` : ""}${when ? ` · Updated ${escapeHtml(when)}` : ""}</div>
+      <div class="card-category">${ratingHTML(p.rating)}${p.rating ? " · " : ""}${escapeHtml(p.category)}${models ? ` · ${escapeHtml(models)}` : ""}</div>
+      ${when ? `<div class="card-updated">Updated ${escapeHtml(when)}</div>` : ""}
       ${tags ? `<div class="badges">${tags}</div>` : ""}
       <pre class="prompt-preview">${escapeHtml(preview)}</pre>
     </div>
@@ -219,6 +223,21 @@ function controlsHTML() {
   ]
     .map(([v, label]) => `<option value="${v}" ${sort === v ? "selected" : ""}>${label}</option>`)
     .join("");
+  // Filter by curator rating: "at least N stars", plus "Unrated" so the
+  // curator can find prompts still waiting for a score.
+  const nAtLeast = (n) => list.filter((p) => (p.rating || 0) >= n).length;
+  const nUnrated = list.filter((p) => !p.rating).length;
+  const ratingSelect =
+    `<select id="pRatingFilter" class="select" aria-label="Filter by rating">` +
+    `<option value="">Any rating</option>` +
+    [5, 4, 3, 2, 1]
+      .map(
+        (n) =>
+          `<option value="${n}" ${minRating === String(n) ? "selected" : ""}>${"★".repeat(n)}${n < 5 ? " & up" : ""} (${nAtLeast(n)})</option>`
+      )
+      .join("") +
+    `<option value="unrated" ${minRating === "unrated" ? "selected" : ""}>Unrated (${nUnrated})</option>` +
+    `</select>`;
   const favCount = promptFavoriteCount();
   return `<div class="prompts-controls">
     <div class="seg-group" role="group" aria-label="Prompt layout">
@@ -227,6 +246,7 @@ function controlsHTML() {
     </div>
     ${cats.length ? `<select id="pCatFilter" class="select" aria-label="Filter by category">${catOpts}</select>` : ""}
     ${tags.length ? `<select id="pTagFilter" class="select" aria-label="Filter by tag">${tagOpts}</select>` : ""}
+    ${ratingSelect}
     <select id="pSort" class="select" aria-label="Sort prompts">${sortOpts}</select>
     <button type="button" id="pFav" class="btn btn-icon ${favOnly ? "active" : ""}" aria-pressed="${favOnly}" title="${favOnly ? `Showing favorites (${favCount})` : "Show favorites"}" aria-label="Show favorite prompts">${favOnly ? ICONS.starFill : ICONS.star}</button>
   </div>`;
@@ -236,7 +256,7 @@ function render() {
   if (!view) return;
   const admin = adminState().admin;
   const items = filtered();
-  const hasFilter = !!query.trim() || !!activeTag || !!activeCategory || favOnly;
+  const hasFilter = !!query.trim() || !!activeTag || !!activeCategory || !!minRating || favOnly;
   const body = !items.length
     ? !loaded
       ? `<div class="gallery gallery--list">${Array.from({ length: 8 }, () => '<div class="skeleton skeleton-card"></div>').join("")}</div>`
@@ -257,6 +277,8 @@ function render() {
   if (catSel) catSel.addEventListener("change", (e) => { activeCategory = e.target.value; render(); });
   const tagSel = view.querySelector("#pTagFilter");
   if (tagSel) tagSel.addEventListener("change", (e) => { activeTag = e.target.value; render(); });
+  const ratingSel = view.querySelector("#pRatingFilter");
+  if (ratingSel) ratingSel.addEventListener("change", (e) => { minRating = e.target.value; render(); });
   const sortSel = view.querySelector("#pSort");
   if (sortSel) sortSel.addEventListener("change", (e) => { sort = e.target.value; render(); });
   const favBtn = view.querySelector("#pFav");
@@ -322,7 +344,8 @@ function openPromptDetail(p) {
         <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
       </div>
     </div>
-    <div class="card-category">${ratingHTML(p.rating)}${p.rating ? " · " : ""}${escapeHtml(p.category)}${p.updated ? ` · Last updated ${escapeHtml(formatUpdated(p.updated))}` : ""}</div>
+    <div class="card-category">${ratingHTML(p.rating)}${p.rating ? " · " : ""}${escapeHtml(p.category)}</div>
+    ${p.updated ? `<div class="card-updated">Last updated ${escapeHtml(formatUpdated(p.updated))}</div>` : ""}
     ${models || tags ? `<div class="badges pd-badges">${models}${tags}</div>` : ""}
     ${p.notes ? `<div class="pd-section"><span class="detail-label">Notes</span><p class="pd-notes">${escapeHtml(p.notes)}</p></div>` : ""}
     <div class="prompt-block">
