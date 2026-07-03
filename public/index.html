@@ -215,9 +215,8 @@
             <button type="button" class="footer-link" id="footExport">Export the catalog</button>
             <button type="button" class="footer-link" id="footTheme">Switch theme</button>
           </nav>
-          <nav class="footer-col" aria-label="Site">
-            <h5>Site</h5>
-            <button type="button" class="footer-link" id="footAdmin">Admin sign in</button>
+          <nav class="footer-col" aria-label="Platforms">
+            <h5>Platforms</h5>
             <a href="https://claude.ai/" target="_blank" rel="noopener">Claude ↗</a>
             <a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ↗</a>
             <a href="https://gemini.google.com/" target="_blank" rel="noopener">Gemini ↗</a>
@@ -414,7 +413,15 @@
       <div class="modal-card modal-wide">
         <div class="modal-head"><h2 id="sModalTitle">New skill</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
         <section class="ai-section">
-          <p class="field-help">Optionally describe what the skill should do and let Claude draft it for the selected platform.</p>
+          <span class="field-label">Upload a skill you've already built</span>
+          <div id="sDropzone" class="dropzone" tabindex="0" role="button" aria-label="Upload a skill file">
+            <input type="file" id="sFile" accept=".md,.markdown,.txt,.zip,.skill,.json" hidden />
+            <p class="dropzone-hint">Drop a <strong>SKILL.md</strong>, a <strong>.zip / .skill</strong> package, or a <strong>.json</strong> export here, or <span class="linkish">click to browse</span></p>
+          </div>
+          <span class="field-help">SKILL.md fills the form below (frontmatter parsed). A .zip fills it from the SKILL.md inside and lists the package's files. A .json array bulk-imports every skill in it.</span>
+        </section>
+        <section class="ai-section">
+          <p class="field-help">Or describe what the skill should do and let Claude draft it for the selected platform.</p>
           <textarea id="sNl" class="input textarea" rows="2" placeholder="e.g. a skill that turns meeting transcripts into decisions, action items, and owners"></textarea>
           <div class="ai-controls"><button id="sGenerate" class="btn btn-primary">Draft with AI</button></div>
         </section>

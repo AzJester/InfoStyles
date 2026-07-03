@@ -429,6 +429,165 @@ function setStatus(m, isErr = false) {
   refs.status.classList.toggle("error", isErr);
 }
 
+// ---------- import existing skills (SKILL.md / .zip / .skill / .json) ----------
+// Parse a SKILL.md: optional YAML frontmatter (name, description, version,
+// author — description may be a JSON-quoted scalar, which is how this site
+// emits it), body becomes the instructions.
+function parseSkillMarkdown(text) {
+  const out = { instructions: text.trim(), hasFrontmatter: false };
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!m) return out;
+  out.hasFrontmatter = true;
+  out.instructions = text.slice(m[0].length).trim();
+  for (const line of m[1].split(/\r?\n/)) {
+    const kv = line.match(/^(name|description|version|author):\s*(.*)$/);
+    if (!kv) continue;
+    let v = kv[2].trim();
+    if (v.startsWith('"')) {
+      try {
+        v = JSON.parse(v);
+      } catch {
+        v = v.replace(/^"+|"+$/g, "");
+      }
+    }
+    out[kv[1]] = v;
+  }
+  return out;
+}
+
+// "ai-fingerprint" / "meeting-notes.skill.zip" -> "Ai Fingerprint" / "Meeting Notes"
+function titleize(s) {
+  let out = String(s || "");
+  // Strip stacked extensions (e.g. ".skill.zip").
+  for (let prev = ""; prev !== out; ) {
+    prev = out;
+    out = out.replace(/\.(md|markdown|txt|zip|skill|json)$/i, "");
+  }
+  return out.replace(/[-_]+/g, " ").trim().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// Minimal zip reader — enough to list entries and extract text files. Uses the
+// central directory for names/sizes and DecompressionStream for deflate, so no
+// library is needed (CSP allows same-origin scripts only).
+async function readZip(file) {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const dv = new DataView(buf.buffer);
+  let eocd = -1;
+  for (let i = buf.length - 22; i >= Math.max(0, buf.length - 22 - 65535); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd < 0) throw new Error("That doesn't look like a valid .zip file.");
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  const entries = [];
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const csize = dv.getUint32(off + 20, true);
+    const nameLen = dv.getUint16(off + 28, true);
+    const extraLen = dv.getUint16(off + 30, true);
+    const cmtLen = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = new TextDecoder().decode(buf.subarray(off + 46, off + 46 + nameLen));
+    entries.push({ name, method, csize, lho });
+    off += 46 + nameLen + extraLen + cmtLen;
+  }
+  const readText = async (e) => {
+    // The local header's own name/extra lengths locate the data (they can
+    // differ from the central directory's).
+    const lnameLen = dv.getUint16(e.lho + 26, true);
+    const lextraLen = dv.getUint16(e.lho + 28, true);
+    const start = e.lho + 30 + lnameLen + lextraLen;
+    const data = buf.slice(start, start + e.csize);
+    if (e.method === 0) return new TextDecoder().decode(data);
+    if (e.method === 8) {
+      const ds = new DecompressionStream("deflate-raw");
+      return await new Response(new Blob([data]).stream().pipeThrough(ds)).text();
+    }
+    throw new Error(`Unsupported zip compression (method ${e.method}).`);
+  };
+  return { entries, readText };
+}
+
+function fillFormFromImport(parsed, files, filename) {
+  refs.name.value = titleize(parsed.name) || titleize(filename) || refs.name.value;
+  if (parsed.description) refs.description.value = parsed.description;
+  refs.instructions.value = parsed.instructions || "";
+  if (parsed.version) refs.version.value = parsed.version;
+  if (parsed.author) refs.author.value = parsed.author;
+  if (files.length) refs.files.value = files.join(", ");
+  // Frontmatter means it's a Claude SKILL.md package.
+  if (parsed.hasFrontmatter) refs.platform.value = "Claude";
+}
+
+async function importSkillFile(file) {
+  const ext = (file.name.toLowerCase().match(/\.([a-z0-9]+)$/) || [])[1] || "";
+  setStatus(`Reading ${file.name}…`);
+  try {
+    if (ext === "json") {
+      const parsed = JSON.parse(await file.text());
+      if (Array.isArray(parsed)) {
+        await bulkImport(parsed);
+        return;
+      }
+      fillFormFromImport(
+        { ...parsed, hasFrontmatter: parsed.platform === "Claude", instructions: parsed.instructions || "" },
+        parsed.files || [],
+        file.name
+      );
+      if (parsed.platform) refs.platform.value = PLATFORMS.includes(parsed.platform) ? parsed.platform : "Other";
+      if (parsed.category) refs.category.value = parsed.category;
+      if (parsed.tags) refs.tags.value = Array.isArray(parsed.tags) ? parsed.tags.join(", ") : String(parsed.tags);
+      if (parsed.link) refs.link.value = parsed.link;
+      if (parsed.notes) refs.notes.value = parsed.notes;
+      setStatus("Imported — review and Save.");
+      return;
+    }
+    if (ext === "zip" || ext === "skill") {
+      const { entries, readText } = await readZip(file);
+      const files = entries.filter((e) => !e.name.endsWith("/")).map((e) => e.name);
+      const md = entries.find((e) => /(^|\/)skill\.md$/i.test(e.name));
+      if (!md) throw new Error("No SKILL.md found inside the archive.");
+      fillFormFromImport(parseSkillMarkdown(await readText(md)), files, file.name);
+      setStatus(
+        files.length > 1
+          ? "Imported from SKILL.md — review and Save. Reference file contents aren't stored; keep the package at the source link."
+          : "Imported — review and Save."
+      );
+      return;
+    }
+    // .md / .markdown / .txt
+    fillFormFromImport(parseSkillMarkdown(await file.text()), [], file.name);
+    setStatus("Imported — review and Save.");
+  } catch (e) {
+    setStatus(`Import failed: ${e.message}`, true);
+  }
+}
+
+// A .json array bulk-saves every skill in it (shared store, admin-gated).
+async function bulkImport(items) {
+  let ok = 0;
+  let firstError = "";
+  for (const item of items) {
+    try {
+      await api.saveSkill({ skill: item });
+      ok++;
+    } catch (e) {
+      if (!firstError) firstError = e.message;
+    }
+  }
+  await refresh();
+  if (ok === items.length) {
+    toast(`Imported ${ok} skills`);
+    closeModal(refs.modal);
+  } else {
+    setStatus(`Imported ${ok}/${items.length} skills.${firstError ? ` First error: ${firstError}` : ""}`, ok === 0);
+  }
+}
+
 function openForm(s) {
   editId = s?.id || null;
   refs.modalTitle.textContent = s ? "Edit skill" : "New skill";
@@ -553,11 +712,43 @@ export function initSkills(opts = {}) {
     save: el("sSave"),
     status: el("sStatus"),
     newBtn: el("newSkillBtn"),
+    dropzone: el("sDropzone"),
+    file: el("sFile"),
   };
   wireModalDismiss(refs.modal);
   refs.newBtn.addEventListener("click", () => openForm());
   refs.gen.addEventListener("click", onGenerate);
   refs.save.addEventListener("click", onSave);
+
+  // Upload an existing skill: click, keyboard, or drag & drop onto the zone.
+  refs.dropzone.addEventListener("click", () => refs.file.click());
+  refs.dropzone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      refs.file.click();
+    }
+  });
+  refs.file.addEventListener("change", async (e) => {
+    const f = e.target.files?.[0];
+    if (f) await importSkillFile(f);
+    refs.file.value = "";
+  });
+  for (const ev of ["dragover", "dragenter"]) {
+    refs.dropzone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      refs.dropzone.classList.add("dragover");
+    });
+  }
+  for (const ev of ["dragleave", "drop"]) {
+    refs.dropzone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      refs.dropzone.classList.remove("dragover");
+    });
+  }
+  refs.dropzone.addEventListener("drop", async (e) => {
+    const f = e.dataTransfer?.files?.[0];
+    if (f) await importSkillFile(f);
+  });
 
   return {
     // /skills — the hub.
