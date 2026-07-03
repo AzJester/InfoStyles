@@ -77,6 +77,7 @@ let loaded = false;
 let editId = null;
 let formResults = [];
 let formModels = []; // models attached to the prompt being edited
+let formRating = 0; // curator rating (0 = unrated) for the prompt being edited
 let viewMode = "list"; // "grid" | "list"
 let activeTag = ""; // lowercased tag name selected in the filter dropdown
 let activeCategory = ""; // category selected in the filter dropdown
@@ -137,6 +138,7 @@ function filtered() {
   // Default order is the stored order (newest first, since saves unshift).
   if (sort === "title") out.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   else if (sort === "outputs") out.sort((a, b) => (b.results || []).length - (a.results || []).length);
+  else if (sort === "rating") out.sort((a, b) => (b.rating || 0) - (a.rating || 0));
   return out;
 }
 
@@ -146,6 +148,12 @@ function formatUpdated(iso) {
   const d = new Date(`${iso}T00:00:00`);
   if (isNaN(d)) return "";
   return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
+
+// Read-only star row for a curator rating (1-5); unrated renders nothing.
+function ratingHTML(r) {
+  if (!r) return "";
+  return `<span class="rating" role="img" aria-label="Rated ${r} of 5" title="Rated ${r} of 5">${"★".repeat(r)}<span class="rating-off" aria-hidden="true">${"★".repeat(5 - r)}</span></span>`;
 }
 
 function cardHTML(p, admin) {
@@ -161,7 +169,7 @@ function cardHTML(p, admin) {
         <div class="card-title">${escapeHtml(p.title)}</div>
         <button type="button" class="fav ${fav ? "on" : ""}" data-fav="${escapeHtml(p.id)}" aria-pressed="${fav}" title="${fav ? "Remove from favorites" : "Add to favorites"}" aria-label="Favorite">${fav ? "★" : "☆"}</button>
       </div>
-      <div class="card-category">${escapeHtml(p.category)}${models ? ` · ${escapeHtml(models)}` : ""}${when ? ` · Updated ${escapeHtml(when)}` : ""}</div>
+      <div class="card-category">${ratingHTML(p.rating)}${p.rating ? " · " : ""}${escapeHtml(p.category)}${models ? ` · ${escapeHtml(models)}` : ""}${when ? ` · Updated ${escapeHtml(when)}` : ""}</div>
       ${tags ? `<div class="badges">${tags}</div>` : ""}
       <pre class="prompt-preview">${escapeHtml(preview)}</pre>
     </div>
@@ -205,6 +213,7 @@ function controlsHTML() {
       .join("");
   const sortOpts = [
     ["", "Newest"],
+    ["rating", "Top rated"],
     ["title", "Title A→Z"],
     ["outputs", "Most outputs"],
   ]
@@ -313,7 +322,7 @@ function openPromptDetail(p) {
         <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
       </div>
     </div>
-    <div class="card-category">${escapeHtml(p.category)}${p.updated ? ` · Last updated ${escapeHtml(formatUpdated(p.updated))}` : ""}</div>
+    <div class="card-category">${ratingHTML(p.rating)}${p.rating ? " · " : ""}${escapeHtml(p.category)}${p.updated ? ` · Last updated ${escapeHtml(formatUpdated(p.updated))}` : ""}</div>
     ${models || tags ? `<div class="badges pd-badges">${models}${tags}</div>` : ""}
     ${p.notes ? `<div class="pd-section"><span class="detail-label">Notes</span><p class="pd-notes">${escapeHtml(p.notes)}</p></div>` : ""}
     <div class="prompt-block">
@@ -476,6 +485,24 @@ function setStatus(m, isErr = false) {
   refs.status.classList.toggle("error", isErr);
 }
 
+// ---------- rating picker (admin form) ----------
+function renderRatingPicker() {
+  refs.rating.innerHTML =
+    [1, 2, 3, 4, 5]
+      .map(
+        (n) =>
+          `<button type="button" class="rate-star ${n <= formRating ? "on" : ""}" data-rate="${n}" aria-pressed="${n <= formRating}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`
+      )
+      .join("") +
+    (formRating ? `<button type="button" class="btn btn-sm btn-ghost" data-rate="0">Clear</button>` : `<span class="field-help">Not rated</span>`);
+  refs.rating.querySelectorAll("[data-rate]").forEach((b) =>
+    b.addEventListener("click", () => {
+      formRating = Number(b.dataset.rate);
+      renderRatingPicker();
+    })
+  );
+}
+
 // ---------- model pickers (dropdown + chips) ----------
 function renderModelChips() {
   refs.modelChips.innerHTML = formModels.length
@@ -531,6 +558,8 @@ function openForm(p) {
   refs.body.value = p?.body || "";
   refs.notes.value = p?.notes || "";
   refs.nl.value = "";
+  formRating = p?.rating || 0;
+  renderRatingPicker();
   formModels = (p?.models || []).slice();
   renderModelChips();
   fillModelPick();
@@ -593,6 +622,7 @@ async function onSave() {
     body: refs.body.value.trim(),
     notes: refs.notes.value.trim(),
     results: formResults,
+    rating: formRating,
   };
   if (!prompt.title || !prompt.body) {
     setStatus("Title and body are required.", true);
@@ -642,6 +672,7 @@ export function initPrompts() {
     title: el("pTitle"),
     category: el("pCategory"),
     tags: el("pTags"),
+    rating: el("pRating"),
     body: el("pBody"),
     notes: el("pNotes"),
     nl: el("pNl"),

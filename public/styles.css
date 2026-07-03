@@ -503,6 +503,16 @@ mark { background: none; color: inherit; font-weight: 650; }
 .sd-resource summary > span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sd-resource .sd-codebody { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); margin-bottom: 10px; max-height: 36vh; }
 
+/* Curator rating: read-only stars on cards/detail + the picker in the editor. */
+.rating { color: var(--warn); letter-spacing: 1px; white-space: nowrap; }
+.rating .rating-off { color: var(--border-strong); }
+.rate-pick { display: flex; gap: 2px; align-items: center; }
+.rate-star {
+  font: inherit; font-size: 1.35rem; line-height: 1; background: none; border: none;
+  cursor: pointer; color: var(--border-strong); padding: 0 2px; transition: color 0.1s;
+}
+.rate-star.on, .rate-star:hover { color: var(--warn); }
+
 /* Post-import checklist: what still needs a human answer, one-click focus. */
 .import-checklist {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
