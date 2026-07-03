@@ -418,8 +418,9 @@
             <input type="file" id="sFile" accept=".md,.markdown,.txt,.zip,.skill,.json" hidden />
             <p class="dropzone-hint">Drop a <strong>SKILL.md</strong>, a <strong>.zip / .skill</strong> package, or a <strong>.json</strong> export here, or <span class="linkish">click to browse</span></p>
           </div>
-          <span class="field-help">SKILL.md fills the form below (frontmatter parsed). A .zip fills it from the SKILL.md inside and lists the package's files. A .json array bulk-imports every skill in it.</span>
+          <span class="field-help">SKILL.md fills the form below (frontmatter parsed). A .zip fills it from the SKILL.md inside and lists the package's files. A .json array bulk-imports every skill in it. Claude fills in any metadata the file doesn't declare; anything left is highlighted for you.</span>
         </section>
+        <div id="sChecklist" class="import-checklist" hidden></div>
         <section class="ai-section">
           <p class="field-help">Or describe what the skill should do and let Claude draft it for the selected platform.</p>
           <textarea id="sNl" class="input textarea" rows="2" placeholder="e.g. a skill that turns meeting transcripts into decisions, action items, and owners"></textarea>
@@ -443,6 +444,7 @@
           <label class="field span-2"><span class="field-label">Description</span><textarea id="sDescription" class="input textarea" rows="2" placeholder="What the skill does and when it triggers."></textarea></label>
           <label class="field span-2"><span class="field-label">Instructions</span><textarea id="sInstructions" class="input textarea" rows="8" placeholder="The full skill body: SKILL.md content, custom-GPT instructions, or Gem instructions."></textarea></label>
           <label class="field"><span class="field-label">Files (comma-separated, optional)</span><input id="sFiles" class="input" placeholder="SKILL.md, references/GUARDRAILS.md" /></label>
+          <div class="field span-2" id="sResources" hidden></div>
           <label class="field"><span class="field-label">Source link (optional)</span><input id="sLink" class="input" placeholder="https://…  (Drive folder, repo, GPT share link)" /></label>
           <label class="field span-2"><span class="field-label">Notes (optional)</span><input id="sNotes" class="input" placeholder="Setup notes, files to attach…" /></label>
         </div>

@@ -14,6 +14,7 @@
   --accent-2: #6a4de0;
   --accent-soft: #eaeefc;
   --danger: #c92a2a;
+  --warn: #b45309;
   --ring: rgba(37, 71, 208, 0.18);
   --lift: 0 8px 24px rgba(22, 26, 38, 0.07);
   --shadow-lg: 0 20px 55px rgba(22, 26, 38, 0.16);
@@ -33,6 +34,7 @@
   --accent-2: #a48eff;
   --accent-soft: #202741;
   --danger: #f87171;
+  --warn: #f0a840;
   --ring: rgba(142, 164, 255, 0.24);
   --lift: 0 10px 28px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.55);
@@ -478,6 +480,36 @@ mark { background: none; color: inherit; font-weight: 650; }
 .input { width: 100%; }
 .status { font-size: 0.8125rem; color: var(--muted); margin-right: auto; }
 .status.error { color: var(--danger); }
+
+/* Captured package files in the skill editor + viewer on detail pages. */
+.resource-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px; font-size: 0.8rem;
+}
+.resource-row .resource-path { font-family: var(--mono); font-size: 0.74rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#sResources { gap: 6px; }
+.sd-resource { border-bottom: 1px solid var(--border); }
+.sd-resource:last-child { border-bottom: 0; }
+.sd-resource summary {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  padding: 9px 0; font-size: 0.82rem; font-family: var(--mono); list-style: none;
+}
+.sd-resource summary::before { content: "▸"; color: var(--muted); font-family: var(--font); }
+.sd-resource[open] summary::before { content: "▾"; }
+.sd-resource summary > span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-resource .sd-codebody { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); margin-bottom: 10px; max-height: 36vh; }
+
+/* Post-import checklist: what still needs a human answer, one-click focus. */
+.import-checklist {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: color-mix(in srgb, var(--warn) 9%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--border));
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 16px; font-size: 0.8rem;
+}
+.checklist-label { font-weight: 650; }
+.field-attn .input { border-color: color-mix(in srgb, var(--warn) 70%, var(--border-strong)); }
+.field-attn .field-label::after { content: " •"; color: var(--warn); }
 
 /* ---------- Creator / editor ---------- */
 .ai-section { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 16px; }

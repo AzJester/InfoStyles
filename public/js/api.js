@@ -63,3 +63,4 @@ export async function getSkills() {
 export const saveSkill = (payload) => post("/api/skills", { action: "save", ...payload });
 export const deleteSkillApi = (id) => post("/api/skills", { action: "delete", id });
 export const generateSkill = (payload) => post("/api/generate-skill", payload);
+export const analyzeSkill = (payload) => post("/api/analyze-skill", payload);

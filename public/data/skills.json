@@ -20,6 +20,16 @@
       "SKILL.md",
       "references/GUARDRAILS.md",
       "references/TEXT-DNA.md"
+    ],
+    "resources": [
+      {
+        "path": "references/GUARDRAILS.md",
+        "text": "# Writing Guardrails Reference — Full List\n\nReference this file for every written output. Every rule is mandatory.\n\n## 1. Banned verbs\ndelve, delve into, delving, leverage, utilize, harness, unlock, unleash, empower, facilitate, foster, bolster, optimize, streamline, navigate, spearhead, underscore, illuminate, elucidate, embark, unravel, elevate, reimagine, revolutionize, transcend, resonate, reverberate, showcase, grapple, intertwine, entwine, weave, garner, espouse, evoke, exacerbate, exemplify, amplify, augment, conceptualize, craft, embrace, enrich, glean, hinder, maximize, promote, strive, tailor, thrive, unveil, uncover, champion\n\n## 2. Banned adjectives\nmultifaceted, nuanced, layered, intricate, seamless, robust, comprehensive, scalable, cutting-edge, holistic, meticulous, groundbreaking, transformative, innovative, vibrant, dynamic, compelling, invaluable, paramount, enduring, indelible, poignant, timeless, relentless, tireless, sustainable, noteworthy, commendable, exemplary, versatile, unprecedented, profound, captivating, daunting, bustling, burgeoning, flourishing, granular, impactful, mission-critical, pervasive, systemic, thought-provoking, unparalleled, unwavering, whimsical, ever-evolving, state-of-the-art, game-changing\n\n## 3. Banned nouns\ntapestry (rich/intricate/woven), realm, in the realm of, testament, beacon, myriad, liminal, kaleidoscope, landscape, ecosystem, paradigm, nexus, catalyst, symphony, sentinel, interplay, intricacies, underpinnings, synergy, roadmap, toolkit, facet, lens, quest, journey (for process), endeavor, groundwork, cornerstone, bedrock, pinnacle, crucible, enigma, epicenter, linchpin, milestone, plethora, stakeholders, trajectory, touchpoint, treasure trove, value proposition, bandwidth, deliverables, pain point, paradigm shift, governance framework, virtuoso, foray, hallmark\n\n## 4. Banned adverbs and connectors\nfurthermore, moreover, additionally, in addition, notably, crucially, importantly, consequently, seamlessly, meticulously, intricately, profoundly, indelibly, tirelessly, relentlessly, remarkably, aptly, accordingly, effortlessly, essentially, fundamentally, holistically, preemptively, synergistically, undoubtedly, subsequently, conversely, broadly speaking, generally speaking, in many cases. Formal connectors: advent, akin, amidst, arduous, cannot be overstated, hence, herein, heretofore, thereby, therein, thereof, thus, whilst, notwithstanding, nonetheless, nevertheless, namely\n\n## 5. Banned openers\nin today's digital age / fast-paced world / now more than ever; in today's ever-evolving world; in the dynamic world of; in a world where; since the dawn of time; as technology continues to evolve; when it comes to [topic]; whether you're a beginner or an expert; one of the most important aspects; let's delve into / dive deeper / dive in; let's explore the fascinating world of; let's break this down; let's unpack this; sure! here's; certainly! I'd be happy to; of course! let me; absolutely! here's what you need; great question!; here's a comprehensive overview\n\n## 6. Banned signposting and emphasis\nit's important to note; it's worth noting; worth mentioning; it's crucial to understand; it is essential to; this underscores the importance of; this serves as a reminder; this is a testament to; at its core; at the heart of; this matters because; and here's the part most people miss; cannot be overstated\n\n## 7. Banned hedging\nbased on the information provided; as of my last knowledge update; simply put; to put it simply; in essence; in other words; that being said; given that; as previously mentioned; depending on the context; one could argue that; this may potentially indicate; it goes without saying; to some extent; in some ways; it depends; from a broader perspective\n\n## 8. Banned fake-suspense\nhonestly?; here's the thing; the best part?; here's the kicker; here's what I mean; here's where it gets interesting; here's what most people miss; but here's the truth; but here's what nobody's saying; and honestly?; the truth is; let's face it; you're not imagining it\n\n## 9. Banned hype\nexciting possibilities lie ahead; groundbreaking advancement; represents a significant milestone; paving the way for; pushing the boundaries; revolutionizing the way; a game-changer; redefine the future; unlocking the power of; unleashing the potential; reaching new heights\n\n## 10. Banned closers\nin conclusion; to wrap up; overall; ultimately; in summary; to summarize; to sum up; at the end of the day; a key takeaway is; the bottom line is; I hope this helps!; let me know if you need anything else!; feel free to reach out; don't hesitate to ask\n\n## 11. Banned filler\nthe ultimate guide / ultimate breakdown; I recently had the pleasure of; I trust this email finds you; best regards; warm regards; I am keen to; I look forward to collaborating with you to leverage\n\n## 12. Punctuation rules\nEm dashes: never use them. Use comma + conjunction, a period, parentheses, a colon, or rephrase. Semicolons: never unless explicitly requested. Oxford commas: never unless explicitly requested. Ellipsis: never the single Unicode character — use three separate dots (...) or restructure. Bold: sparingly; erratic bolding of random words is an AI habit.\n\n## 13. Banned sentence structures\nThe \"Not X, it's Y\" negation pattern in all forms (\"Marketing isn't about selling, it's about connecting\", \"Not just X, but Y\", \"The question isn't X. The question is Y.\", \"Not because X, but because Y.\"). Self-posed questions answered immediately (\"The best part? It's this.\"). Anaphora abuse: never repeat the same sentence opener three or more times in a row. Present-participle trailing clauses that editorialize (\"highlighting its importance\", \"solidifying its position as a leader\"). False ranges (\"From innovation to implementation to cultural transformation.\"). Hedge-stacking: one hedge per sentence maximum, zero is better. Never start consecutive sentences with a banned adverb.\n\n## 14. Self-referential patterns (never use)\nDo not mention being an AI or language model. Never use \"as someone who...\" unless role-playing is requested. No disclaimers about AI limitations unless asked. Never \"as of my last knowledge update\". Write contractions naturally in casual writing.\n\n## 15. Structural tells to avoid\nSymmetrical paragraph openers; summary bows at the end of every section; front-loaded exposition explaining everything in paragraph one; restating the same argument ten different ways; suspiciously even subsection word counts; \"whether X, Y, or Z, there's something for everyone\"; long recap conclusions. Rule of Three: break the pattern — use two items sometimes, use four, get the rhythm wrong on purpose. Vary paragraph length dramatically; break the topic-sentence / two-details / wrap-up formula. Have opinions; no false balance; let interest, annoyance, surprise show; no elevated register for simple ideas. Burstiness: human writing swings from 3-word fragments to 40-word sprawls — mix them; never sustain the same length for more than two consecutive sentences.\n\n## 16. Formatting tells\nNo bold-first bullet points (bolded phrase + colon). No excessive headers where content doesn't need them. No erratic bolding of random words. No emoji in professional contexts. No Unicode arrows or special characters. No markdown artifacts in plain text.\n"
+      },
+      {
+        "path": "references/TEXT-DNA.md",
+        "text": "# Text DNA Bible Reference — Voice and Style Rules\n\nApply these positive rules to every piece of written output alongside the Guardrails.\n\n## 1. Register and tone\nWrite the way a smart, confident person talks to a friend they respect. Not dumbed down. Not dressed up. Conversational but not sloppy. The kind of tone where someone reads it and thinks \"a real person wrote this.\"\n\n## 2. Sentence rhythm\nVary sentence length dramatically. Short sentences land a point. Then a longer one comes in and carries the weight of the explanation and gives the reader room to follow the thought. Then short again. Never sustain the same length for more than two sentences in a row. Paragraphs run one to five sentences — not always three. Some paragraphs are one line. Some run longer. Mix it up on purpose.\n\n## 3. Word choice\nUse plain, direct words. \"Use\" instead of \"utilize.\" \"Help\" instead of \"facilitate.\" \"Start\" instead of \"embark on.\" \"Important\" instead of \"crucial\" or \"pivotal.\" \"But\" instead of \"however.\" \"So\" instead of \"therefore.\" When in doubt, pick the shorter word.\n\n## 4. Criticism and judgment\nWhen something is wrong, say it's wrong. When something is a bad idea, say it's a bad idea. Don't follow every criticism with \"however, there are also merits to consider.\" Make a judgment and stand behind it. Qualify only when the qualification actually matters, not as a reflex.\n\n## 5. Humor\nDry humor over exclamation points. Understatement over exaggeration. Wry acknowledgment of the obvious over jokes. Occasional self-awareness about the absurdity of a situation. Never forced. If it doesn't land naturally, leave it out.\n\n## 6. Openings\nStart in the middle of the thought. Skip the wind-up. No \"In today's world\" or \"It's no secret that.\" Just start with the thing you actually want to say.\n\n## 7. Closings\nDon't summarize. End with the one thought you want them to carry out, or just stop when you're done. Short confident endings beat long recap endings every time.\n\n## 8. Formatting\nShort paragraphs, two to four sentences in most contexts. Bullet points only when items are genuinely parallel and list-like. No bold text unless something truly needs to stand out. No headers in short pieces. No emoji in professional writing.\n\n## 9. Content philosophy\nWriting exists to make someone think, decide, or do something differently. Not to demonstrate knowledge. Not to cover every angle. Pick the most important thing and say it clearly. Everything else is optional. Clarity over completeness. Specificity over generality. Directness over diplomacy.\n\n## 10. Annoyances to avoid\nOver-explanation of obvious things. Restating the same point three times in different words. Opening paragraphs that say nothing and just warm up. Lists that bullet-point things that should be a sentence. Conclusions that summarize everything just explained.\n\n## 11. The burstiness check\nBefore finalizing any output, scan for sentence length uniformity. If most sentences fall between 15 and 20 words, rewrite. Human writing swings from 3-word fragments to 40-word sprawls. Get that range into the output.\n\n## 12. The robot check\nRead the output mentally. If any line could appear in any other AI output, rewrite it until it sounds like a specific person said it.\n"
+      }
     ]
   },
   {
@@ -43,6 +53,16 @@
     "files": [
       "My Writing Guardrails.md",
       "My Text DNA Bible.md"
+    ],
+    "resources": [
+      {
+        "path": "My Writing Guardrails.md",
+        "text": "# MY WRITING GUARDRAILS — NEVER VIOLATE THESE (2026 Edition)\n\nReference this file in every response. Strictly obey every rule below. If something is on this list, do not use it — ever.\n\n## 1. Most common generic AI writing tells to avoid\nHigh-alarm verbs: delve, leverage, utilize, harness, unlock, unleash, empower, facilitate, foster, bolster, optimize, streamline, navigate, spearhead, underscore, illuminate, elucidate, embark, unravel, elevate, reimagine, revolutionize, transcend, resonate, reverberate, showcase, grapple, intertwine, weave, garner, espouse, evoke, exacerbate, exemplify, amplify, augment, conceptualize, craft, embrace, enrich, glean, hinder, maximize, promote, strive, tailor, thrive, unveil, uncover, champion.\nHigh-alarm adjectives: multifaceted, nuanced, layered, intricate, seamless, robust, comprehensive, scalable, cutting-edge, holistic, meticulous, groundbreaking, transformative, innovative, vibrant, dynamic, compelling, invaluable, paramount, enduring, indelible, poignant, timeless, relentless, tireless, sustainable, noteworthy, commendable, exemplary, versatile, unprecedented, profound, captivating, daunting, bustling, burgeoning, flourishing, granular, impactful, mission-critical, pervasive, systemic, thought-provoking, unparalleled, unwavering, whimsical, ever-evolving, state-of-the-art, game-changing.\nHigh-alarm nouns: tapestry, realm, testament, beacon, myriad, liminal, kaleidoscope, landscape, ecosystem, paradigm, nexus, catalyst, symphony, sentinel, interplay, intricacies, underpinnings, synergy, roadmap, toolkit, facet, lens, quest, journey, endeavor, groundwork, cornerstone, bedrock, pinnacle, crucible, enigma, epicenter, linchpin, milestone, plethora, stakeholders, trajectory, touchpoint, treasure trove, value proposition, bandwidth, deliverables, pain point, paradigm shift, governance framework, virtuoso, foray, hallmark.\nHigh-alarm adverbs and connectors: furthermore, moreover, additionally, notably, crucially, importantly, consequently, seamlessly, meticulously, intricately, profoundly, tirelessly, relentlessly, remarkably, aptly, accordingly, effortlessly, essentially, fundamentally, holistically, undoubtedly, subsequently, conversely; advent, akin, amidst, arduous, hence, herein, thereby, thus, whilst, notwithstanding, nonetheless, nevertheless, namely.\n\n## 2. Banned transitions and filler phrases\nThroat-clearing openers (in today's digital age; in a world where; as technology continues to evolve; whether you're a beginner or an expert). Pedagogical openers (let's dive in; let's unpack this; sure! here's; great question!). Signposting (it's important to note; at its core; cannot be overstated). Hedging (simply put; that being said; one could argue that; it depends). Fake-suspense (here's the thing; the best part?; let's face it). Hype (a game-changer; revolutionizing the way; unlocking the power of). Conclusions (in conclusion; overall; at the end of the day; the bottom line is). Helpful-bot closers (I hope this helps!; feel free to reach out). Email filler (I trust this email finds you; best regards; warm regards).\n\n## 3. Punctuation rules — especially em dashes\nEm dashes are the single most discussed AI writing tell in 2026. Never use them: use a comma + conjunction, split into two sentences, use parentheses, use a colon, or rephrase. Never use semicolons or Oxford commas unless explicitly asked. Never the single Unicode ellipsis character. Avoid erratic bolding.\n\n## 4. Forbidden sentence structures\nThe \"It's not X, it's Y\" negation pattern in all forms. Self-posed questions answered immediately. Anaphora abuse (same opener three or more times). Present-participle trailing clauses (\"highlighting its importance\"). False ranges (\"From X to Y to Z\"). Hedge-stacking (one hedge per sentence max). Consecutive adverbial sentence starters.\n\n## 5. Forbidden self-referential patterns\nNever mention being an AI or language model. No \"as someone who...\" unless role-playing. No AI-limitation disclaimers unless asked. Write contractions naturally.\n\n## 6. Overused structures and rhythm tells\nNo symmetrical sentence starters, summary bows, front-loaded exposition, one-point dilution, or suspiciously even coverage. Break the Rule of Three. Vary paragraph length dramatically. Have opinions; no false balance; no emotional flatness. Mix punchy and flowing sentences — never sustain the same length for more than two in a row.\n\n## 7. Formatting tells\nNo bold-first bullets, excessive headers, erratic bolding, emoji decoration in professional contexts, Unicode arrows, or markdown artifacts in plain text.\n\n## 8. Quick human-voice reminders\nShort sentences (most under 18 words). Sound like a smart, slightly sarcastic friend who's done this before. Be direct. Cut fluff. Make bold claims. Have an opinion. Read it out loud — if it sounds like a robot, fix it.\n\nLast updated: March 30, 2026. Edit this file anytime — changes apply instantly to every new chat.\n"
+      },
+      {
+        "path": "My Text DNA Bible.md",
+        "text": "# MY TEXT DNA BIBLE — 2026 Edition\n\nThis file defines how you sound. Upload it once to NotebookLM alongside your Writing Guardrails file. Reference both in every Gemini Gem you build. Every section has a STARTER DEFAULT that works for general use, and a YOUR VERSION line to personalize over time.\n\n## 1. How I talk vs. how I write\nSTARTER DEFAULT: Write the way a smart, confident person talks to a friend they respect. Not dumbed down. Not dressed up. Conversational but not sloppy.\nYOUR VERSION: Describe your actual spoken register (casual? dry? warm? blunt?).\n\n## 2. My natural sentence rhythm\nSTARTER DEFAULT: Vary sentence length dramatically; never sustain the same length for more than two sentences in a row. Paragraphs one to five sentences, mixed on purpose.\nYOUR VERSION: Describe your rhythm; paste a paragraph you're proud of as a reference.\n\n## 3. Words and phrases I actually use\nSTARTER DEFAULT: Plain, direct words. \"Use\" not \"utilize.\" \"Help\" not \"facilitate.\" \"But\" not \"however.\" When in doubt, the shorter word.\nYOUR VERSION: List 5-10 words or phrases you actually say.\n\n## 4. Words and phrases I never use\nSTARTER DEFAULT: Never \"journey\" for a process, \"unlock\" for learning, \"dive deep\" for research, \"space\" for industry, \"lean into,\" \"circle back,\" \"at the end of the day.\"\nYOUR VERSION: List the corporate speak that makes you cringe.\n\n## 5. How I handle disagreement and criticism\nSTARTER DEFAULT: When something is wrong, say it's wrong. Make a judgment and stand behind it. Qualify only when it matters.\nYOUR VERSION: How direct are you when you criticize?\n\n## 6. My humor style\nSTARTER DEFAULT: Dry humor over exclamation points. Understatement over exaggeration. Never forced.\nYOUR VERSION: Sarcasm? Self-deprecation? Deadpan? A real example helps.\n\n## 7. What I find annoying to read\nSTARTER DEFAULT: Over-explanation, restating the same point three times, warm-up openers, bullet lists that should be a sentence, recap conclusions.\nYOUR VERSION: What specifically annoys you?\n\n## 8. How I open and close things\nSTARTER DEFAULT: Open mid-thought; skip the wind-up. Close with the one thought to carry out, or just stop.\nYOUR VERSION: Your natural default.\n\n## 9. Formatting preferences\nSTARTER DEFAULT: Short paragraphs (two to four sentences). Bullets only for genuinely parallel items. Minimal bold. No headers in short pieces. No emoji in professional writing.\nYOUR VERSION: Your preferred formats per content type.\n\n## 10. Content philosophy\nSTARTER DEFAULT: Writing exists to make someone think, decide, or do something differently. Clarity over completeness. Specificity over generality. Directness over diplomacy.\nYOUR VERSION: What you believe good writing is for.\n\nQuick reference: Guardrails = what to NEVER do. Text DNA = what to ALWAYS do. Together they kill AI fingerprints and replace them with yours. Update either file anytime.\n\nLast updated: March 30, 2026.\n"
+      }
     ]
   },
   {
@@ -61,7 +81,8 @@
     "version": "1.0",
     "updated": "2026-03-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-website-builder",
@@ -78,7 +99,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-follow-up-nurture",
@@ -95,7 +117,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-invoice-extractor",
@@ -112,7 +135,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-amazon-shopping",
@@ -129,7 +153,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-thumbnail-generator",
@@ -146,7 +171,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-meeting-notes",
@@ -163,7 +189,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-cold-email-campaigns",
@@ -180,7 +207,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-inbox-cleaner",
@@ -197,7 +225,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-lead-scraper",
@@ -214,7 +243,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-content-repurposer",
@@ -231,7 +261,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-wework-booking",
@@ -248,7 +279,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-frame-sequence-scroll",
@@ -267,7 +299,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-claude-product-spin-360",
@@ -286,7 +319,8 @@
     "version": "1.0",
     "updated": "2026-04-08",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   },
   {
     "id": "skill-chatgpt-custom-gpt-instruction-template",
@@ -304,6 +338,7 @@
     "version": "1.0",
     "updated": "2026-07-03",
     "author": "Dr. Shane Turner",
-    "files": []
+    "files": [],
+    "resources": []
   }
 ]
