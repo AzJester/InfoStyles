@@ -1,5 +1,7 @@
 # The AI Compendium
 
+Live at **[theaicompendium.com](https://theaicompendium.com)** (the infostyles.onrender.com URL keeps working).
+
 A clean, shareable web app with three libraries: **1,530 infographic & slide styles** across 62 categories, a **reusable LLM prompt library**, and a **Skills Hub** for Claude, ChatGPT, and Gemini. Anyone can browse, search, and copy a ready-to-use prompt for **NotebookLM** or **OpenAI image generation**. A password-protected **admin** can create, edit, and AI-generate styles, prompts, and skills, with the API key kept on the server, never in the browser.
 
 Each library is its own page (`/styles`, `/prompts`, `/skills`) via History-API routing, and every skill has a shareable page at `/skills/<slug>` with server-rendered link-preview tags. Old `/?style=` / `/?prompt=` / `/?skill=` links redirect.
