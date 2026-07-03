@@ -1,6 +1,8 @@
-# InfoStyles
+# The AI Compendium
 
-A clean, shareable web app with three libraries: **1,530 infographic & slide styles** across 62 categories, a **reusable LLM prompt library**, and an **AI skill library** for Claude, ChatGPT, and Gemini. Anyone can browse, search, and copy a ready-to-use prompt for **NotebookLM** or **OpenAI image generation**. A password-protected **admin** can create, edit, and AI-generate styles, prompts, and skills, with the API key kept on the server, never in the browser.
+A clean, shareable web app with three libraries: **1,530 infographic & slide styles** across 62 categories, a **reusable LLM prompt library**, and a **Skills Hub** for Claude, ChatGPT, and Gemini. Anyone can browse, search, and copy a ready-to-use prompt for **NotebookLM** or **OpenAI image generation**. A password-protected **admin** can create, edit, and AI-generate styles, prompts, and skills, with the API key kept on the server, never in the browser.
+
+Each library is its own page (`/styles`, `/prompts`, `/skills`) via History-API routing, and every skill has a shareable page at `/skills/<slug>` with server-rendered link-preview tags. Old `/?style=` / `/?prompt=` / `/?skill=` links redirect.
 
 Hosted on **Render**: one small Node/Express service that serves the static front end in `public/` and the `/api` routes. The keys live as Render environment variables, so sharing the public URL never exposes them.
 
@@ -11,7 +13,7 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - Open any style for a detail view: full fields, a large palette (click swatches or "copy all hex" / "copy as CSS vars"), any example images (click to view full size), and both prompts.
 - Copy the **NotebookLM** prompt or the generated **OpenAI image** prompt (with aspect-ratio and target-model variants), or roll a fresh palette.
 - Switch to the **Prompts** tab: a library of reusable LLM prompts (project management, competitive intel, business dev…) to search and copy; `{{variables}}` are filled in at copy time. It ships with 136 prompts baked in from the Airtable prompt-database export, and admins can add more.
-- Switch to the **Skills** tab: a library of AI skills — **Claude Skills**, **ChatGPT custom-GPT instruction sets**, and **Gemini Gems** — filterable by platform, category, and tag. Copy a skill's instructions, or download it as an install-ready file (`SKILL.md` with YAML frontmatter for Claude, plain Markdown otherwise). Skills with an external source (e.g. a Drive folder) link straight to it.
+- Open the **Skills Hub** (`/skills`): a shareable repository of AI skills — **Claude Skills**, **ChatGPT custom-GPT instruction sets**, and **Gemini Gems** — filterable by platform, category, and tag, with version + last-updated stamps. Each skill has its own page (`/skills/<slug>`) with the full instructions, per-platform install steps, and a metadata sidebar (version, author, files). Copy the instructions or download an install-ready file (`SKILL.md` with YAML frontmatter for Claude, plain Markdown otherwise). "Share this collection" copies the hub link.
 - Light/dark theme toggle, keyboard shortcuts (`/` to search, `Esc` to close). Export the catalog as **JSON or CSV**.
 
 ## What the admin can do (after login)

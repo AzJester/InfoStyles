@@ -1,6 +1,8 @@
-// AI skill library: the third section (Valkey-backed like prompts) for reusable
-// skills — Claude Skills, ChatGPT custom-GPT instruction sets, and Gemini Gems.
-// Visitors browse/search/copy/download; admins create, edit, and AI-draft.
+// Skills Hub: the shareable repository of AI skills — Claude Skills, ChatGPT
+// custom-GPT instruction sets, and Gemini Gems. Renders two page modes inside
+// #skillsView: the hub (cards + filters + install guide) and a per-skill
+// detail page at /skills/<slug>. Visitors browse/copy/download; admins
+// create, edit, and AI-draft.
 import * as api from "./api.js";
 import { adminState } from "./admin.js";
 import { escapeHtml, copyText, toast, openModal, closeModal, wireModalDismiss, ICONS } from "./ui.js";
@@ -9,6 +11,13 @@ import { getSkillView, setSkillView, isSkillFavorite, toggleSkillFavorite, skill
 // Platforms the UI knows how to badge/color. Anything else renders as "Other".
 const PLATFORMS = ["Claude", "ChatGPT", "Gemini", "Other"];
 const platformClass = (p) => `platform-badge platform-${(PLATFORMS.includes(p) ? p : "Other").toLowerCase()}`;
+const platformLabel = (p) =>
+  p === "Claude" ? "Claude Skill" : p === "ChatGPT" ? "ChatGPT GPT" : p === "Gemini" ? "Gemini Gem" : p || "Other";
+
+// The public URL path segment for a skill (mirrors lib/skill.js).
+export function skillSlug(id) {
+  return String(id || "").replace(/^skill-/, "");
+}
 
 let list = [];
 let query = "";
@@ -20,11 +29,14 @@ let activeCategory = "";
 let activeTag = "";
 let sort = ""; // "" newest | "name" | "platform"
 let favOnly = false;
+let detailSlug = null; // non-null => detail page mode
 let view, refs;
+let navigate = () => {};
 
 const byId = (id) => list.find((s) => s.id === id);
+const bySlug = (slug) => list.find((s) => skillSlug(s.id) === slug || s.id === slug);
 
-// Platforms present across all skills, with counts, in PLATFORMS order first.
+// Platforms present across all skills, with counts, in PLATFORMS order.
 function allPlatforms() {
   const counts = new Map();
   for (const s of list) {
@@ -34,7 +46,6 @@ function allPlatforms() {
   return PLATFORMS.filter((p) => counts.has(p)).map((p) => [p, counts.get(p)]);
 }
 
-// Categories across all skills, with counts, alphabetical.
 function allCategories() {
   const counts = new Map();
   for (const s of list) {
@@ -44,7 +55,6 @@ function allCategories() {
   return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
-// Tags across all skills, with counts, most-used first.
 function allTags() {
   const counts = new Map();
   for (const s of list) for (const t of s.tags || []) counts.set(t, (counts.get(t) || 0) + 1);
@@ -70,15 +80,23 @@ function filtered() {
       .toLowerCase()
       .includes(q);
   });
-  // Default order is the stored order (newest first, since saves unshift).
+  // Default order: most recently updated first, then the stored order.
   if (sort === "name") out.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   else if (sort === "platform")
     out.sort((a, b) => (a.platform || "").localeCompare(b.platform || "") || (a.name || "").localeCompare(b.name || ""));
+  else out.sort((a, b) => (b.updated || "").localeCompare(a.updated || ""));
   return out;
 }
 
-function skillLink(id) {
-  return `${location.origin}${location.pathname}?skill=${encodeURIComponent(id)}`;
+function skillURL(s) {
+  return `${location.origin}/skills/${encodeURIComponent(skillSlug(s.id))}`;
+}
+
+function formatDate(iso) {
+  if (!iso) return "";
+  const d = new Date(`${iso}T00:00:00`);
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
 }
 
 // ---------- install file (SKILL.md for Claude, plain markdown otherwise) ----------
@@ -115,32 +133,59 @@ function downloadSkill(s) {
   toast(`Downloaded ${filename}`);
 }
 
+// Per-platform install steps shown on detail pages and the hub guide.
+function installSteps(s) {
+  const p = PLATFORMS.includes(s.platform) ? s.platform : "Other";
+  if (p === "Claude")
+    return [
+      `<b>Download SKILL.md</b>${s.files?.length > 1 ? " and the reference files listed in the sidebar" : ""}.`,
+      `Add it under <b>Settings → Capabilities → Skills</b> on claude.ai, or drop the folder into <code>~/.claude/skills</code> for Claude Code.`,
+      `Ask Claude for a matching task — the skill triggers automatically.`,
+    ];
+  if (p === "ChatGPT")
+    return [
+      `<b>Copy the instructions</b> below.`,
+      `In ChatGPT, open <b>Explore GPTs → Create</b> and paste them into the <b>Instructions</b> field.`,
+      `Add any knowledge files listed in the sidebar, then save your GPT.`,
+    ];
+  if (p === "Gemini")
+    return [
+      `<b>Copy the instructions</b> below.`,
+      `In Gemini, open <b>Gems → New Gem</b> and paste them as the Gem's instructions.`,
+      `Attach the source files listed in the sidebar, then save the Gem.`,
+    ];
+  return [`<b>Copy the instructions</b> below and adapt them to your tool.`];
+}
+
+// ---------- hub cards ----------
 function cardHTML(s, admin) {
   const tags = (s.tags || []).map((t) => `<span class="badge">${escapeHtml(t)}</span>`).join("");
   const fav = isSkillFavorite(s.id);
   const desc = s.description || s.notes || "";
   const hasBody = !!(s.instructions || "").trim();
-  return `<article class="card skill-card" data-id="${escapeHtml(s.id)}" tabindex="0" role="button" aria-label="Open ${escapeHtml(s.name)}">
+  const when = formatDate(s.updated);
+  const slug = skillSlug(s.id);
+  return `<article class="card skill-card" data-id="${escapeHtml(s.id)}" data-slug="${escapeHtml(slug)}" tabindex="0" role="button" aria-label="Open ${escapeHtml(s.name)}">
     <div class="card-body">
       <div class="card-head">
-        <div class="card-title">${escapeHtml(s.name)}</div>
+        <h5 class="card-title">${escapeHtml(s.name)}${s.version ? ` <span class="ver-chip">v${escapeHtml(s.version)}</span>` : ""}</h5>
         <button type="button" class="fav ${fav ? "on" : ""}" data-fav="${escapeHtml(s.id)}" aria-pressed="${fav}" title="${fav ? "Remove from favorites" : "Add to favorites"}" aria-label="Favorite">${fav ? "★" : "☆"}</button>
       </div>
       <div class="skill-meta">
-        <span class="${platformClass(s.platform)}">${escapeHtml(s.platform || "Other")}</span>
+        <span class="${platformClass(s.platform)}">${escapeHtml(platformLabel(s.platform))}</span>
         <span class="card-category">${escapeHtml(s.category || "General")}</span>
       </div>
       ${desc ? `<p class="skill-desc">${escapeHtml(desc)}</p>` : ""}
       ${tags ? `<div class="badges">${tags}</div>` : ""}
     </div>
-    <div class="card-actions always">
-      ${hasBody ? `<button type="button" class="btn btn-sm btn-primary" data-copy="${escapeHtml(s.id)}">Copy</button>` : ""}
-      ${hasBody ? `<button type="button" class="btn btn-sm" data-dl="${escapeHtml(s.id)}">Download</button>` : ""}
-      ${s.link ? `<a class="btn btn-sm" href="${escapeHtml(s.link)}" target="_blank" rel="noopener" data-ext>Open source ↗</a>` : ""}
-      <button type="button" class="btn btn-sm btn-ghost" data-link="${escapeHtml(s.id)}" title="Copy a shareable link">Link</button>
+    <div class="sk-foot">
+      <span class="sk-when">${when ? `Updated ${escapeHtml(when)}` : ""}</span>
+      ${hasBody ? `<button type="button" class="btn btn-sm" data-copy="${escapeHtml(s.id)}">Copy</button>` : ""}
+      ${hasBody ? `<button type="button" class="btn btn-sm btn-primary" data-dl="${escapeHtml(s.id)}">${s.platform === "Claude" ? "SKILL.md ↓" : ".md ↓"}</button>` : ""}
+      ${!hasBody && s.link ? `<a class="btn btn-sm" href="${escapeHtml(s.link)}" target="_blank" rel="noopener">Open source ↗</a>` : ""}
       ${
         admin
-          ? `<button type="button" class="btn btn-sm" data-edit="${escapeHtml(s.id)}">Edit</button>
+          ? `<button type="button" class="btn btn-sm btn-ghost" data-edit="${escapeHtml(s.id)}">Edit</button>
              <button type="button" class="btn btn-sm btn-ghost btn-danger" data-del="${escapeHtml(s.id)}">Delete</button>`
           : ""
       }
@@ -177,7 +222,7 @@ function controlsHTML() {
       )
       .join("");
   const sortOpts = [
-    ["", "Newest"],
+    ["", "Recently updated"],
     ["name", "Name A→Z"],
     ["platform", "Platform"],
   ]
@@ -197,8 +242,21 @@ function controlsHTML() {
   </div>`;
 }
 
+const INSTALL_GUIDE = `<div class="install-guide">
+  <h6>How to install</h6>
+  <div class="install-cols">
+    <div><b>Claude</b><p>Download SKILL.md and add it under Settings → Capabilities → Skills, or drop the folder into <code>~/.claude/skills</code> for Claude Code.</p></div>
+    <div><b>ChatGPT</b><p>Copy the instruction block into your GPT's Instructions field in the GPT builder, then add the listed knowledge files.</p></div>
+    <div><b>Gemini</b><p>Create a Gem, paste the instructions, and attach the referenced source files (e.g. Guardrails + Text DNA).</p></div>
+  </div>
+</div>`;
+
 function render() {
   if (!view) return;
+  if (detailSlug) {
+    renderDetail();
+    return;
+  }
   const admin = adminState().admin;
   const items = filtered();
   const hasFilter = !!query.trim() || !!activePlatform || !!activeCategory || !!activeTag || favOnly;
@@ -209,8 +267,20 @@ function render() {
           favOnly ? "No favorite skills yet — tap ☆ on a skill." : hasFilter ? "No skills match your filters." : "No skills yet."
         }${admin && !hasFilter ? ' Use "+ New skill" to add one.' : ""}</div>`
     : `<div class="gallery ${viewMode === "list" ? "gallery--list" : ""}">${items.map((s) => cardHTML(s, admin)).join("")}</div>`;
-  view.innerHTML = controlsHTML() + body;
 
+  view.innerHTML = `
+    <div class="sh-head">
+      <div>
+        <h2>Skills Hub</h2>
+        <p>Every skill here is install-ready: download the file, copy the instructions, or share the link.</p>
+      </div>
+      <button type="button" class="btn btn-primary" data-share-hub>Share this collection</button>
+    </div>
+    ${controlsHTML()}${body}${INSTALL_GUIDE}`;
+
+  view.querySelector("[data-share-hub]").addEventListener("click", () =>
+    copyText(`${location.origin}/skills`, "Skills Hub link copied")
+  );
   view.querySelectorAll("[data-plat]").forEach((b) =>
     b.addEventListener("click", () => {
       activePlatform = b.dataset.plat;
@@ -237,21 +307,15 @@ function render() {
     b.addEventListener("click", () => copyText(byId(b.dataset.copy)?.instructions || "", "Skill instructions copied"))
   );
   view.querySelectorAll("[data-dl]").forEach((b) => b.addEventListener("click", () => downloadSkill(byId(b.dataset.dl))));
-  view.querySelectorAll("[data-link]").forEach((b) =>
-    b.addEventListener("click", () => copyText(skillLink(b.dataset.link), "Link copied"))
-  );
   view.querySelectorAll("[data-fav]").forEach((b) =>
     b.addEventListener("click", () => {
       toggleSkillFavorite(b.dataset.fav);
       render();
     })
   );
-  // Clicking anywhere on a card (except its buttons/links) opens the detail view.
+  // Clicking anywhere on a card (except its buttons/links) opens the detail page.
   view.querySelectorAll(".skill-card").forEach((card) => {
-    const open = () => {
-      const s = byId(card.dataset.id);
-      if (s) openSkillDetail(s);
-    };
+    const open = () => navigate(`/skills/${encodeURIComponent(card.dataset.slug)}`);
     card.addEventListener("click", (e) => {
       if (e.target.closest("button, a")) return;
       open();
@@ -279,75 +343,88 @@ function render() {
   );
 }
 
-// ---------- skill detail (click a card) ----------
-function openSkillDetail(s) {
+// ---------- skill detail page (/skills/<slug>) ----------
+function renderDetail() {
+  const s = bySlug(detailSlug);
+  if (!s) {
+    view.innerHTML = `
+      <div class="sd-crumb"><a href="/skills">Skills Hub</a> / <b>Not found</b></div>
+      <div class="empty">That skill doesn't exist (it may have been deleted).</div>`;
+    return;
+  }
   const admin = adminState().admin;
   const fav = isSkillFavorite(s.id);
   const tags = (s.tags || []).map((t) => `<span class="badge">${escapeHtml(t)}</span>`).join("");
   const hasBody = !!(s.instructions || "").trim();
-  refs.detailBody.innerHTML = `
-    <div class="modal-head">
-      <h2 id="sdTitle">${escapeHtml(s.name)}</h2>
-      <div class="detail-head-actions">
-        <button type="button" class="btn btn-icon fav ${fav ? "on" : ""}" data-sd-fav aria-pressed="${fav}" title="${fav ? "Remove from favorites" : "Add to favorites"}">${fav ? "★" : "☆"}</button>
-        <button type="button" class="btn" data-sd-link title="Copy a shareable link">Copy link</button>
-        <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
+  const steps = installSteps(s)
+    .map((step, i) => `<div class="sd-step"><i>${i + 1}</i><span>${step}</span></div>`)
+    .join("");
+  const files = (s.files || []).length
+    ? s.files.map((f) => escapeHtml(f)).join("<br>")
+    : hasBody
+      ? escapeHtml(s.platform === "Claude" ? "SKILL.md" : `${fileSlug(s.name)}.md`)
+      : "—";
+
+  view.innerHTML = `
+    <div class="sd-crumb"><a href="/skills">Skills Hub</a> / <b>${escapeHtml(s.name)}</b></div>
+    <div class="sd-layout">
+      <div class="sd-main">
+        <span class="${platformClass(s.platform)}">${escapeHtml(platformLabel(s.platform))}</span>
+        <h2>${escapeHtml(s.name)}${s.version ? ` <span class="ver-chip">v${escapeHtml(s.version)}</span>` : ""}
+          <button type="button" class="fav ${fav ? "on" : ""}" data-sd-fav aria-pressed="${fav}" title="${fav ? "Remove from favorites" : "Add to favorites"}">${fav ? "★" : "☆"}</button>
+        </h2>
+        ${s.description ? `<p class="sd-desc">${escapeHtml(s.description)}</p>` : ""}
+        ${tags ? `<div class="badges" style="margin-bottom:18px">${tags}</div>` : ""}
+        ${
+          hasBody
+            ? `<div class="sd-code">
+                 <div class="sd-codehead"><span>${s.platform === "Claude" ? "SKILL.md" : "Instructions"}</span><button type="button" class="btn btn-sm" data-sd-copy>Copy</button></div>
+                 <pre class="sd-codebody">${escapeHtml(s.instructions)}</pre>
+               </div>`
+            : `<p class="muted">No instructions captured yet${s.link ? " — see the source link in the sidebar" : ""}.</p>`
+        }
+        ${hasBody ? `<div class="sd-steps"><h6>Install in ${escapeHtml(PLATFORMS.includes(s.platform) ? s.platform : "your tool")}</h6>${steps}</div>` : ""}
+        ${s.notes ? `<p class="sd-notes"><b>Notes.</b> ${escapeHtml(s.notes)}</p>` : ""}
       </div>
-    </div>
-    <div class="skill-meta">
-      <span class="${platformClass(s.platform)}">${escapeHtml(s.platform || "Other")}</span>
-      <span class="card-category">${escapeHtml(s.category || "General")}</span>
-    </div>
-    ${s.description ? `<p class="skill-desc sd-desc">${escapeHtml(s.description)}</p>` : ""}
-    ${tags ? `<div class="badges pd-badges">${tags}</div>` : ""}
-    ${s.notes ? `<div class="pd-section"><span class="detail-label">Notes</span><p class="pd-notes">${escapeHtml(s.notes)}</p></div>` : ""}
-    ${
-      s.link
-        ? `<div class="pd-section"><span class="detail-label">Source</span><p class="pd-notes"><a class="linkish" href="${escapeHtml(s.link)}" target="_blank" rel="noopener">${escapeHtml(s.link)}</a></p></div>`
-        : ""
-    }
-    ${
-      hasBody
-        ? `<div class="prompt-block">
-             <div class="prompt-head"><span>Instructions</span><button type="button" class="btn btn-sm" data-sd-copy>Copy</button></div>
-             <pre class="prompt-text pd-text">${escapeHtml(s.instructions)}</pre>
-           </div>`
-        : `<p class="muted">No instructions captured yet${s.link ? " — see the source link above" : ""}.</p>`
-    }
-    <div class="pd-actions">
-      ${hasBody ? `<button type="button" class="btn btn-primary" data-sd-dl>Download ${s.platform === "Claude" ? "SKILL.md" : "Markdown"}</button>` : ""}
-      ${admin ? `<button type="button" class="btn" data-sd-edit>Edit</button><button type="button" class="btn btn-ghost btn-danger" data-sd-del>Delete</button>` : ""}
+      <aside class="sd-aside">
+        <div class="sd-meta-row"><span>Platform</span><b>${escapeHtml(s.platform || "Other")}</b></div>
+        <div class="sd-meta-row"><span>Category</span><b>${escapeHtml(s.category || "General")}</b></div>
+        ${s.version ? `<div class="sd-meta-row"><span>Version</span><b>${escapeHtml(s.version)}</b></div>` : ""}
+        ${s.updated ? `<div class="sd-meta-row"><span>Updated</span><b>${escapeHtml(formatDate(s.updated))}</b></div>` : ""}
+        ${s.author ? `<div class="sd-meta-row"><span>Author</span><b>${escapeHtml(s.author)}</b></div>` : ""}
+        <div class="sd-meta-row"><span>Files</span><b>${files}</b></div>
+        ${hasBody ? `<button type="button" class="btn btn-primary" data-sd-dl>Download ${s.platform === "Claude" ? "SKILL.md" : "Markdown"}</button>` : ""}
+        ${hasBody ? `<button type="button" class="btn" data-sd-copy2>Copy instructions</button>` : ""}
+        <button type="button" class="btn" data-sd-link>Copy share link</button>
+        ${s.link ? `<a class="btn" href="${escapeHtml(s.link)}" target="_blank" rel="noopener">Open source ↗</a>` : ""}
+        ${admin ? `<button type="button" class="btn" data-sd-edit>Edit</button><button type="button" class="btn btn-ghost btn-danger" data-sd-del>Delete</button>` : ""}
+      </aside>
     </div>`;
 
-  const q = (sel) => refs.detailBody.querySelector(sel);
+  const q = (sel) => view.querySelector(sel);
   q("[data-sd-fav]").onclick = (e) => {
     toggleSkillFavorite(s.id);
     const on = isSkillFavorite(s.id);
     e.currentTarget.classList.toggle("on", on);
     e.currentTarget.textContent = on ? "★" : "☆";
     e.currentTarget.setAttribute("aria-pressed", String(on));
-    render();
   };
-  q("[data-sd-link]").onclick = () => copyText(skillLink(s.id), "Link copied");
   q("[data-sd-copy]")?.addEventListener("click", () => copyText(s.instructions, "Skill instructions copied"));
+  q("[data-sd-copy2]")?.addEventListener("click", () => copyText(s.instructions, "Skill instructions copied"));
   q("[data-sd-dl]")?.addEventListener("click", () => downloadSkill(s));
-  q("[data-sd-edit]")?.addEventListener("click", () => {
-    closeModal(refs.detailModal);
-    openForm(s);
-  });
+  q("[data-sd-link]").addEventListener("click", () => copyText(skillURL(s), "Link copied"));
+  q("[data-sd-edit]")?.addEventListener("click", () => openForm(s));
   q("[data-sd-del]")?.addEventListener("click", async () => {
     if (!confirm(`Delete skill "${s.name}"?`)) return;
     try {
       await api.deleteSkillApi(s.id);
-      closeModal(refs.detailModal);
       toast("Deleted");
       await refresh();
+      navigate("/skills", { replace: true });
     } catch (e) {
       toast(e.message);
     }
   });
-
-  openModal(refs.detailModal);
 }
 
 // ---------- create / edit form (admin) ----------
@@ -379,6 +456,9 @@ function openForm(s) {
   refs.tags.value = (s?.tags || []).join(", ");
   refs.instructions.value = s?.instructions || "";
   refs.notes.value = s?.notes || "";
+  refs.version.value = s?.version || "";
+  refs.author.value = s?.author || "";
+  refs.files.value = (s?.files || []).join(", ");
   refs.nl.value = "";
   setStatus("");
   openModal(refs.modal);
@@ -401,6 +481,7 @@ async function onGenerate() {
     refs.tags.value = (skill.tags || []).join(", ");
     refs.instructions.value = skill.instructions;
     refs.notes.value = skill.notes || "";
+    if (!refs.version.value) refs.version.value = "1.0";
     setStatus("Draft generated — review and Save.");
   } catch (e) {
     setStatus(e.message, true);
@@ -419,6 +500,9 @@ async function onSave() {
     tags: refs.tags.value,
     instructions: refs.instructions.value.trim(),
     notes: refs.notes.value.trim(),
+    version: refs.version.value.trim(),
+    author: refs.author.value.trim(),
+    files: refs.files.value,
   };
   if (!skill.name) {
     setStatus("A name is required.", true);
@@ -449,7 +533,8 @@ async function refresh() {
   render();
 }
 
-export function initSkills() {
+export function initSkills(opts = {}) {
+  navigate = opts.navigate || (() => {});
   view = document.getElementById("skillsView");
   viewMode = getSkillView();
   const el = (id) => document.getElementById(id);
@@ -464,37 +549,43 @@ export function initSkills() {
     tags: el("sTags"),
     instructions: el("sInstructions"),
     notes: el("sNotes"),
+    version: el("sVersion"),
+    author: el("sAuthor"),
+    files: el("sFiles"),
     nl: el("sNl"),
     gen: el("sGenerate"),
     save: el("sSave"),
     status: el("sStatus"),
     newBtn: el("newSkillBtn"),
-    detailModal: el("skillDetailModal"),
-    detailBody: el("sdBody"),
   };
   wireModalDismiss(refs.modal);
-  wireModalDismiss(refs.detailModal);
   refs.newBtn.addEventListener("click", () => openForm());
   refs.gen.addEventListener("click", onGenerate);
   refs.save.addEventListener("click", onSave);
 
   return {
-    show: async () => {
+    // /skills — the hub.
+    showHub: async () => {
+      detailSlug = null;
+      await ensureLoaded();
+      render();
+    },
+    // /skills/<slug> — a skill's own page.
+    openBySlug: async (slug) => {
+      detailSlug = slug;
+      render(); // skeleton/instant if already loaded
       await ensureLoaded();
       render();
     },
     rerender: render,
     setQuery: (q) => {
       query = q;
-      if (view && !view.hidden) render();
-    },
-    // Deep link (?skill=<id>): open that skill's detail view.
-    openById: async (id) => {
-      await ensureLoaded();
-      render();
-      const s = byId(id);
-      if (s) openSkillDetail(s);
-      return !!s;
+      if (view && !view.closest("section")?.hidden && detailSlug) {
+        // Searching from a detail page returns to the filtered hub.
+        detailSlug = null;
+        navigate("/skills", { replace: true });
+      }
+      if (view && !view.closest("section")?.hidden) render();
     },
   };
 }

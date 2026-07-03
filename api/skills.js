@@ -33,6 +33,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
     const clean = sanitizeSkill(skill || {});
+    // Every save stamps the freshness date shown on cards and detail pages.
+    clean.updated = new Date().toISOString().slice(0, 10);
     const skillId =
       id || `skill-${slugify(clean.platform, clean.name)}-${Math.abs(hashString(clean.name + clean.platform)).toString(36)}`;
     const saved = await saveSkill({ id: skillId, ...clean });

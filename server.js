@@ -4,7 +4,12 @@
 import express from "express";
 import compression from "compression";
 import path from "node:path";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+
+import { mergeSkills, skillSlug } from "./lib/skill.js";
+import { seedSkills } from "./lib/skillSeeds.js";
+import { getSkills as storedSkills, getDeletedSkillIds } from "./lib/store.js";
 
 import login from "./api/login.js";
 import logout from "./api/logout.js";
@@ -84,6 +89,40 @@ app.post("/api/generate-skill", wrap(generateSkill));
 if (process.env.UPLOAD_DIR) {
   app.use("/uploads", express.static(process.env.UPLOAD_DIR, { maxAge: "1h", index: false }));
 }
+
+// ---- Client-side routes (History API): every page serves the shell. ----
+const INDEX_PATH = path.join(__dirname, "public", "index.html");
+const escapeHtml = (s) =>
+  String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+app.get(["/styles", "/prompts", "/skills"], (req, res) => res.sendFile(INDEX_PATH));
+
+// Skill detail pages get server-rendered <title>/OG tags so a shared link
+// unfurls with the skill's own name and description.
+app.get("/skills/:slug", async (req, res) => {
+  let html = readFileSync(INDEX_PATH, "utf8");
+  try {
+    const [saved, deleted] = await Promise.all([storedSkills(), getDeletedSkillIds()]);
+    const all = mergeSkills(seedSkills(), saved, deleted);
+    const s = all.find((k) => skillSlug(k.id) === req.params.slug || k.id === req.params.slug);
+    if (s) {
+      const title = escapeHtml(`${s.name} — The AI Compendium Skills Hub`);
+      const desc = escapeHtml(s.description || `A ${s.platform} skill from the InfoStyles Skills Hub.`);
+      const url = escapeHtml(`https://infostyles.onrender.com/skills/${skillSlug(s.id)}`);
+      // The <meta> tags in index.html wrap across lines, so match attributes
+      // separated by any whitespace.
+      html = html
+        .replace(/<title>[^<]*<\/title>/, () => `<title>${title}</title>`)
+        .replace(/(<meta\s+property="og:title"\s+content=")[^"]*(")/, (m, a, b) => a + title + b)
+        .replace(/(<meta\s+property="og:description"\s+content=")[^"]*(")/, (m, a, b) => a + desc + b)
+        .replace(/(<meta\s+property="og:url"\s+content=")[^"]*(")/, (m, a, b) => a + url + b)
+        .replace(/(<meta\s+name="description"\s+content=")[^"]*(")/, (m, a, b) => a + desc + b);
+    }
+  } catch (err) {
+    console.error("skill OG render failed:", err); // fall through to the plain shell
+  }
+  res.type("html").send(html);
+});
 
 // Static site (index.html served at /).
 app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));

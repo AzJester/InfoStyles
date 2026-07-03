@@ -12,7 +12,15 @@
       "voice",
       "anti-AI"
     ],
-    "notes": "Packaged as ai-fingerprint.skill with references/GUARDRAILS.md and references/TEXT-DNA.md. Supersedes the anti-ai-writing skill when both are installed."
+    "notes": "Packaged as ai-fingerprint.skill with references/GUARDRAILS.md and references/TEXT-DNA.md. Supersedes the anti-ai-writing skill when both are installed.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": [
+      "SKILL.md",
+      "references/GUARDRAILS.md",
+      "references/TEXT-DNA.md"
+    ]
   },
   {
     "id": "skill-gemini-ai-tell-eliminator",
@@ -28,7 +36,14 @@
       "anti-AI",
       "gem"
     ],
-    "notes": "Gemini Gem. Needs the Writing Guardrails and Text DNA Bible files attached as sources."
+    "notes": "Gemini Gem. Needs the Writing Guardrails and Text DNA Bible files attached as sources.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": [
+      "My Writing Guardrails.md",
+      "My Text DNA Bible.md"
+    ]
   },
   {
     "id": "skill-claude-anti-ai-writing",
@@ -42,7 +57,11 @@
       "writing",
       "anti-AI"
     ],
-    "notes": "Earlier version; the AI Fingerprint skill supersedes this one when both are installed."
+    "notes": "Earlier version; the AI Fingerprint skill supersedes this one when both are installed.",
+    "version": "1.0",
+    "updated": "2026-03-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-website-builder",
@@ -55,7 +74,11 @@
     "tags": [
       "design"
     ],
-    "notes": "Skill package: website-builder. Stored in the shared Google Drive folder."
+    "notes": "Skill package: website-builder. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-follow-up-nurture",
@@ -68,7 +91,11 @@
     "tags": [
       "sales"
     ],
-    "notes": "Skill package: follow-up-nurture. Stored in the shared Google Drive folder."
+    "notes": "Skill package: follow-up-nurture. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-invoice-extractor",
@@ -81,7 +108,11 @@
     "tags": [
       "finance"
     ],
-    "notes": "Skill package: invoice-extractor. Stored in the shared Google Drive folder."
+    "notes": "Skill package: invoice-extractor. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-amazon-shopping",
@@ -94,7 +125,11 @@
     "tags": [
       "e-commerce"
     ],
-    "notes": "Skill package: amazon-shopping. Stored in the shared Google Drive folder."
+    "notes": "Skill package: amazon-shopping. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-thumbnail-generator",
@@ -107,7 +142,11 @@
     "tags": [
       "content"
     ],
-    "notes": "Skill package: thumbnail-generator. Stored in the shared Google Drive folder."
+    "notes": "Skill package: thumbnail-generator. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-meeting-notes",
@@ -120,7 +159,11 @@
     "tags": [
       "productivity"
     ],
-    "notes": "Skill package: meeting-notes. Stored in the shared Google Drive folder."
+    "notes": "Skill package: meeting-notes. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-cold-email-campaigns",
@@ -133,7 +176,11 @@
     "tags": [
       "sales"
     ],
-    "notes": "Skill package: cold-email-campaigns. Stored in the shared Google Drive folder."
+    "notes": "Skill package: cold-email-campaigns. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-inbox-cleaner",
@@ -146,7 +193,11 @@
     "tags": [
       "productivity"
     ],
-    "notes": "Skill package: inbox-cleaner. Stored in the shared Google Drive folder."
+    "notes": "Skill package: inbox-cleaner. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-lead-scraper",
@@ -159,7 +210,11 @@
     "tags": [
       "sales"
     ],
-    "notes": "Skill package: lead-scraper. Stored in the shared Google Drive folder."
+    "notes": "Skill package: lead-scraper. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-content-repurposer",
@@ -172,7 +227,11 @@
     "tags": [
       "content"
     ],
-    "notes": "Skill package: content-repurposer. Stored in the shared Google Drive folder."
+    "notes": "Skill package: content-repurposer. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-wework-booking",
@@ -185,7 +244,11 @@
     "tags": [
       "productivity"
     ],
-    "notes": "Skill package: wework-booking. Stored in the shared Google Drive folder."
+    "notes": "Skill package: wework-booking. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-frame-sequence-scroll",
@@ -200,7 +263,11 @@
       "animation",
       "web"
     ],
-    "notes": ""
+    "notes": "",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-claude-product-spin-360",
@@ -215,7 +282,11 @@
       "e-commerce",
       "web"
     ],
-    "notes": ""
+    "notes": "",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
   },
   {
     "id": "skill-chatgpt-custom-gpt-instruction-template",
@@ -229,6 +300,10 @@
       "template",
       "custom GPT"
     ],
-    "notes": "Start here when saving a new ChatGPT GPT into the library so nothing gets lost."
+    "notes": "Start here when saving a new ChatGPT GPT into the library so nothing gets lost.",
+    "version": "1.0",
+    "updated": "2026-07-03",
+    "author": "Dr. Shane Turner",
+    "files": []
   }
 ]

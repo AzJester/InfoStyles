@@ -4,11 +4,11 @@
 (function () {
   try {
     var t = localStorage.getItem("infostyles.theme");
-    // Dark is the site's primary look: new visitors get it regardless of the
-    // OS preference; the toggle (persisted) still switches to light.
-    if (t !== "light" && t !== "dark") t = "dark";
+    // Light is the site's primary look: new visitors get it regardless of the
+    // OS preference; the toggle (persisted) still switches to dark.
+    if (t !== "light" && t !== "dark") t = "light";
     document.documentElement.dataset.theme = t;
   } catch (e) {
-    document.documentElement.dataset.theme = "dark";
+    document.documentElement.dataset.theme = "light";
   }
 })();

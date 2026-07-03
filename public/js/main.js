@@ -1,10 +1,11 @@
-// Boot + orchestration: load the merged catalog, render the gallery, and wire
-// search / filters / favorites / theme / admin / creator / detail.
+// Boot + orchestration: History-API routing across the four pages (Home,
+// Styles, Prompts, Skills Hub), the styles gallery + filters, and shared
+// chrome (search, theme, admin, command palette, settings).
 import { loadCatalog, getStyles, getCategories, kindOf } from "./catalog.js";
 import { buildCard, openDetail } from "./card.js";
 import { initCreator } from "./creator.js";
 import { initPrompts } from "./prompts.js";
-import { initSkills } from "./skills.js";
+import { initSkills, skillSlug } from "./skills.js";
 import { initAdmin, adminState } from "./admin.js";
 import { isFavorite, favoriteCount, getTheme, setTheme, getView, setView, hasSeenIntro, markIntroSeen } from "./storage.js";
 import { getPrompts, getSkills } from "./api.js";
@@ -34,14 +35,15 @@ const els = {
   themeBtn: document.getElementById("themeBtn"),
   viewBtn: document.getElementById("viewBtn"),
   activeFilters: document.getElementById("activeFilters"),
-  promptsView: document.getElementById("promptsView"),
-  skillsView: document.getElementById("skillsView"),
-  secStyles: document.getElementById("secStyles"),
-  secPrompts: document.getElementById("secPrompts"),
-  secSkills: document.getElementById("secSkills"),
-  intro: document.querySelector(".hero"),
+  homeView: document.getElementById("homeView"),
+  stylesView: document.getElementById("stylesView"),
+  promptsWrap: document.getElementById("promptsWrap"),
+  skillsWrap: document.getElementById("skillsWrap"),
+  navHome: document.getElementById("navHome"),
+  navStyles: document.getElementById("navStyles"),
+  navPrompts: document.getElementById("navPrompts"),
+  navSkills: document.getElementById("navSkills"),
   featured: document.getElementById("featured"),
-  how: document.getElementById("how"),
   firstRun: document.getElementById("firstRun"),
   firstRunClose: document.getElementById("firstRunClose"),
   cmdk: document.getElementById("cmdk"),
@@ -52,7 +54,9 @@ const els = {
 let creator;
 let promptsUI;
 let skillsUI;
-let section = "styles"; // "styles" | "prompts" | "skills"
+let section = "home"; // "home" | "styles" | "prompts" | "skills"
+let pendingStyleId = null; // ?style=<id>, opened after first render
+let pendingPromptId = null; // ?prompt=<id>
 
 // --- tools popover ---
 function closeTools() {
@@ -68,42 +72,69 @@ function toggleTools() {
   els.toolsBtn.classList.toggle("active", open);
 }
 
-// Switch between the three libraries: Styles, Prompts, and Skills.
-function setSection(next) {
-  section = next === "prompts" ? "prompts" : next === "skills" ? "skills" : "styles";
-  const isStyles = section === "styles";
-  const isPrompts = section === "prompts";
-  const isSkills = section === "skills";
-  for (const [tab, on] of [
-    [els.secStyles, isStyles],
-    [els.secPrompts, isPrompts],
-    [els.secSkills, isSkills],
-  ]) {
-    tab.classList.toggle("active", on);
-    tab.setAttribute("aria-selected", String(on));
-  }
-
-  // Style-only controls + areas (sort/color/random live inside the tools popover).
-  for (const el of [els.category, els.favFilter, els.viewBtn, els.toolsBtn, els.randomBtn, els.gallery, els.sentinel, els.activeFilters, els.resultCount]) {
-    if (el) el.hidden = !isStyles;
-  }
-  closeTools();
-  els.empty.hidden = true;
-  if (els.intro) els.intro.hidden = !isStyles; // hero + landing sections are styles-specific
-  updateLanding();
-  els.promptsView.hidden = !isPrompts;
-  els.skillsView.hidden = !isSkills;
-  els.newStyleBtn.hidden = !isStyles || !adminState().admin;
-  els.newPromptBtn.hidden = !isPrompts || !adminState().admin;
-  els.newSkillBtn.hidden = !isSkills || !adminState().admin;
-  els.search.placeholder = isPrompts ? "Search prompts…   ( / )" : isSkills ? "Search skills…   ( / )" : "Search styles…   ( / )";
-
-  if (isPrompts) promptsUI.show();
-  if (isSkills) skillsUI.show();
+// ---------- routing (History API) ----------
+// Paths: /  /styles  /prompts  /skills  /skills/<slug>
+function parsePath(pathname = location.pathname) {
+  const p = pathname.replace(/\/+$/, "") || "/";
+  if (p === "/") return { section: "home" };
+  if (p === "/styles") return { section: "styles" };
+  if (p === "/prompts") return { section: "prompts" };
+  if (p === "/skills") return { section: "skills" };
+  const m = p.match(/^\/skills\/([^/]+)$/);
+  if (m) return { section: "skills", skillSlug: decodeURIComponent(m[1]) };
+  return null;
 }
-let pendingStyleId = null; // ?style=<id> from the initial URL, opened after first render
-let pendingPromptId = null; // ?prompt=<id> from the initial URL
-let pendingSkillId = null; // ?skill=<id> from the initial URL
+
+export function navigate(path, { replace = false } = {}) {
+  history[replace ? "replaceState" : "pushState"](null, "", path);
+  route();
+}
+
+function route() {
+  const r = parsePath() || { section: "home" };
+  setSection(r.section);
+  if (r.section === "skills") {
+    if (r.skillSlug) skillsUI.openBySlug(r.skillSlug);
+    else skillsUI.showHub();
+  }
+  if (r.section === "prompts") {
+    const id = new URLSearchParams(location.search).get("prompt");
+    if (id) promptsUI.openById(id);
+    else promptsUI.show();
+  }
+}
+
+// Show one of the four page views and sync the chrome around it.
+function setSection(next) {
+  section = ["styles", "prompts", "skills"].includes(next) ? next : "home";
+  const isStyles = section === "styles";
+
+  els.homeView.hidden = section !== "home";
+  els.stylesView.hidden = !isStyles;
+  els.promptsWrap.hidden = section !== "prompts";
+  els.skillsWrap.hidden = section !== "skills";
+
+  for (const [link, name] of [
+    [els.navStyles, "styles"],
+    [els.navPrompts, "prompts"],
+    [els.navSkills, "skills"],
+  ]) {
+    link.classList.toggle("active", section === name);
+    if (section === name) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+
+  closeTools();
+  els.newStyleBtn.hidden = !isStyles || !adminState().admin;
+  els.newPromptBtn.hidden = section !== "prompts" || !adminState().admin;
+  els.newSkillBtn.hidden = section !== "skills" || !adminState().admin;
+  els.search.placeholder =
+    section === "prompts" ? "Search prompts…   ( / )"
+    : section === "skills" ? "Search skills…   ( / )"
+    : isStyles ? "Search styles…   ( / )"
+    : "Search…   ( / )";
+  updateLanding();
+}
 
 // ---------- theme ----------
 function applyTheme(theme) {
@@ -242,19 +273,14 @@ function applyFilters() {
   syncURL();
 }
 
-// The featured-categories and how-it-works sections are landing furniture:
-// shown only on a pristine Styles view, hidden once the user filters.
+// The featured-categories block is browsing furniture on the Styles page:
+// shown on a pristine view, hidden once the user filters.
 function updateLanding() {
   const hasFilter = !!(state.query.trim() || state.category || state.color || state.favOnly);
-  const hide = section !== "styles" || hasFilter;
-  if (els.featured) els.featured.hidden = hide;
-  if (els.how) els.how.hidden = hide;
-  // While filtering, the hero collapses to just its headline so results start
-  // near the top of the page.
-  if (els.intro) els.intro.classList.toggle("hero--compact", hasFilter && section === "styles");
+  if (els.featured) els.featured.hidden = section !== "styles" || hasFilter;
 }
 
-// ---------- landing (hero stats, palette strip, featured categories) ----------
+// ---------- home landing (stats, library counts, palette strip) ----------
 function buildLanding() {
   const styles = getStyles();
   const cats = getCategories();
@@ -262,13 +288,15 @@ function buildLanding() {
   const stats = document.getElementById("heroStats");
   if (stats) {
     stats.innerHTML =
-      `<span class="stat"><strong>${styles.length.toLocaleString()}</strong> styles</span>` +
-      `<span class="stat"><strong>${cats.length}</strong> categories</span>` +
-      `<span class="stat" id="statPrompts">Prompt library</span>` +
-      `<span class="stat" id="statSkills">Skill library</span>`;
+      `<span class="stat"><strong>${styles.length.toLocaleString()}</strong><span>Styles</span></span>` +
+      `<span class="stat"><strong>${cats.length}</strong><span>Categories</span></span>` +
+      `<span class="stat" id="statPrompts"><strong>—</strong><span>Prompts</span></span>` +
+      `<span class="stat" id="statSkills"><strong>—</strong><span>Skills</span></span>`;
   }
+  const cs = document.getElementById("libCountStyles");
+  if (cs) cs.textContent = styles.length.toLocaleString();
 
-  // Color the hero strip with hues sampled from real style palettes.
+  // Color the Style Library card's strip with hues from real style palettes.
   const strip = document.getElementById("heroStrip");
   if (strip) {
     const pals = styles.filter((s) => (s.palette || []).length >= 4);
@@ -314,6 +342,37 @@ function buildLanding() {
         els.gallery.scrollIntoView({ behavior: "smooth", block: "start" });
       })
     );
+  }
+}
+
+// Fill the prompt + skill counts once (hero stats, library cards, footer).
+async function fillCounts() {
+  let nPrompts = 0;
+  let nSkills = 0;
+  try {
+    nPrompts = ((await getPrompts()).prompts || []).length;
+    if (nPrompts) {
+      const st = document.querySelector("#statPrompts strong");
+      if (st) st.textContent = nPrompts.toLocaleString();
+      const lc = document.getElementById("libCountPrompts");
+      if (lc) lc.textContent = nPrompts.toLocaleString();
+    }
+  } catch { /* leave the placeholder */ }
+  try {
+    nSkills = ((await getSkills()).skills || []).length;
+    if (nSkills) {
+      const st = document.querySelector("#statSkills strong");
+      if (st) st.textContent = nSkills.toLocaleString();
+      const lc = document.getElementById("libCountSkills");
+      if (lc) lc.textContent = nSkills.toLocaleString();
+    }
+  } catch { /* leave the placeholder */ }
+  const fc = document.getElementById("footerCounts");
+  if (fc) {
+    const bits = [`${getStyles().length.toLocaleString()} styles`];
+    if (nPrompts) bits.push(`${nPrompts.toLocaleString()} prompts`);
+    if (nSkills) bits.push(`${nSkills.toLocaleString()} skills`);
+    fc.innerHTML = bits.map((b) => `<span>${escapeHtml(b)}</span>`).join("");
   }
 }
 
@@ -365,8 +424,9 @@ function clearFilter(which) {
   applyFilters();
 }
 
-// ---------- shareable URL state ----------
+// ---------- shareable URL state (styles filters live on /styles) ----------
 function syncURL() {
+  if (section !== "styles") return; // filters only own the URL on the Styles page
   const p = new URLSearchParams();
   if (state.query.trim()) p.set("q", state.query.trim());
   if (state.category) p.set("cat", state.category);
@@ -375,7 +435,7 @@ function syncURL() {
   if (state.sort) p.set("sort", state.sort);
   if (!els.gallery.classList.contains("gallery--list")) p.set("view", "grid");
   const qs = p.toString();
-  history.replaceState(null, "", qs ? `?${qs}` : location.pathname);
+  history.replaceState(null, "", qs ? `/styles?${qs}` : "/styles");
 }
 
 function readURLState() {
@@ -404,10 +464,9 @@ function readURLState() {
   const v = p.get("view");
   if (v === "grid" || v === "list") applyView(v);
 
-  // Captured before applyFilters()->syncURL() rewrites the URL and drops it.
+  // Captured before applyFilters()->syncURL() rewrites the URL and drops them.
   pendingStyleId = p.get("style") || null;
   pendingPromptId = p.get("prompt") || null;
-  pendingSkillId = p.get("skill") || null;
 }
 
 function openStyleFromURL() {
@@ -435,6 +494,25 @@ async function reloadAndRender() {
   buildCategoryOptions();
   buildLanding();
   applyFilters();
+}
+
+// Legacy links: the pre-rebuild site kept everything at "/" with query params.
+// Translate them so old bookmarks and shares keep working.
+function redirectLegacyURL() {
+  if (location.pathname !== "/") return;
+  const p = new URLSearchParams(location.search);
+  const skill = p.get("skill");
+  if (skill) {
+    history.replaceState(null, "", `/skills/${encodeURIComponent(skillSlug(skill))}`);
+    return;
+  }
+  if (p.get("prompt")) {
+    history.replaceState(null, "", `/prompts?prompt=${encodeURIComponent(p.get("prompt"))}`);
+    return;
+  }
+  if (p.get("style") || p.get("q") || p.get("cat") || p.get("color") || p.get("fav") || p.get("sort")) {
+    history.replaceState(null, "", `/styles${location.search}`);
+  }
 }
 
 // ---------- boot ----------
@@ -468,46 +546,33 @@ async function init() {
   const fy = document.getElementById("footerYear");
   if (fy) fy.textContent = String(new Date().getFullYear());
 
+  redirectLegacyURL();
+
   renderSkeletons();
   await loadCatalog();
   buildCategoryOptions();
   buildLanding();
   readURLState();
-  applyFilters();
-  openStyleFromURL();
-
-  document.getElementById("ctaStyles")?.addEventListener("click", () => {
-    els.gallery.scrollIntoView({ behavior: "smooth", block: "start" });
-    els.search.focus({ preventScroll: true });
-  });
-  document.getElementById("ctaPrompts")?.addEventListener("click", () => setSection("prompts"));
-  document.getElementById("ctaSkills")?.addEventListener("click", () => setSection("skills"));
-
-  // Fill the prompt + skill counts into the hero once the landing has painted.
-  setTimeout(async () => {
-    try {
-      const n = ((await getPrompts()).prompts || []).length;
-      const el = document.getElementById("statPrompts");
-      if (el && n) el.innerHTML = `<strong>${n.toLocaleString()}</strong> prompts`;
-    } catch {
-      /* leave the plain label */
-    }
-    try {
-      const n = ((await getSkills()).skills || []).length;
-      const el = document.getElementById("statSkills");
-      if (el && n) el.innerHTML = `<strong>${n.toLocaleString()}</strong> skills`;
-    } catch {
-      /* leave the plain label */
-    }
-  }, 1200);
 
   creator = initCreator(ctx);
   promptsUI = initPrompts();
-  skillsUI = initSkills();
+  skillsUI = initSkills({ navigate });
 
-  els.secStyles.addEventListener("click", () => setSection("styles"));
-  els.secPrompts.addEventListener("click", () => setSection("prompts"));
-  els.secSkills.addEventListener("click", () => setSection("skills"));
+  // Internal links (nav, brand, library cards, breadcrumbs) route client-side.
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a[href]");
+    if (!a || a.origin !== location.origin || a.target === "_blank") return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    if (!parsePath(a.pathname)) return; // not one of our pages
+    e.preventDefault();
+    navigate(a.pathname + a.search);
+  });
+  window.addEventListener("popstate", route);
+
+  route(); // render the section for the current URL
+  applyFilters();
+  openStyleFromURL();
+  fillCounts();
 
   // Tools popover: toggle, close on outside click / Escape, close when a control inside is used.
   els.toolsBtn.addEventListener("click", (e) => {
@@ -542,6 +607,7 @@ async function init() {
       } else if (section === "skills") {
         skillsUI.setQuery(v);
       } else {
+        if (section === "home" && v.trim()) navigate("/styles");
         state.query = v;
         applyFilters();
       }
@@ -628,7 +694,7 @@ async function init() {
     if (next) next.focus();
   });
 
-  // First-run hint (shown once).
+  // First-run hint (shown once, on the home page).
   if (!hasSeenIntro() && els.firstRun) els.firstRun.hidden = false;
   els.firstRunClose?.addEventListener("click", () => {
     els.firstRun.hidden = true;
@@ -637,20 +703,17 @@ async function init() {
 
   initCmdk();
 
-  // ?prompt=<id> deep link: jump to the Prompts section and open that prompt.
-  if (pendingPromptId) {
+  // Footer shortcuts reuse the topbar controls' handlers.
+  document.getElementById("footExport")?.addEventListener("click", () => document.getElementById("settingsBtn").click());
+  document.getElementById("footTheme")?.addEventListener("click", () => els.themeBtn.click());
+  document.getElementById("footAdmin")?.addEventListener("click", () => document.getElementById("adminBtn").click());
+
+  // ?prompt=<id> on /prompts is handled by route(); this covers the case where
+  // readURLState captured it before route() rewrote the URL.
+  if (pendingPromptId && section === "prompts") {
     const id = pendingPromptId;
     pendingPromptId = null;
-    setSection("prompts");
     promptsUI.openById(id);
-  }
-
-  // ?skill=<id> deep link: jump to the Skills section and open that skill.
-  if (pendingSkillId) {
-    const id = pendingSkillId;
-    pendingSkillId = null;
-    setSection("skills");
-    skillsUI.openById(id);
   }
 
   initSettings();
@@ -685,7 +748,9 @@ function initCmdk() {
         skillsCache = [];
       }
     }
-    filter("");
+    // Re-filter with whatever was typed while the caches were loading — a
+    // fixed filter("") here would silently discard fast typing.
+    filter(els.cmdkInput.value);
     els.cmdkInput.focus();
   };
   const close = () => {
@@ -710,11 +775,12 @@ function initCmdk() {
         const sc = score(`${s.style} ${s.category}`, terms);
         if (sc >= 0) results.push({ kind: "Style", title: s.style, sub: s.category, sc, style: s });
       }
-      for (const p of promptsCache) {
+      // The caches load async after open(); typing immediately must not race them.
+      for (const p of promptsCache || []) {
         const sc = score(`${p.title} ${p.category}`, terms);
         if (sc >= 0) results.push({ kind: "Prompt", id: p.id, title: p.title, sub: p.category, sc });
       }
-      for (const s of skillsCache) {
+      for (const s of skillsCache || []) {
         const sc = score(`${s.name} ${s.platform} ${s.category}`, terms);
         if (sc >= 0) results.push({ kind: "Skill", id: s.id, title: s.name, sub: `${s.platform} · ${s.category}`, sc });
       }
@@ -750,11 +816,9 @@ function initCmdk() {
     if (!it) return;
     close();
     if (it.kind === "Style") openDetail(it.style, ctx);
-    else if (it.kind === "Skill") {
-      setSection("skills");
-      skillsUI.openById(it.id);
-    } else {
-      setSection("prompts");
+    else if (it.kind === "Skill") navigate(`/skills/${encodeURIComponent(skillSlug(it.id))}`);
+    else {
+      navigate("/prompts");
       promptsUI.openById(it.id);
     }
   };
@@ -831,26 +895,26 @@ function initSettings() {
   const favorites = () => getStyles().filter((s) => isFavorite(s.id));
 
   exportBtn.addEventListener("click", () => {
-    download(JSON.stringify(getStyles(), null, 2), "application/json", "infostyles-catalog.json");
+    download(JSON.stringify(getStyles(), null, 2), "application/json", "ai-compendium-styles.json");
     toast("Catalog exported (JSON)");
   });
 
   const exportCsvBtn = document.getElementById("exportCsvBtn");
   exportCsvBtn?.addEventListener("click", () => {
-    download(toCsv(getStyles()), "text/csv", "infostyles-catalog.csv");
+    download(toCsv(getStyles()), "text/csv", "ai-compendium-styles.csv");
     toast("Catalog exported (CSV)");
   });
 
   document.getElementById("exportFavBtn")?.addEventListener("click", () => {
     const fav = favorites();
     if (!fav.length) return toast("No favorites to export");
-    download(JSON.stringify(fav, null, 2), "application/json", "infostyles-favorites.json");
+    download(JSON.stringify(fav, null, 2), "application/json", "ai-compendium-favorites.json");
     toast(`Exported ${fav.length} favorites (JSON)`);
   });
   document.getElementById("exportFavCsvBtn")?.addEventListener("click", () => {
     const fav = favorites();
     if (!fav.length) return toast("No favorites to export");
-    download(toCsv(fav), "text/csv", "infostyles-favorites.csv");
+    download(toCsv(fav), "text/csv", "ai-compendium-favorites.csv");
     toast(`Exported ${fav.length} favorites (CSV)`);
   });
 

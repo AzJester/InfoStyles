@@ -91,7 +91,7 @@ export function skillFavoriteCount() {
 export function getTheme() {
   const saved = localStorage.getItem(K_THEME);
   if (saved === "light" || saved === "dark") return saved;
-  return "dark"; // dark is the site's primary look (see theme-init.js)
+  return "light"; // light is the site's primary look (see theme-init.js)
 }
 export function setTheme(theme) {
   localStorage.setItem(K_THEME, theme);

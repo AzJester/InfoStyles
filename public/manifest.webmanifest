@@ -1,13 +1,13 @@
 {
-  "name": "InfoStyles — Styles, Prompts & AI Skills",
-  "short_name": "InfoStyles",
-  "description": "Browse infographic & slide styles, a reusable LLM prompt library, and an AI skill library for Claude, ChatGPT, and Gemini.",
+  "name": "The AI Compendium — Styles, Prompts & AI Skills",
+  "short_name": "AI Compendium",
+  "description": "A curated library of infographic & slide styles, reusable LLM prompts, and install-ready AI skills for Claude, ChatGPT, and Gemini.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#08090d",
-  "theme_color": "#08090d",
+  "background_color": "#f7f8fa",
+  "theme_color": "#f7f8fa",
   "icons": [
     {
       "src": "/icon.svg",

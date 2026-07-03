@@ -33,6 +33,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
     const clean = sanitizePrompt(prompt || {});
+    // Stamp the freshness date shown on cards and the detail view. Seeds never
+    // carry one, so a date always means "edited/created in the app".
+    clean.updated = new Date().toISOString().slice(0, 10);
     const promptId =
       id || `prompt-${slugify(clean.category, clean.title)}-${Math.abs(hashString(clean.title + clean.category)).toString(36)}`;
     const saved = await savePrompt({ id: promptId, ...clean });

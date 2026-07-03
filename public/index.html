@@ -3,75 +3,45 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>InfoStyles — Styles, Prompts &amp; AI Skills</title>
+    <title>The AI Compendium — Styles, Prompts &amp; AI Skills</title>
     <meta
       name="description"
-      content="Browse 1,500+ infographic & slide styles, a reusable LLM prompt library, and an AI skill library for Claude, ChatGPT, and Gemini."
+      content="A curated library of infographic & slide styles, reusable LLM prompts, and install-ready AI skills for Claude, ChatGPT, and Gemini."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="InfoStyles" />
-    <meta property="og:title" content="InfoStyles — Styles, Prompts &amp; AI Skills" />
+    <meta property="og:site_name" content="The AI Compendium" />
+    <meta property="og:title" content="The AI Compendium — Styles, Prompts &amp; AI Skills" />
     <meta
       property="og:description"
-      content="1,500+ infographic & slide styles with copy-ready prompts, a reusable LLM prompt library, and an AI skill library for Claude, ChatGPT, and Gemini."
+      content="A curated library of infographic & slide styles, reusable LLM prompts, and install-ready AI skills for Claude, ChatGPT, and Gemini."
     />
     <meta property="og:url" content="https://infostyles.onrender.com/" />
     <meta property="og:image" content="https://infostyles.onrender.com/icon.svg" />
     <meta name="twitter:card" content="summary" />
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="manifest" href="manifest.webmanifest" />
-    <meta name="theme-color" content="#08090d" />
-    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#f7f8fa" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23111827'/%3E%3Crect x='22' y='24' width='24' height='24' rx='5' fill='%2338bdf8'/%3E%3Crect x='54' y='24' width='24' height='24' rx='5' fill='%238b5cf6'/%3E%3Crect x='22' y='56' width='24' height='24' rx='5' fill='%2322c55e'/%3E%3Crect x='54' y='56' width='24' height='24' rx='5' fill='%23facc15'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232547d0'/%3E%3Crect x='24' y='24' width='22' height='22' rx='6' fill='%23ffffff'/%3E%3Crect x='54' y='24' width='22' height='22' rx='6' fill='%23ffffff' opacity='0.75'/%3E%3Crect x='24' y='54' width='22' height='22' rx='6' fill='%23ffffff' opacity='0.75'/%3E%3Crect x='54' y='54' width='22' height='22' rx='6' fill='%23ffffff' opacity='0.5'/%3E%3C/svg%3E"
     />
-    <script src="js/theme-init.js"></script>
+    <script src="/js/theme-init.js"></script>
   </head>
   <body>
     <header class="topbar">
-      <div class="brand">
+      <a class="brand" href="/" id="navHome">
         <span class="brand-mark" aria-hidden="true"></span>
-        <h1>InfoStyles</h1>
-        <span class="count-badge" id="resultCount"></span>
-        <div class="section-toggle" role="tablist">
-          <button id="secStyles" class="seg active" role="tab" aria-selected="true">Styles</button>
-          <button id="secPrompts" class="seg" role="tab" aria-selected="false">Prompts</button>
-          <button id="secSkills" class="seg" role="tab" aria-selected="false">Skills</button>
-        </div>
-      </div>
+        <h1>The AI Compendium</h1>
+      </a>
+      <nav class="site-nav" aria-label="Primary">
+        <a class="nav-link" href="/styles" id="navStyles">Styles</a>
+        <a class="nav-link" href="/prompts" id="navPrompts">Prompts</a>
+        <a class="nav-link" href="/skills" id="navSkills">Skills</a>
+      </nav>
       <div class="controls">
-        <input type="search" id="search" class="search" placeholder="Search styles…   ( / )" autocomplete="off" spellcheck="false" aria-label="Search styles" />
-        <select id="categoryFilter" class="select" aria-label="Filter by category"></select>
-        <button id="favFilter" class="btn btn-icon" aria-pressed="false" title="Show favorites" aria-label="Show favorites"></button>
-        <button id="viewBtn" class="btn btn-icon" title="Switch to list view" aria-label="Switch to list view"></button>
-
-        <div class="popover">
-          <button id="toolsBtn" class="btn btn-icon" aria-haspopup="true" aria-expanded="false" title="More tools" aria-label="More tools"></button>
-          <div id="toolsPanel" class="popover-panel" hidden>
-            <label class="tool-row">
-              <span>Sort</span>
-              <select id="sortSelect" class="select" aria-label="Sort styles">
-                <option value="">Default</option>
-                <option value="name-asc">Name A→Z</option>
-                <option value="name-desc">Name Z→A</option>
-                <option value="category">Category</option>
-              </select>
-            </label>
-            <div class="tool-row">
-              <span>Filter by color</span>
-              <span class="tool-color">
-                <input type="color" id="colorFilter" value="#000000" aria-label="Filter by palette color" />
-                <button id="colorClear" class="btn btn-icon" hidden aria-label="Clear color filter" title="Clear color filter">✕</button>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <span class="controls-divider" aria-hidden="true"></span>
-
+        <input type="search" id="search" class="search" placeholder="Search…   ( / )" autocomplete="off" spellcheck="false" aria-label="Search" />
         <div class="controls-utility">
-          <button id="randomBtn" class="btn btn-icon" title="Surprise me — open a random style" aria-label="Open a random style"></button>
           <button id="newStyleBtn" class="btn btn-icon" title="New style" aria-label="New style" hidden>+</button>
           <button id="newPromptBtn" class="btn btn-icon" title="New prompt" aria-label="New prompt" hidden>+</button>
           <button id="newSkillBtn" class="btn btn-icon" title="New skill" aria-label="New skill" hidden>+</button>
@@ -83,82 +53,180 @@
     </header>
 
     <main>
-      <div id="firstRun" class="first-run" hidden>
-        <p>
-          <strong>Welcome.</strong> Open any style for its color palette and copy-ready prompts
-          (NotebookLM + image generation). Switch to <strong>Prompts</strong> for reusable LLM prompts,
-          or <strong>Skills</strong> for Claude, ChatGPT, and Gemini skills you can copy or download.
-          Star ☆ to save favorites, and <kbd>⌘/Ctrl</kbd>+<kbd>K</kbd> jumps to anything.
-        </p>
-        <button type="button" class="btn btn-icon first-run-x" id="firstRunClose" aria-label="Dismiss">✕</button>
-      </div>
-      <section class="hero">
-        <div class="hero-strip" id="heroStrip" aria-hidden="true"></div>
-        <h2>Design styles, reusable prompts, and AI skills — one library</h2>
-        <p class="hero-sub">
-          Browse 1,500+ curated design styles, each with a color palette and copy-ready prompts for
-          <strong>NotebookLM</strong> and <strong>image generation</strong> (OpenAI, Gemini, Midjourney…).
-          Plus a library of reusable LLM prompts, and a skill library for
-          <strong>Claude</strong>, <strong>ChatGPT</strong>, and <strong>Gemini</strong>.
-        </p>
-        <div class="hero-stats" id="heroStats"></div>
-        <div class="hero-ctas">
-          <button type="button" class="btn btn-primary" id="ctaStyles">Browse styles</button>
-          <button type="button" class="btn" id="ctaPrompts">Explore prompts</button>
-          <button type="button" class="btn" id="ctaSkills">Browse skills</button>
+      <!-- ================= Home ================= -->
+      <section id="homeView">
+        <div id="firstRun" class="first-run" hidden>
+          <p>
+            <strong>Welcome.</strong> Browse <strong>Styles</strong> for palettes and copy-ready prompts,
+            <strong>Prompts</strong> for reusable LLM prompts, and the <strong>Skills Hub</strong> for
+            Claude, ChatGPT, and Gemini skills you can download or share.
+            <kbd>⌘/Ctrl</kbd>+<kbd>K</kbd> jumps to anything.
+          </p>
+          <button type="button" class="btn btn-icon first-run-x" id="firstRunClose" aria-label="Dismiss">✕</button>
+        </div>
+        <div class="hero">
+          <p class="hero-eyebrow">A curated AI design &amp; prompt toolkit</p>
+          <h2>Styles, prompts, and skills — organized, versioned, shareable.</h2>
+          <p class="hero-sub">
+            1,500+ infographic &amp; slide styles with copy-ready prompts for <strong>NotebookLM</strong> and
+            image generation, a reusable LLM prompt library, and install-ready skills for
+            <strong>Claude</strong>, <strong>ChatGPT</strong>, and <strong>Gemini</strong>.
+          </p>
+          <div class="hero-stats" id="heroStats"></div>
+        </div>
+        <div class="lib-grid">
+          <a class="lib-card" href="/styles" id="ctaStyles">
+            <span class="lib-count" id="libCountStyles"></span>
+            <span class="lib-strip" id="heroStrip" aria-hidden="true"></span>
+            <h3>Style Library</h3>
+            <p>Design styles for infographics &amp; slides — each with a palette and copy-ready prompts for NotebookLM and image generation.</p>
+            <span class="lib-go">Browse styles →</span>
+          </a>
+          <a class="lib-card" href="/prompts" id="ctaPrompts">
+            <span class="lib-count" id="libCountPrompts"></span>
+            <span class="lib-glyph" aria-hidden="true">¶</span>
+            <h3>Prompt Library</h3>
+            <p>Reusable LLM prompts for research, project management, and business development — variables filled in at copy time.</p>
+            <span class="lib-go">Browse prompts →</span>
+          </a>
+          <a class="lib-card" href="/skills" id="ctaSkills">
+            <span class="lib-count" id="libCountSkills"></span>
+            <span class="lib-glyph" aria-hidden="true">⚡</span>
+            <h3>Skills Hub</h3>
+            <p>Install-ready skills for Claude, ChatGPT, and Gemini — download the file, copy the instructions, or share a link.</p>
+            <span class="lib-go">Open the hub →</span>
+          </a>
+        </div>
+        <div class="how" id="how" aria-label="How it works">
+          <div class="how-step">
+            <span class="how-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            </span>
+            <div>
+              <h4>Pick from a library</h4>
+              <p>Search styles by color or category, prompts by tag, and skills by platform.</p>
+            </div>
+          </div>
+          <div class="how-step">
+            <span class="how-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </span>
+            <div>
+              <h4>Copy or download</h4>
+              <p>Prompts copy with variables filled in; skills download install-ready.</p>
+            </div>
+          </div>
+          <div class="how-step">
+            <span class="how-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v13m0-13 4 4m-4-4-4 4"/></svg>
+            </span>
+            <div>
+              <h4>Share with anyone</h4>
+              <p>Every style, prompt, and skill has its own link — no login needed to browse.</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section class="featured" id="featured" aria-label="Browse by category">
-        <h3>Start with a category</h3>
-        <div class="featured-grid" id="featuredGrid"></div>
+      <!-- ================= Styles ================= -->
+      <section id="stylesView" hidden>
+        <div class="page-head">
+          <div>
+            <h2>Style Library</h2>
+            <p>Design styles for infographics &amp; slides, each with a palette and copy-ready prompts.</p>
+          </div>
+        </div>
+        <div class="page-toolbar">
+          <select id="categoryFilter" class="select" aria-label="Filter by category"></select>
+          <button id="favFilter" class="btn btn-icon" aria-pressed="false" title="Show favorites" aria-label="Show favorites"></button>
+          <button id="viewBtn" class="btn btn-icon" title="Switch to list view" aria-label="Switch to list view"></button>
+          <div class="popover">
+            <button id="toolsBtn" class="btn btn-icon" aria-haspopup="true" aria-expanded="false" title="More tools" aria-label="More tools"></button>
+            <div id="toolsPanel" class="popover-panel" hidden>
+              <label class="tool-row">
+                <span>Sort</span>
+                <select id="sortSelect" class="select" aria-label="Sort styles">
+                  <option value="">Default</option>
+                  <option value="name-asc">Name A→Z</option>
+                  <option value="name-desc">Name Z→A</option>
+                  <option value="category">Category</option>
+                </select>
+              </label>
+              <div class="tool-row">
+                <span>Filter by color</span>
+                <span class="tool-color">
+                  <input type="color" id="colorFilter" value="#000000" aria-label="Filter by palette color" />
+                  <button id="colorClear" class="btn btn-icon" hidden aria-label="Clear color filter" title="Clear color filter">✕</button>
+                </span>
+              </div>
+            </div>
+          </div>
+          <button id="randomBtn" class="btn btn-icon" title="Surprise me — open a random style" aria-label="Open a random style"></button>
+          <span class="toolbar-spacer"></span>
+          <span class="count-badge" id="resultCount"></span>
+        </div>
+        <section class="featured" id="featured" aria-label="Browse by category">
+          <h3>Start with a category</h3>
+          <div class="featured-grid" id="featuredGrid"></div>
+        </section>
+        <div id="activeFilters" class="active-filters" hidden></div>
+        <div id="gallery" class="gallery"></div>
+        <div id="empty" class="empty" hidden>No styles match your filters.</div>
+        <div id="sentinel" class="sentinel"></div>
       </section>
 
-      <section class="how" id="how" aria-label="How it works">
-        <div class="how-step">
-          <span class="how-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-          </span>
+      <!-- ================= Prompts ================= -->
+      <section id="promptsWrap" hidden>
+        <div class="page-head">
           <div>
-            <h4>Pick a style</h4>
-            <p>Search 62 categories, filter by color or favorites, or open a random style.</p>
+            <h2>Prompt Library</h2>
+            <p>Reusable LLM prompts — customize the variables, then copy or open in your tool.</p>
           </div>
         </div>
-        <div class="how-step">
-          <span class="how-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </span>
-          <div>
-            <h4>Copy its prompt</h4>
-            <p>Every style ships palette-locked prompts for NotebookLM or your image model.</p>
-          </div>
-        </div>
-        <div class="how-step">
-          <span class="how-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3m6.4-.4-2.1 2.1M21 12h-3m.4 6.4-2.1-2.1M12 18v3m-6.4-.4 2.1-2.1M3 12h3m-.4-6.4 2.1 2.1"/></svg>
-          </span>
-          <div>
-            <h4>Paste and create</h4>
-            <p>Drop it into NotebookLM, ChatGPT, Gemini, or Midjourney for on-brand output.</p>
-          </div>
-        </div>
+        <div id="promptsView"></div>
       </section>
-      <div id="activeFilters" class="active-filters" hidden></div>
-      <div id="gallery" class="gallery"></div>
-      <div id="empty" class="empty" hidden>No styles match your filters.</div>
-      <div id="sentinel" class="sentinel"></div>
-      <div id="promptsView" hidden></div>
-      <div id="skillsView" hidden></div>
+
+      <!-- ================= Skills Hub ================= -->
+      <section id="skillsWrap" hidden>
+        <div id="skillsView"></div>
+      </section>
     </main>
 
     <footer class="site-footer">
       <div class="footer-inner">
-        <div class="footer-brand"><span class="brand-mark" aria-hidden="true"></span><strong>InfoStyles</strong></div>
-        <p class="footer-tag">
-          A curated library of infographic &amp; slide styles, reusable LLM prompts, and AI skills
-          for Claude, ChatGPT, and Gemini — built for NotebookLM and image-generation workflows.
-        </p>
-        <p class="footer-legal">© <span id="footerYear">2026</span> Dr. Shane Turner. All rights reserved.</p>
+        <div class="footer-grid">
+          <div class="footer-about">
+            <div class="footer-brand"><span class="brand-mark" aria-hidden="true"></span><strong>The AI Compendium</strong></div>
+            <p class="footer-tag">
+              A curated library of infographic &amp; slide styles, reusable LLM prompts, and
+              install-ready AI skills for Claude, ChatGPT, and Gemini — built to be shared.
+            </p>
+            <div class="footer-counts" id="footerCounts" aria-hidden="true"></div>
+          </div>
+          <nav class="footer-col" aria-label="Browse">
+            <h5>Browse</h5>
+            <a href="/styles">Style Library</a>
+            <a href="/prompts">Prompt Library</a>
+            <a href="/skills">Skills Hub</a>
+          </nav>
+          <nav class="footer-col" aria-label="Get started">
+            <h5>Get started</h5>
+            <a href="/skills" id="footInstall">Install a skill</a>
+            <button type="button" class="footer-link" id="footExport">Export the catalog</button>
+            <button type="button" class="footer-link" id="footTheme">Switch theme</button>
+          </nav>
+          <nav class="footer-col" aria-label="Site">
+            <h5>Site</h5>
+            <button type="button" class="footer-link" id="footAdmin">Admin sign in</button>
+            <a href="https://claude.ai/" target="_blank" rel="noopener">Claude ↗</a>
+            <a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ↗</a>
+            <a href="https://gemini.google.com/" target="_blank" rel="noopener">Gemini ↗</a>
+          </nav>
+        </div>
+        <div class="footer-bottom">
+          <p class="footer-legal">© <span id="footerYear">2026</span> Dr. Shane Turner. All rights reserved.</p>
+          <p class="footer-hint"><kbd>⌘/Ctrl</kbd>+<kbd>K</kbd> jumps to any style, prompt, or skill</p>
+        </div>
       </div>
     </footer>
 
@@ -181,12 +249,12 @@
       </div>
     </div>
 
-    <!-- Detail modal -->
+    <!-- Detail modal (styles) -->
     <div id="detailModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="detailTitle">
       <div class="modal-card modal-wide" id="detailBody"></div>
     </div>
 
-    <!-- Create / edit modal -->
+    <!-- Create / edit modal (styles) -->
     <div id="createModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="createTitle">
       <div class="modal-card modal-wide">
         <div class="modal-head"><h2 id="createTitle">Create a new style</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
@@ -363,18 +431,16 @@
           </label>
           <label class="field"><span class="field-label">Category</span><input id="sCategory" class="input" placeholder="Writing, Sales, Productivity…" /></label>
           <label class="field"><span class="field-label">Tags (comma-separated)</span><input id="sTags" class="input" placeholder="writing, voice" /></label>
+          <label class="field"><span class="field-label">Version</span><input id="sVersion" class="input" placeholder="1.0" /></label>
+          <label class="field"><span class="field-label">Author</span><input id="sAuthor" class="input" placeholder="Who built this skill" /></label>
           <label class="field span-2"><span class="field-label">Description</span><textarea id="sDescription" class="input textarea" rows="2" placeholder="What the skill does and when it triggers."></textarea></label>
           <label class="field span-2"><span class="field-label">Instructions</span><textarea id="sInstructions" class="input textarea" rows="8" placeholder="The full skill body: SKILL.md content, custom-GPT instructions, or Gem instructions."></textarea></label>
+          <label class="field"><span class="field-label">Files (comma-separated, optional)</span><input id="sFiles" class="input" placeholder="SKILL.md, references/GUARDRAILS.md" /></label>
           <label class="field"><span class="field-label">Source link (optional)</span><input id="sLink" class="input" placeholder="https://…  (Drive folder, repo, GPT share link)" /></label>
-          <label class="field"><span class="field-label">Notes (optional)</span><input id="sNotes" class="input" placeholder="Setup notes, files to attach…" /></label>
+          <label class="field span-2"><span class="field-label">Notes (optional)</span><input id="sNotes" class="input" placeholder="Setup notes, files to attach…" /></label>
         </div>
         <div class="modal-foot"><span id="sStatus" class="status"></span><button id="sSave" class="btn btn-primary">Save</button></div>
       </div>
-    </div>
-
-    <!-- Skill detail: instructions, notes, source link (click a skill card) -->
-    <div id="skillDetailModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="sdTitle">
-      <div class="modal-card modal-wide" id="sdBody"></div>
     </div>
 
     <!-- View saved outputs for a prompt -->
@@ -408,6 +474,6 @@
     </div>
 
     <div id="toast" class="toast" hidden></div>
-    <script type="module" src="js/main.js"></script>
+    <script type="module" src="/js/main.js"></script>
   </body>
 </html>

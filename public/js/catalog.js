@@ -11,7 +11,9 @@ let builtin = [];
 let merged = [];
 
 async function loadBuiltin() {
-  const [styles] = await Promise.all([fetch("data/styles.json").then((r) => r.json())]);
+  // Absolute path: pages now live at nested URLs (/skills/<slug>), where a
+  // relative "data/…" would resolve against the page path and 404.
+  const [styles] = await Promise.all([fetch("/data/styles.json").then((r) => r.json())]);
   return styles;
 }
 
