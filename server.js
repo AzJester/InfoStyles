@@ -15,6 +15,8 @@ import styles from "./api/styles.js";
 import uploadImage from "./api/upload-image.js";
 import prompts from "./api/prompts.js";
 import generatePrompt from "./api/generate-prompt.js";
+import skills from "./api/skills.js";
+import generateSkill from "./api/generate-skill.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -74,6 +76,9 @@ app.post("/api/upload-image", wrap(uploadImage));
 app.get("/api/prompts", wrap(prompts));
 app.post("/api/prompts", wrap(prompts));
 app.post("/api/generate-prompt", wrap(generatePrompt));
+app.get("/api/skills", wrap(skills));
+app.post("/api/skills", wrap(skills));
+app.post("/api/generate-skill", wrap(generateSkill));
 
 // Serve admin-uploaded sample images from the persistent disk, when configured.
 if (process.env.UPLOAD_DIR) {

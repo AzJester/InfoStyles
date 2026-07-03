@@ -1,7 +1,7 @@
 {
-  "name": "InfoStyles — Infographic Style Library",
+  "name": "InfoStyles — Styles, Prompts & AI Skills",
   "short_name": "InfoStyles",
-  "description": "Browse infographic & slide styles with NotebookLM and image-generation prompts, plus a reusable LLM prompt library.",
+  "description": "Browse infographic & slide styles, a reusable LLM prompt library, and an AI skill library for Claude, ChatGPT, and Gemini.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

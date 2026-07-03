@@ -3,17 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>InfoStyles — Infographic Style Library</title>
+    <title>InfoStyles — Styles, Prompts &amp; AI Skills</title>
     <meta
       name="description"
-      content="Browse 1,500+ infographic & slide styles with NotebookLM and image-generation prompts, plus a reusable LLM prompt library."
+      content="Browse 1,500+ infographic & slide styles, a reusable LLM prompt library, and an AI skill library for Claude, ChatGPT, and Gemini."
     />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="InfoStyles" />
-    <meta property="og:title" content="InfoStyles — Infographic Style Library" />
+    <meta property="og:title" content="InfoStyles — Styles, Prompts &amp; AI Skills" />
     <meta
       property="og:description"
-      content="1,500+ infographic & slide styles with copy-ready prompts for NotebookLM and image generation, plus a reusable LLM prompt library."
+      content="1,500+ infographic & slide styles with copy-ready prompts, a reusable LLM prompt library, and an AI skill library for Claude, ChatGPT, and Gemini."
     />
     <meta property="og:url" content="https://infostyles.onrender.com/" />
     <meta property="og:image" content="https://infostyles.onrender.com/icon.svg" />
@@ -37,6 +37,7 @@
         <div class="section-toggle" role="tablist">
           <button id="secStyles" class="seg active" role="tab" aria-selected="true">Styles</button>
           <button id="secPrompts" class="seg" role="tab" aria-selected="false">Prompts</button>
+          <button id="secSkills" class="seg" role="tab" aria-selected="false">Skills</button>
         </div>
       </div>
       <div class="controls">
@@ -73,6 +74,7 @@
           <button id="randomBtn" class="btn btn-icon" title="Surprise me — open a random style" aria-label="Open a random style"></button>
           <button id="newStyleBtn" class="btn btn-icon" title="New style" aria-label="New style" hidden>+</button>
           <button id="newPromptBtn" class="btn btn-icon" title="New prompt" aria-label="New prompt" hidden>+</button>
+          <button id="newSkillBtn" class="btn btn-icon" title="New skill" aria-label="New skill" hidden>+</button>
           <button id="themeBtn" class="btn btn-icon" aria-label="Toggle theme"></button>
           <button id="settingsBtn" class="btn btn-icon" title="Settings" aria-label="Settings"></button>
           <button id="adminBtn" class="btn btn-icon" title="Admin sign in" aria-label="Admin sign in"></button>
@@ -84,23 +86,26 @@
       <div id="firstRun" class="first-run" hidden>
         <p>
           <strong>Welcome.</strong> Open any style for its color palette and copy-ready prompts
-          (NotebookLM + image generation). Switch to <strong>Prompts</strong> for reusable LLM prompts.
-          Star ☆ to save favorites, the dice button opens a random style, and <kbd>⌘/Ctrl</kbd>+<kbd>K</kbd> jumps to anything.
+          (NotebookLM + image generation). Switch to <strong>Prompts</strong> for reusable LLM prompts,
+          or <strong>Skills</strong> for Claude, ChatGPT, and Gemini skills you can copy or download.
+          Star ☆ to save favorites, and <kbd>⌘/Ctrl</kbd>+<kbd>K</kbd> jumps to anything.
         </p>
         <button type="button" class="btn btn-icon first-run-x" id="firstRunClose" aria-label="Dismiss">✕</button>
       </div>
       <section class="hero">
         <div class="hero-strip" id="heroStrip" aria-hidden="true"></div>
-        <h2>Design-ready styles for infographics and slides</h2>
+        <h2>Design styles, reusable prompts, and AI skills — one library</h2>
         <p class="hero-sub">
           Browse 1,500+ curated design styles, each with a color palette and copy-ready prompts for
           <strong>NotebookLM</strong> and <strong>image generation</strong> (OpenAI, Gemini, Midjourney…).
-          Plus a library of reusable LLM prompts for research, project management, and business development.
+          Plus a library of reusable LLM prompts, and a skill library for
+          <strong>Claude</strong>, <strong>ChatGPT</strong>, and <strong>Gemini</strong>.
         </p>
         <div class="hero-stats" id="heroStats"></div>
         <div class="hero-ctas">
           <button type="button" class="btn btn-primary" id="ctaStyles">Browse styles</button>
           <button type="button" class="btn" id="ctaPrompts">Explore prompts</button>
+          <button type="button" class="btn" id="ctaSkills">Browse skills</button>
         </div>
       </section>
 
@@ -143,14 +148,15 @@
       <div id="empty" class="empty" hidden>No styles match your filters.</div>
       <div id="sentinel" class="sentinel"></div>
       <div id="promptsView" hidden></div>
+      <div id="skillsView" hidden></div>
     </main>
 
     <footer class="site-footer">
       <div class="footer-inner">
         <div class="footer-brand"><span class="brand-mark" aria-hidden="true"></span><strong>InfoStyles</strong></div>
         <p class="footer-tag">
-          A curated library of infographic &amp; slide styles and reusable LLM prompts, built for
-          NotebookLM and image-generation workflows.
+          A curated library of infographic &amp; slide styles, reusable LLM prompts, and AI skills
+          for Claude, ChatGPT, and Gemini — built for NotebookLM and image-generation workflows.
         </p>
         <p class="footer-legal">© <span id="footerYear">2026</span> Dr. Shane Turner. All rights reserved.</p>
       </div>
@@ -335,6 +341,42 @@
       <div class="modal-card modal-wide" id="pdBody"></div>
     </div>
 
+    <!-- Create / edit an AI skill (admin) -->
+    <div id="skillModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="sModalTitle">
+      <div class="modal-card modal-wide">
+        <div class="modal-head"><h2 id="sModalTitle">New skill</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <section class="ai-section">
+          <p class="field-help">Optionally describe what the skill should do and let Claude draft it for the selected platform.</p>
+          <textarea id="sNl" class="input textarea" rows="2" placeholder="e.g. a skill that turns meeting transcripts into decisions, action items, and owners"></textarea>
+          <div class="ai-controls"><button id="sGenerate" class="btn btn-primary">Draft with AI</button></div>
+        </section>
+        <div class="editor-grid">
+          <label class="field"><span class="field-label">Name</span><input id="sName" class="input" /></label>
+          <label class="field">
+            <span class="field-label">Platform</span>
+            <select id="sPlatform" class="input" aria-label="Platform">
+              <option value="Claude">Claude</option>
+              <option value="ChatGPT">ChatGPT</option>
+              <option value="Gemini">Gemini</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label class="field"><span class="field-label">Category</span><input id="sCategory" class="input" placeholder="Writing, Sales, Productivity…" /></label>
+          <label class="field"><span class="field-label">Tags (comma-separated)</span><input id="sTags" class="input" placeholder="writing, voice" /></label>
+          <label class="field span-2"><span class="field-label">Description</span><textarea id="sDescription" class="input textarea" rows="2" placeholder="What the skill does and when it triggers."></textarea></label>
+          <label class="field span-2"><span class="field-label">Instructions</span><textarea id="sInstructions" class="input textarea" rows="8" placeholder="The full skill body: SKILL.md content, custom-GPT instructions, or Gem instructions."></textarea></label>
+          <label class="field"><span class="field-label">Source link (optional)</span><input id="sLink" class="input" placeholder="https://…  (Drive folder, repo, GPT share link)" /></label>
+          <label class="field"><span class="field-label">Notes (optional)</span><input id="sNotes" class="input" placeholder="Setup notes, files to attach…" /></label>
+        </div>
+        <div class="modal-foot"><span id="sStatus" class="status"></span><button id="sSave" class="btn btn-primary">Save</button></div>
+      </div>
+    </div>
+
+    <!-- Skill detail: instructions, notes, source link (click a skill card) -->
+    <div id="skillDetailModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="sdTitle">
+      <div class="modal-card modal-wide" id="sdBody"></div>
+    </div>
+
     <!-- View saved outputs for a prompt -->
     <div id="promptResultsModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="prTitle">
       <div class="modal-card modal-wide">
@@ -353,10 +395,10 @@
       </div>
     </div>
 
-    <!-- Command palette (⌘/Ctrl+K): jump to any style or prompt -->
+    <!-- Command palette (⌘/Ctrl+K): jump to any style, prompt, or skill -->
     <div id="cmdk" class="cmdk" hidden role="dialog" aria-modal="true" aria-label="Quick jump">
       <div class="cmdk-card">
-        <input type="text" id="cmdkInput" class="cmdk-input" placeholder="Jump to a style or prompt…" autocomplete="off" spellcheck="false" aria-label="Search styles and prompts" />
+        <input type="text" id="cmdkInput" class="cmdk-input" placeholder="Jump to a style, prompt, or skill…" autocomplete="off" spellcheck="false" aria-label="Search styles, prompts, and skills" />
         <ul id="cmdkList" class="cmdk-list"></ul>
       </div>
     </div>

@@ -50,3 +50,16 @@ export async function getPrompts() {
 export const savePrompt = (payload) => post("/api/prompts", { action: "save", ...payload });
 export const deletePromptApi = (id) => post("/api/prompts", { action: "delete", id });
 export const generatePrompt = (payload) => post("/api/generate-prompt", payload);
+
+export async function getSkills() {
+  try {
+    const res = await fetch("/api/skills", { headers: { "cache-control": "no-store" } });
+    if (!res.ok) return { skills: [] };
+    return await res.json();
+  } catch {
+    return { skills: [] };
+  }
+}
+export const saveSkill = (payload) => post("/api/skills", { action: "save", ...payload });
+export const deleteSkillApi = (id) => post("/api/skills", { action: "delete", id });
+export const generateSkill = (payload) => post("/api/generate-skill", payload);

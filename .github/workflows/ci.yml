@@ -28,10 +28,12 @@ jobs:
           styles = json.load(open("public/data/styles.json"))
           cats = json.load(open("public/data/categories.json"))
           prompts = json.load(open("public/data/prompts.json"))
+          skills = json.load(open("public/data/skills.json"))  # committed directly, no build step
           assert len(styles) > 0, "no styles generated"
           assert len(cats) > 0, "no categories generated"
           assert len(prompts) > 0, "no prompts generated"
-          print(f"OK: {len(styles)} styles, {len(cats)} categories, {len(prompts)} prompts")
+          assert len(skills) > 0, "no seed skills"
+          print(f"OK: {len(styles)} styles, {len(cats)} categories, {len(prompts)} prompts, {len(skills)} skills")
           PY
       # Production serves the committed JSON (Render never runs the builds),
       # so fail if someone edited a CSV without regenerating the data.

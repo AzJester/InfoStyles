@@ -4,9 +4,10 @@ import { loadCatalog, getStyles, getCategories, kindOf } from "./catalog.js";
 import { buildCard, openDetail } from "./card.js";
 import { initCreator } from "./creator.js";
 import { initPrompts } from "./prompts.js";
+import { initSkills } from "./skills.js";
 import { initAdmin, adminState } from "./admin.js";
 import { isFavorite, favoriteCount, getTheme, setTheme, getView, setView, hasSeenIntro, markIntroSeen } from "./storage.js";
-import { getPrompts } from "./api.js";
+import { getPrompts, getSkills } from "./api.js";
 import { toast, openModal, wireModalDismiss, closeModal, escapeHtml, ICONS } from "./ui.js";
 
 const PAGE_SIZE = 60;
@@ -29,12 +30,15 @@ const els = {
   toolsPanel: document.getElementById("toolsPanel"),
   newStyleBtn: document.getElementById("newStyleBtn"),
   newPromptBtn: document.getElementById("newPromptBtn"),
+  newSkillBtn: document.getElementById("newSkillBtn"),
   themeBtn: document.getElementById("themeBtn"),
   viewBtn: document.getElementById("viewBtn"),
   activeFilters: document.getElementById("activeFilters"),
   promptsView: document.getElementById("promptsView"),
+  skillsView: document.getElementById("skillsView"),
   secStyles: document.getElementById("secStyles"),
   secPrompts: document.getElementById("secPrompts"),
+  secSkills: document.getElementById("secSkills"),
   intro: document.querySelector(".hero"),
   featured: document.getElementById("featured"),
   how: document.getElementById("how"),
@@ -47,7 +51,8 @@ const els = {
 
 let creator;
 let promptsUI;
-let section = "styles"; // "styles" | "prompts"
+let skillsUI;
+let section = "styles"; // "styles" | "prompts" | "skills"
 
 // --- tools popover ---
 function closeTools() {
@@ -63,32 +68,42 @@ function toggleTools() {
   els.toolsBtn.classList.toggle("active", open);
 }
 
-// Toggle between the Styles catalog and the Prompts library.
+// Switch between the three libraries: Styles, Prompts, and Skills.
 function setSection(next) {
-  section = next === "prompts" ? "prompts" : "styles";
+  section = next === "prompts" ? "prompts" : next === "skills" ? "skills" : "styles";
+  const isStyles = section === "styles";
   const isPrompts = section === "prompts";
-  els.secStyles.classList.toggle("active", !isPrompts);
-  els.secPrompts.classList.toggle("active", isPrompts);
-  els.secStyles.setAttribute("aria-selected", String(!isPrompts));
-  els.secPrompts.setAttribute("aria-selected", String(isPrompts));
+  const isSkills = section === "skills";
+  for (const [tab, on] of [
+    [els.secStyles, isStyles],
+    [els.secPrompts, isPrompts],
+    [els.secSkills, isSkills],
+  ]) {
+    tab.classList.toggle("active", on);
+    tab.setAttribute("aria-selected", String(on));
+  }
 
   // Style-only controls + areas (sort/color/random live inside the tools popover).
-  for (const el of [els.category, els.favFilter, els.viewBtn, els.toolsBtn, els.randomBtn, els.gallery, els.sentinel, els.activeFilters]) {
-    if (el) el.hidden = isPrompts;
+  for (const el of [els.category, els.favFilter, els.viewBtn, els.toolsBtn, els.randomBtn, els.gallery, els.sentinel, els.activeFilters, els.resultCount]) {
+    if (el) el.hidden = !isStyles;
   }
   closeTools();
   els.empty.hidden = true;
-  if (els.intro) els.intro.hidden = isPrompts; // hero + landing sections are styles-specific
+  if (els.intro) els.intro.hidden = !isStyles; // hero + landing sections are styles-specific
   updateLanding();
   els.promptsView.hidden = !isPrompts;
-  els.newStyleBtn.hidden = isPrompts || !adminState().admin;
+  els.skillsView.hidden = !isSkills;
+  els.newStyleBtn.hidden = !isStyles || !adminState().admin;
   els.newPromptBtn.hidden = !isPrompts || !adminState().admin;
-  els.search.placeholder = isPrompts ? "Search prompts…   ( / )" : "Search styles…   ( / )";
+  els.newSkillBtn.hidden = !isSkills || !adminState().admin;
+  els.search.placeholder = isPrompts ? "Search prompts…   ( / )" : isSkills ? "Search skills…   ( / )" : "Search styles…   ( / )";
 
   if (isPrompts) promptsUI.show();
+  if (isSkills) skillsUI.show();
 }
 let pendingStyleId = null; // ?style=<id> from the initial URL, opened after first render
 let pendingPromptId = null; // ?prompt=<id> from the initial URL
+let pendingSkillId = null; // ?skill=<id> from the initial URL
 
 // ---------- theme ----------
 function applyTheme(theme) {
@@ -231,12 +246,12 @@ function applyFilters() {
 // shown only on a pristine Styles view, hidden once the user filters.
 function updateLanding() {
   const hasFilter = !!(state.query.trim() || state.category || state.color || state.favOnly);
-  const hide = section === "prompts" || hasFilter;
+  const hide = section !== "styles" || hasFilter;
   if (els.featured) els.featured.hidden = hide;
   if (els.how) els.how.hidden = hide;
   // While filtering, the hero collapses to just its headline so results start
   // near the top of the page.
-  if (els.intro) els.intro.classList.toggle("hero--compact", hasFilter && section !== "prompts");
+  if (els.intro) els.intro.classList.toggle("hero--compact", hasFilter && section === "styles");
 }
 
 // ---------- landing (hero stats, palette strip, featured categories) ----------
@@ -249,7 +264,8 @@ function buildLanding() {
     stats.innerHTML =
       `<span class="stat"><strong>${styles.length.toLocaleString()}</strong> styles</span>` +
       `<span class="stat"><strong>${cats.length}</strong> categories</span>` +
-      `<span class="stat" id="statPrompts">Prompt library</span>`;
+      `<span class="stat" id="statPrompts">Prompt library</span>` +
+      `<span class="stat" id="statSkills">Skill library</span>`;
   }
 
   // Color the hero strip with hues sampled from real style palettes.
@@ -391,6 +407,7 @@ function readURLState() {
   // Captured before applyFilters()->syncURL() rewrites the URL and drops it.
   pendingStyleId = p.get("style") || null;
   pendingPromptId = p.get("prompt") || null;
+  pendingSkillId = p.get("skill") || null;
 }
 
 function openStyleFromURL() {
@@ -464,8 +481,9 @@ async function init() {
     els.search.focus({ preventScroll: true });
   });
   document.getElementById("ctaPrompts")?.addEventListener("click", () => setSection("prompts"));
+  document.getElementById("ctaSkills")?.addEventListener("click", () => setSection("skills"));
 
-  // Fill the prompt count into the hero once the landing has painted.
+  // Fill the prompt + skill counts into the hero once the landing has painted.
   setTimeout(async () => {
     try {
       const n = ((await getPrompts()).prompts || []).length;
@@ -474,13 +492,22 @@ async function init() {
     } catch {
       /* leave the plain label */
     }
+    try {
+      const n = ((await getSkills()).skills || []).length;
+      const el = document.getElementById("statSkills");
+      if (el && n) el.innerHTML = `<strong>${n.toLocaleString()}</strong> skills`;
+    } catch {
+      /* leave the plain label */
+    }
   }, 1200);
 
   creator = initCreator(ctx);
   promptsUI = initPrompts();
+  skillsUI = initSkills();
 
   els.secStyles.addEventListener("click", () => setSection("styles"));
   els.secPrompts.addEventListener("click", () => setSection("prompts"));
+  els.secSkills.addEventListener("click", () => setSection("skills"));
 
   // Tools popover: toggle, close on outside click / Escape, close when a control inside is used.
   els.toolsBtn.addEventListener("click", (e) => {
@@ -495,10 +522,12 @@ async function init() {
 
   await initAdmin({
     onChange: () => {
-      els.newStyleBtn.hidden = section === "prompts" || !adminState().admin;
+      els.newStyleBtn.hidden = section !== "styles" || !adminState().admin;
       els.newPromptBtn.hidden = section !== "prompts" || !adminState().admin;
+      els.newSkillBtn.hidden = section !== "skills" || !adminState().admin;
       // Re-render the active section so admin-only controls appear/disappear.
       if (section === "prompts") promptsUI.rerender();
+      else if (section === "skills") skillsUI.rerender();
       else applyFilters();
     },
   });
@@ -510,6 +539,8 @@ async function init() {
     t = setTimeout(() => {
       if (section === "prompts") {
         promptsUI.setQuery(v);
+      } else if (section === "skills") {
+        skillsUI.setQuery(v);
       } else {
         state.query = v;
         applyFilters();
@@ -614,13 +645,22 @@ async function init() {
     promptsUI.openById(id);
   }
 
+  // ?skill=<id> deep link: jump to the Skills section and open that skill.
+  if (pendingSkillId) {
+    const id = pendingSkillId;
+    pendingSkillId = null;
+    setSection("skills");
+    skillsUI.openById(id);
+  }
+
   initSettings();
 }
 
-// ---------- command palette (⌘/Ctrl+K): jump to any style or prompt ----------
+// ---------- command palette (⌘/Ctrl+K): jump to any style, prompt, or skill ----------
 function initCmdk() {
   if (!els.cmdk) return;
   let promptsCache = null;
+  let skillsCache = null;
   let items = [];
   let active = 0;
 
@@ -634,6 +674,15 @@ function initCmdk() {
         promptsCache = (await getPrompts()).prompts || [];
       } catch {
         promptsCache = [];
+      }
+    }
+    // Palette-local cache (like prompts above): fetching here must not mark the
+    // Skills section as loaded, or a failed fetch would latch it empty.
+    if (!skillsCache) {
+      try {
+        skillsCache = (await getSkills()).skills || [];
+      } catch {
+        skillsCache = [];
       }
     }
     filter("");
@@ -664,6 +713,10 @@ function initCmdk() {
       for (const p of promptsCache) {
         const sc = score(`${p.title} ${p.category}`, terms);
         if (sc >= 0) results.push({ kind: "Prompt", id: p.id, title: p.title, sub: p.category, sc });
+      }
+      for (const s of skillsCache) {
+        const sc = score(`${s.name} ${s.platform} ${s.category}`, terms);
+        if (sc >= 0) results.push({ kind: "Skill", id: s.id, title: s.name, sub: `${s.platform} · ${s.category}`, sc });
       }
       results.sort((a, b) => a.sc - b.sc || a.title.localeCompare(b.title));
     } else {
@@ -697,7 +750,10 @@ function initCmdk() {
     if (!it) return;
     close();
     if (it.kind === "Style") openDetail(it.style, ctx);
-    else {
+    else if (it.kind === "Skill") {
+      setSection("skills");
+      skillsUI.openById(it.id);
+    } else {
       setSection("prompts");
       promptsUI.openById(it.id);
     }

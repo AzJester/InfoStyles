@@ -3,10 +3,12 @@
 
 const K_FAVORITES = "infostyles.favorites";
 const K_PFAVORITES = "infostyles.promptFavorites";
+const K_SFAVORITES = "infostyles.skillFavorites";
 const K_THEME = "infostyles.theme";
 const K_MODEL = "infostyles.model";
 const K_VIEW = "infostyles.view";
 const K_PVIEW = "infostyles.promptView";
+const K_SVIEW = "infostyles.skillView";
 const K_SEEN = "infostyles.seenIntro";
 
 export const DEFAULT_MODEL = "claude-sonnet-4-6";
@@ -62,6 +64,29 @@ export function promptFavoriteCount() {
   return pfavs.size;
 }
 
+// --- skill favorites (set of skill ids) ---
+function readSFavs() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(K_SFAVORITES) || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+let sfavs = readSFavs();
+
+export function isSkillFavorite(id) {
+  return sfavs.has(id);
+}
+export function toggleSkillFavorite(id) {
+  if (sfavs.has(id)) sfavs.delete(id);
+  else sfavs.add(id);
+  localStorage.setItem(K_SFAVORITES, JSON.stringify([...sfavs]));
+  return sfavs.has(id);
+}
+export function skillFavoriteCount() {
+  return sfavs.size;
+}
+
 // --- theme ('light' | 'dark') ---
 export function getTheme() {
   const saved = localStorage.getItem(K_THEME);
@@ -94,6 +119,14 @@ export function getPromptView() {
 }
 export function setPromptView(v) {
   localStorage.setItem(K_PVIEW, v === "grid" ? "grid" : "list");
+}
+
+// --- skills view ('grid' | 'list'), defaults to grid (cards read well) ---
+export function getSkillView() {
+  return localStorage.getItem(K_SVIEW) === "list" ? "list" : "grid";
+}
+export function setSkillView(v) {
+  localStorage.setItem(K_SVIEW, v === "list" ? "list" : "grid");
 }
 
 // --- first-run hint (shown once) ---
