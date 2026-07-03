@@ -706,7 +706,6 @@ async function init() {
   // Footer shortcuts reuse the topbar controls' handlers.
   document.getElementById("footExport")?.addEventListener("click", () => document.getElementById("settingsBtn").click());
   document.getElementById("footTheme")?.addEventListener("click", () => els.themeBtn.click());
-  document.getElementById("footAdmin")?.addEventListener("click", () => document.getElementById("adminBtn").click());
 
   // ?prompt=<id> on /prompts is handled by route(); this covers the case where
   // readURLState captured it before route() rewrote the URL.
