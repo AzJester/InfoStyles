@@ -39,6 +39,18 @@ test("sanitizePrompt tolerates a missing/invalid results field", () => {
   assert.deepEqual(sanitizePrompt({ title: "X", body: "Y", results: "nope" }).results, []);
 });
 
+test("sanitizePrompt keeps valid ratings and omits the key otherwise", () => {
+  assert.equal(sanitizePrompt({ title: "X", body: "Y", rating: 4 }).rating, 4);
+  assert.equal(sanitizePrompt({ title: "X", body: "Y", rating: "5" }).rating, 5);
+  // unrated / invalid / out of range: the key must be absent so seed records
+  // round-trip unchanged and clearing a rating removes it
+  assert.ok(!("rating" in sanitizePrompt({ title: "X", body: "Y" })));
+  assert.ok(!("rating" in sanitizePrompt({ title: "X", body: "Y", rating: 0 })));
+  assert.ok(!("rating" in sanitizePrompt({ title: "X", body: "Y", rating: 9 })));
+  assert.ok(!("rating" in sanitizePrompt({ title: "X", body: "Y", rating: -2 })));
+  assert.ok(!("rating" in sanitizePrompt({ title: "X", body: "Y", rating: "great" })));
+});
+
 test("slugify is url-safe", () => {
   assert.equal(slugify("Research", "My Prompt!"), "research-my-prompt");
 });
