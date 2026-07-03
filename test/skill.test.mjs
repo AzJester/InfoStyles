@@ -35,6 +35,34 @@ test("slugify is url-safe", () => {
   assert.equal(slugify("Claude", "My Skill!"), "claude-my-skill");
 });
 
+test("sanitizeSkill keeps valid ratings and omits the key otherwise", () => {
+  assert.equal(sanitizeSkill({ name: "X", rating: 4 }).rating, 4);
+  assert.ok(!("rating" in sanitizeSkill({ name: "X" })));
+  assert.ok(!("rating" in sanitizeSkill({ name: "X", rating: 0 })));
+  assert.ok(!("rating" in sanitizeSkill({ name: "X", rating: 9 })));
+});
+
+test("sanitizeSkill keeps base64 resources and rejects fake base64", () => {
+  const s = sanitizeSkill({
+    name: "X",
+    resources: [
+      { path: "assets/logo.png", text: "aGVsbG8=", encoding: "base64" },
+      { path: "assets/fake.png", text: "<not base64!>", encoding: "base64" },
+      { path: "notes.md", text: "plain text" },
+    ],
+  });
+  assert.deepEqual(
+    s.resources.map((r) => [r.path, r.encoding || "text"]),
+    [["assets/logo.png", "base64"], ["notes.md", "text"]]
+  );
+});
+
+test("mergeSkills marks saved records that shadow a seed with _seed", () => {
+  const merged = mergeSkills([{ id: "a" }, { id: "b" }], [{ id: "a", name: "edited" }, { id: "new" }], []);
+  assert.equal(merged.find((s) => s.id === "a")._seed, true);
+  assert.ok(!("_seed" in merged.find((s) => s.id === "new")));
+});
+
 test("sanitizeSkill keeps package resources, drops junk and traversal paths", () => {
   const s = sanitizeSkill({
     name: "X",

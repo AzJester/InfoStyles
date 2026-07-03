@@ -5,10 +5,10 @@ import { loadCatalog, getStyles, getCategories, kindOf } from "./catalog.js";
 import { buildCard, openDetail } from "./card.js";
 import { initCreator } from "./creator.js";
 import { initPrompts } from "./prompts.js";
-import { initSkills, skillSlug } from "./skills.js";
+import { initSkills, skillSlug, buildZip, toSkillFile, fileSlug } from "./skills.js";
 import { initAdmin, adminState } from "./admin.js";
 import { isFavorite, favoriteCount, getTheme, setTheme, getView, setView, hasSeenIntro, markIntroSeen } from "./storage.js";
-import { getPrompts, getSkills } from "./api.js";
+import { getPrompts, getSkills, getBackup, restoreBackup, getTrash, restoreTrash } from "./api.js";
 import { toast, openModal, wireModalDismiss, closeModal, escapeHtml, ICONS } from "./ui.js";
 
 const PAGE_SIZE = 60;
@@ -376,6 +376,37 @@ async function fillCounts() {
   }
 }
 
+// "Recently updated" strip on Home: the freshest dated prompts + skills.
+async function renderRecent() {
+  const grid = document.getElementById("recentGrid");
+  const section = document.getElementById("recent");
+  if (!grid || !section) return;
+  let items = [];
+  try {
+    const [p, s] = await Promise.all([getPrompts(), getSkills()]);
+    items = [
+      ...(p.prompts || []).filter((x) => x.updated).map((x) => ({ kind: "Prompt", name: x.title, updated: x.updated, href: `/prompts?prompt=${encodeURIComponent(x.id)}` })),
+      ...(s.skills || []).filter((x) => x.updated).map((x) => ({ kind: "Skill", name: x.name, updated: x.updated, href: `/skills/${encodeURIComponent(skillSlug(x.id))}` })),
+    ]
+      .sort((a, b) => b.updated.localeCompare(a.updated))
+      .slice(0, 4);
+  } catch {
+    return;
+  }
+  if (!items.length) return;
+  section.hidden = false;
+  grid.innerHTML = items
+    .map(
+      (it) =>
+        `<a class="recent-card" href="${escapeHtml(it.href)}">
+           <span class="cmdk-kind">${it.kind}</span>
+           <span class="recent-name">${escapeHtml(it.name)}</span>
+           <span class="recent-date">${escapeHtml(new Date(`${it.updated}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }))}</span>
+         </a>`
+    )
+    .join("");
+}
+
 // ---------- active-filter chips ----------
 function renderActiveFilters() {
   const chips = [];
@@ -573,6 +604,7 @@ async function init() {
   applyFilters();
   openStyleFromURL();
   fillCounts();
+  renderRecent();
 
   // Tools popover: toggle, close on outside click / Escape, close when a control inside is used.
   els.toolsBtn.addEventListener("click", (e) => {
@@ -774,13 +806,14 @@ function initCmdk() {
         const sc = score(`${s.style} ${s.category}`, terms);
         if (sc >= 0) results.push({ kind: "Style", title: s.style, sub: s.category, sc, style: s });
       }
-      // The caches load async after open(); typing immediately must not race them.
+      // The caches load async after open(); typing immediately must not race
+      // them. Tags are searchable alongside names and categories.
       for (const p of promptsCache || []) {
-        const sc = score(`${p.title} ${p.category}`, terms);
+        const sc = score(`${p.title} ${p.category} ${(p.tags || []).join(" ")}`, terms);
         if (sc >= 0) results.push({ kind: "Prompt", id: p.id, title: p.title, sub: p.category, sc });
       }
       for (const s of skillsCache || []) {
-        const sc = score(`${s.name} ${s.platform} ${s.category}`, terms);
+        const sc = score(`${s.name} ${s.platform} ${s.category} ${(s.tags || []).join(" ")}`, terms);
         if (sc >= 0) results.push({ kind: "Skill", id: s.id, title: s.name, sub: `${s.platform} · ${s.category}`, sc });
       }
       results.sort((a, b) => a.sc - b.sc || a.title.localeCompare(b.title));
@@ -863,11 +896,49 @@ function initSettings() {
   const favHint = document.getElementById("favCountHint");
   wireModalDismiss(modal);
   open.addEventListener("click", () => {
-    document.getElementById("importRow").hidden = !adminState().admin;
+    const admin = adminState().admin;
+    document.getElementById("importRow").hidden = !admin;
+    document.getElementById("backupRow").hidden = !admin;
+    document.getElementById("trashRow").hidden = !admin;
     const n = favoriteCount();
     if (favHint) favHint.textContent = n ? `${n} starred.` : "No favorites yet.";
+    if (admin) loadTrash();
     openModal(modal);
   });
+
+  // Recently deleted: list the trash with one-click restore.
+  async function loadTrash() {
+    const box = document.getElementById("trashList");
+    if (!box) return;
+    box.innerHTML = `<p class="field-help">Loading…</p>`;
+    try {
+      const { trash } = await getTrash();
+      if (!trash.length) {
+        box.innerHTML = `<p class="field-help">Nothing in the trash.</p>`;
+        return;
+      }
+      box.innerHTML = trash
+        .map((t, i) => {
+          const name = t.record?.title || t.record?.name || t.record?.fields?.style || t.record?.style || t.record?.id || "Untitled";
+          const when = t.at ? new Date(t.at).toLocaleDateString() : "";
+          return `<div class="result-item"><div class="result-head"><span class="badge">${escapeHtml(t.kind)}</span><span>${escapeHtml(String(name))}</span><span class="muted">${escapeHtml(when)}</span><button type="button" class="btn btn-sm" data-restore="${i}">Restore</button></div></div>`;
+        })
+        .join("");
+      box.querySelectorAll("[data-restore]").forEach((b) =>
+        b.addEventListener("click", async () => {
+          try {
+            await restoreTrash(Number(b.dataset.restore));
+            toast("Restored — reloading");
+            setTimeout(() => location.reload(), 600);
+          } catch (e) {
+            toast(e.message);
+          }
+        })
+      );
+    } catch (e) {
+      box.innerHTML = `<p class="field-help">${escapeHtml(e.message)}</p>`;
+    }
+  }
 
   const download = (data, type, filename) => {
     const url = URL.createObjectURL(new Blob([data], { type }));
@@ -915,6 +986,64 @@ function initSettings() {
     if (!fav.length) return toast("No favorites to export");
     download(toCsv(fav), "text/csv", "ai-compendium-favorites.csv");
     toast(`Exported ${fav.length} favorites (CSV)`);
+  });
+
+  // Skills export: the whole hub as one JSON, or every package in one zip.
+  document.getElementById("exportSkillsBtn")?.addEventListener("click", async () => {
+    const skills = ((await getSkills()).skills || []).map(({ _seed, ...s }) => s);
+    if (!skills.length) return toast("No skills to export");
+    download(JSON.stringify(skills, null, 2), "application/json", "ai-compendium-skills.json");
+    toast(`Exported ${skills.length} skills (JSON)`);
+  });
+  document.getElementById("exportSkillsZipBtn")?.addEventListener("click", async () => {
+    const skills = ((await getSkills()).skills || []).filter((s) => (s.instructions || "").trim());
+    if (!skills.length) return toast("No skills with instructions to export");
+    const entries = [];
+    for (const s of skills) {
+      const dir = fileSlug(s.name);
+      const main = toSkillFile(s);
+      entries.push({ path: `${dir}/${main.filename}`, text: main.text });
+      for (const r of s.resources || []) entries.push({ path: `${dir}/${r.path}`, text: r.text, encoding: r.encoding });
+    }
+    const url = URL.createObjectURL(buildZip(entries));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ai-compendium-skill-packages.zip";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast(`Exported ${skills.length} packages (.zip)`);
+  });
+
+  // Backup: download everything; restore replaces everything (with confirm).
+  document.getElementById("backupBtn")?.addEventListener("click", async () => {
+    try {
+      const snap = await getBackup();
+      download(JSON.stringify(snap, null, 2), "application/json", `ai-compendium-backup-${snap.exportedAt.slice(0, 10)}.json`);
+      toast("Backup downloaded");
+    } catch (e) {
+      toast(e.message);
+    }
+  });
+  const restoreInput = document.getElementById("restoreInput");
+  document.getElementById("restoreBtn")?.addEventListener("click", () => restoreInput?.click());
+  restoreInput?.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    restoreInput.value = "";
+    if (!file) return;
+    let snap;
+    try {
+      snap = JSON.parse(await file.text());
+    } catch {
+      return toast("Restore failed: not valid JSON");
+    }
+    if (!confirm(`Restore backup from ${snap?.exportedAt || "unknown date"}? This REPLACES all current edits, custom records, ratings, and counters.`)) return;
+    try {
+      await restoreBackup(snap);
+      toast("Restored — reloading");
+      setTimeout(() => location.reload(), 600);
+    } catch (err) {
+      toast(err.message);
+    }
   });
 
   importInput?.addEventListener("change", async (e) => {

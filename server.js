@@ -9,7 +9,17 @@ import { fileURLToPath } from "node:url";
 
 import { mergeSkills, skillSlug } from "./lib/skill.js";
 import { seedSkills } from "./lib/skillSeeds.js";
-import { getSkills as storedSkills, getDeletedSkillIds } from "./lib/store.js";
+import { mergePrompts } from "./lib/prompt.js";
+import { seedPrompts } from "./lib/promptSeeds.js";
+import {
+  kvAvailable,
+  exportAll,
+  getCatalog as storedCatalog,
+  getPrompts as storedPrompts,
+  getDeletedPromptIds,
+  getSkills as storedSkills,
+  getDeletedSkillIds,
+} from "./lib/store.js";
 
 import login from "./api/login.js";
 import logout from "./api/logout.js";
@@ -23,6 +33,9 @@ import generatePrompt from "./api/generate-prompt.js";
 import skills from "./api/skills.js";
 import generateSkill from "./api/generate-skill.js";
 import analyzeSkill from "./api/analyze-skill.js";
+import backup from "./api/backup.js";
+import trash from "./api/trash.js";
+import track from "./api/track.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -86,6 +99,11 @@ app.get("/api/skills", wrap(skills));
 app.post("/api/skills", wrap(skills));
 app.post("/api/generate-skill", wrap(generateSkill));
 app.post("/api/analyze-skill", wrap(analyzeSkill));
+app.get("/api/backup", wrap(backup));
+app.post("/api/backup", wrap(backup));
+app.get("/api/trash", wrap(trash));
+app.post("/api/trash", wrap(trash));
+app.post("/api/track", wrap(track));
 
 // Serve admin-uploaded sample images from the persistent disk, when configured.
 if (process.env.UPLOAD_DIR) {
@@ -97,37 +115,177 @@ const INDEX_PATH = path.join(__dirname, "public", "index.html");
 const escapeHtml = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-app.get(["/styles", "/prompts", "/skills"], (req, res) => res.sendFile(INDEX_PATH));
+// Public origin, derived from the request so a service rename or custom
+// domain needs no code change.
+const originOf = (req) => `${req.headers["x-forwarded-proto"]?.split(",")[0] || "https"}://${req.headers.host}`;
 
-// Skill detail pages get server-rendered <title>/OG tags so a shared link
-// unfurls with the skill's own name and description.
-app.get("/skills/:slug", async (req, res) => {
+// Rewrite the shell's <title>/description/OG tags for a specific record so a
+// shared link unfurls with its own name. The meta tags wrap across lines, so
+// attribute matching tolerates any whitespace. `extra` is injected raw before
+// </head> (used for JSON-LD).
+function shellWith(req, { title, desc, path: urlPath, extra = "" }) {
   let html = readFileSync(INDEX_PATH, "utf8");
+  const t = escapeHtml(title);
+  const d = escapeHtml(desc);
+  const url = escapeHtml(`${originOf(req)}${urlPath}`);
+  html = html
+    .replace(/<title>[^<]*<\/title>/, () => `<title>${t}</title>`)
+    .replace(/(<meta\s+property="og:title"\s+content=")[^"]*(")/, (m, a, b) => a + t + b)
+    .replace(/(<meta\s+property="og:description"\s+content=")[^"]*(")/, (m, a, b) => a + d + b)
+    .replace(/(<meta\s+property="og:url"\s+content=")[^"]*(")/, (m, a, b) => a + url + b)
+    .replace(/(<meta\s+name="description"\s+content=")[^"]*(")/, (m, a, b) => a + d + b);
+  if (extra) html = html.replace("</head>", `${extra}\n</head>`);
+  return html;
+}
+
+async function allSkills() {
+  const [saved, deleted] = await Promise.all([storedSkills(), getDeletedSkillIds()]);
+  return mergeSkills(seedSkills(), saved, deleted);
+}
+
+// Styles seeds, loaded once (the committed JSON the client also uses).
+let styleSeedCache;
+function styleSeeds() {
+  if (!styleSeedCache) {
+    try {
+      styleSeedCache = JSON.parse(readFileSync(path.join(__dirname, "public", "data", "styles.json"), "utf8"));
+    } catch {
+      styleSeedCache = [];
+    }
+  }
+  return styleSeedCache;
+}
+
+// /styles and /prompts serve the shell; when a share link names a record
+// (?style= / ?prompt=), its title/description are injected for link unfurls.
+app.get("/styles", async (req, res) => {
+  const id = req.query.style;
+  if (id) {
+    try {
+      const cat = await storedCatalog().catch(() => ({ overrides: {}, custom: [] }));
+      const s =
+        cat.custom.find((x) => x.id === id) ||
+        (() => {
+          const seed = styleSeeds().find((x) => x.id === id);
+          const ov = cat.overrides[id];
+          return seed && !(ov && ov._deleted) ? { ...seed, ...(ov || {}) } : seed;
+        })();
+      if (s) {
+        return res.type("html").send(
+          shellWith(req, {
+            title: `${s.style} — The AI Compendium Style Library`,
+            desc: `${s.category ? `${s.category} · ` : ""}An infographic & slide style with a ready palette and copy-ready prompts.`,
+            path: `/styles?style=${encodeURIComponent(id)}`,
+          })
+        );
+      }
+    } catch (err) {
+      console.error("style OG render failed:", err);
+    }
+  }
+  res.sendFile(INDEX_PATH);
+});
+
+app.get("/prompts", async (req, res) => {
+  const id = req.query.prompt;
+  if (id) {
+    try {
+      const [saved, deleted] = await Promise.all([
+        storedPrompts().catch(() => []),
+        getDeletedPromptIds().catch(() => []),
+      ]);
+      const p = mergePrompts(seedPrompts(), saved, deleted).find((x) => x.id === id);
+      if (p) {
+        return res.type("html").send(
+          shellWith(req, {
+            title: `${p.title} — The AI Compendium Prompt Library`,
+            desc: (p.body || "").replace(/\s+/g, " ").slice(0, 200),
+            path: `/prompts?prompt=${encodeURIComponent(id)}`,
+          })
+        );
+      }
+    } catch (err) {
+      console.error("prompt OG render failed:", err);
+    }
+  }
+  res.sendFile(INDEX_PATH);
+});
+
+app.get("/skills", (req, res) => res.sendFile(INDEX_PATH));
+
+// Skill detail pages get server-rendered <title>/OG tags plus JSON-LD so a
+// shared link unfurls with the skill's own name and crawlers see structured data.
+app.get("/skills/:slug", async (req, res) => {
   try {
-    const [saved, deleted] = await Promise.all([storedSkills(), getDeletedSkillIds()]);
-    const all = mergeSkills(seedSkills(), saved, deleted);
-    const s = all.find((k) => skillSlug(k.id) === req.params.slug || k.id === req.params.slug);
+    const s = (await allSkills()).find((k) => skillSlug(k.id) === req.params.slug || k.id === req.params.slug);
     if (s) {
-      const title = escapeHtml(`${s.name} — The AI Compendium Skills Hub`);
-      const desc = escapeHtml(s.description || `A ${s.platform} skill from the InfoStyles Skills Hub.`);
-      const url = escapeHtml(`https://infostyles.onrender.com/skills/${skillSlug(s.id)}`);
-      // The <meta> tags in index.html wrap across lines, so match attributes
-      // separated by any whitespace.
-      html = html
-        .replace(/<title>[^<]*<\/title>/, () => `<title>${title}</title>`)
-        .replace(/(<meta\s+property="og:title"\s+content=")[^"]*(")/, (m, a, b) => a + title + b)
-        .replace(/(<meta\s+property="og:description"\s+content=")[^"]*(")/, (m, a, b) => a + desc + b)
-        .replace(/(<meta\s+property="og:url"\s+content=")[^"]*(")/, (m, a, b) => a + url + b)
-        .replace(/(<meta\s+name="description"\s+content=")[^"]*(")/, (m, a, b) => a + desc + b);
+      const ld = {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        name: s.name,
+        description: s.description || undefined,
+        datePublished: s.updated || undefined,
+        author: s.author ? { "@type": "Person", name: s.author } : undefined,
+        keywords: (s.tags || []).join(", ") || undefined,
+      };
+      return res.type("html").send(
+        shellWith(req, {
+          title: `${s.name} — The AI Compendium Skills Hub`,
+          desc: s.description || `A ${s.platform} skill from The AI Compendium Skills Hub.`,
+          path: `/skills/${skillSlug(s.id)}`,
+          extra: `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>`,
+        })
+      );
     }
   } catch (err) {
     console.error("skill OG render failed:", err); // fall through to the plain shell
   }
-  res.type("html").send(html);
+  res.sendFile(INDEX_PATH);
+});
+
+// ---- Crawlers: robots + a sitemap listing every page incl. skill details ----
+app.get("/robots.txt", (req, res) => {
+  res.type("text/plain").send(`User-agent: *\nAllow: /\nSitemap: ${originOf(req)}/sitemap.xml\n`);
+});
+
+app.get("/sitemap.xml", async (req, res) => {
+  const base = originOf(req);
+  let slugs = [];
+  try {
+    slugs = (await allSkills()).map((s) => skillSlug(s.id));
+  } catch {
+    slugs = seedSkills().map((s) => skillSlug(s.id));
+  }
+  const urls = ["/", "/styles", "/prompts", "/skills", ...slugs.map((x) => `/skills/${encodeURIComponent(x)}`)]
+    .map((u) => `  <url><loc>${escapeHtml(base + u)}</loc></url>`)
+    .join("\n");
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
 });
 
 // Static site (index.html served at /).
 app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));
 
+// ---- Daily backup snapshot to the persistent disk (belt and suspenders on
+// top of the admin's manual export). Keeps the last 14 days. ----
+if (process.env.UPLOAD_DIR && kvAvailable()) {
+  const { writeFileSync, mkdirSync, readdirSync, unlinkSync } = await import("node:fs");
+  const dir = path.join(process.env.UPLOAD_DIR, "backups");
+  const snapshot = async () => {
+    try {
+      mkdirSync(dir, { recursive: true });
+      const snap = await exportAll();
+      writeFileSync(path.join(dir, `backup-${snap.exportedAt.slice(0, 10)}.json`), JSON.stringify(snap));
+      const old = readdirSync(dir).filter((f) => /^backup-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort().slice(0, -14);
+      for (const f of old) unlinkSync(path.join(dir, f));
+      console.log(`backup snapshot written (${dir})`);
+    } catch (err) {
+      console.error("backup snapshot failed:", err?.message || err);
+    }
+  };
+  setTimeout(snapshot, 60 * 1000); // one on boot (delayed so Redis is up)
+  setInterval(snapshot, 24 * 60 * 60 * 1000).unref();
+}
+
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`InfoStyles listening on :${port}`));
+app.listen(port, () => console.log(`The AI Compendium listening on :${port}`));

@@ -97,6 +97,10 @@
             <span class="lib-go">Open the hub →</span>
           </a>
         </div>
+        <section class="featured" id="recent" aria-label="Recently updated" hidden>
+          <h3>Recently updated</h3>
+          <div class="recent-grid" id="recentGrid"></div>
+        </section>
         <div class="how" id="how" aria-label="How it works">
           <div class="how-step">
             <span class="how-icon" aria-hidden="true">
@@ -324,10 +328,36 @@
           </div>
           <span class="field-help">Exports only the styles you've starred. <span id="favCountHint"></span></span>
         </div>
+        <div class="field">
+          <span class="field-label">Export skills</span>
+          <div class="ai-controls">
+            <button id="exportSkillsBtn" class="btn">Download JSON</button>
+            <button id="exportSkillsZipBtn" class="btn">All packages (.zip)</button>
+          </div>
+          <span class="field-help">The whole Skills Hub: one JSON, or every install-ready package in one zip.</span>
+        </div>
         <div class="field" id="importRow" hidden>
           <span class="field-label">Import (admin)</span>
           <input type="file" id="importInput" accept="application/json" class="input" />
           <span class="field-help">Bulk-adds styles from a JSON array as custom styles (saved for everyone).</span>
+        </div>
+        <div class="field" id="backupRow" hidden>
+          <span class="field-label">Backup (admin)</span>
+          <div class="ai-controls">
+            <button id="backupBtn" class="btn">Download backup</button>
+            <input type="file" id="restoreInput" accept="application/json" hidden />
+            <button id="restoreBtn" class="btn btn-danger">Restore from backup…</button>
+          </div>
+          <span class="field-help">
+            One snapshot of everything stored in the app: edits, custom styles, prompts, skills, ratings,
+            counters, and the trash. Restore replaces all of it. A daily snapshot is also written to the
+            server disk automatically.
+          </span>
+        </div>
+        <div class="field" id="trashRow" hidden>
+          <span class="field-label">Recently deleted (admin)</span>
+          <div id="trashList" class="results-list"></div>
+          <span class="field-help">The last 50 deletions, restorable with one click.</span>
         </div>
       </div>
     </div>
@@ -446,6 +476,10 @@
           <label class="field"><span class="field-label">Tags (comma-separated)</span><input id="sTags" class="input" placeholder="writing, voice" /></label>
           <label class="field"><span class="field-label">Version</span><input id="sVersion" class="input" placeholder="1.0" /></label>
           <label class="field"><span class="field-label">Author</span><input id="sAuthor" class="input" placeholder="Who built this skill" /></label>
+          <div class="field span-2">
+            <span class="field-label">Rating (your score)</span>
+            <div id="sRating" class="rate-pick" role="group" aria-label="Rating out of 5"></div>
+          </div>
           <label class="field span-2"><span class="field-label">Description</span><textarea id="sDescription" class="input textarea" rows="2" placeholder="What the skill does and when it triggers."></textarea></label>
           <label class="field span-2"><span class="field-label">Instructions</span><textarea id="sInstructions" class="input textarea" rows="8" placeholder="The full skill body: SKILL.md content, custom-GPT instructions, or Gem instructions."></textarea></label>
           <label class="field"><span class="field-label">Files (comma-separated, optional)</span><input id="sFiles" class="input" placeholder="SKILL.md, references/GUARDRAILS.md" /></label>

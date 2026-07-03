@@ -27,8 +27,10 @@ let viewMode = "grid"; // "grid" | "list"
 let activePlatform = ""; // "" = all
 let activeCategory = "";
 let activeTag = "";
-let sort = ""; // "" newest | "name" | "platform"
+let minRating = ""; // "" any | "1".."5" (at least N stars) | "unrated"
+let sort = ""; // "" recently updated | "rating" | "downloads" | "name" | "platform"
 let favOnly = false;
+let formRating = 0; // curator rating for the skill being edited (0 = unrated)
 let detailSlug = null; // non-null => detail page mode
 let formResources = []; // package files attached to the skill being edited
 let view, refs;
@@ -71,6 +73,8 @@ function filtered() {
       if (p !== activePlatform) return false;
     }
     if (activeCategory && (s.category || "General") !== activeCategory) return false;
+    if (minRating === "unrated" && s.rating) return false;
+    if (minRating && minRating !== "unrated" && (s.rating || 0) < Number(minRating)) return false;
     if (activeTag) {
       const tset = new Set((s.tags || []).map((t) => t.toLowerCase()));
       if (!tset.has(activeTag)) return false;
@@ -85,6 +89,8 @@ function filtered() {
   if (sort === "name") out.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   else if (sort === "platform")
     out.sort((a, b) => (a.platform || "").localeCompare(b.platform || "") || (a.name || "").localeCompare(b.name || ""));
+  else if (sort === "rating") out.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  else if (sort === "downloads") out.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
   else out.sort((a, b) => (b.updated || "").localeCompare(a.updated || ""));
   return out;
 }
@@ -100,12 +106,18 @@ function formatDate(iso) {
   return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
 }
 
+// Read-only star row for a curator rating (1-5); unrated renders nothing.
+function ratingHTML(r) {
+  if (!r) return "";
+  return `<span class="rating" role="img" aria-label="Rated ${r} of 5" title="Rated ${r} of 5">${"★".repeat(r)}<span class="rating-off" aria-hidden="true">${"★".repeat(5 - r)}</span></span>`;
+}
+
 // ---------- install file (SKILL.md for Claude, plain markdown otherwise) ----------
-function fileSlug(name) {
+export function fileSlug(name) {
   return String(name || "skill").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "skill";
 }
 
-function toSkillFile(s) {
+export function toSkillFile(s) {
   if (s.platform === "Claude") {
     // Claude Skills ship as SKILL.md with YAML frontmatter. The description is
     // emitted as a JSON string (valid YAML): unquoted prose with ": ", "#", or
@@ -139,15 +151,30 @@ function crc32(bytes) {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-// Build an uncompressed (STORE) zip from [{path, text}] — no library needed.
-function buildZip(files) {
+function base64ToBytes(b64) {
+  const bin = atob(b64.replace(/\s+/g, ""));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function bytesToBase64(bytes) {
+  let bin = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  return btoa(bin);
+}
+
+// Build an uncompressed (STORE) zip from [{path, text, encoding?}] — no
+// library needed. encoding "base64" entries are decoded back to raw bytes.
+export function buildZip(files) {
   const enc = new TextEncoder();
   const chunks = [];
   const central = [];
   let offset = 0;
   for (const f of files) {
     const nameB = enc.encode(f.path);
-    const data = enc.encode(f.text);
+    const data = f.encoding === "base64" ? base64ToBytes(f.text) : enc.encode(f.text);
     const crc = crc32(data);
     const lh = new DataView(new ArrayBuffer(30));
     lh.setUint32(0, 0x04034b50, true);
@@ -195,15 +222,17 @@ function downloadBlob(blob, filename) {
 }
 
 // With package files (references, patterns…) stored, download the whole
-// folder as a zip; otherwise just the single markdown file.
+// folder as a zip; otherwise just the single markdown file. Every download
+// bumps the public counter (best-effort).
 function downloadSkill(s) {
   const main = toSkillFile(s);
   if ((s.resources || []).length) {
     const zip = buildZip([{ path: main.filename, text: main.text }, ...s.resources]);
     downloadBlob(zip, `${fileSlug(s.name)}.zip`);
-    return;
+  } else {
+    downloadBlob(new Blob([main.text], { type: "text/markdown" }), main.filename);
   }
-  downloadBlob(new Blob([main.text], { type: "text/markdown" }), main.filename);
+  api.trackDownload(s.id);
 }
 
 const hasPackage = (s) => (s.resources || []).length > 0;
@@ -248,13 +277,14 @@ function cardHTML(s, admin) {
       </div>
       <div class="skill-meta">
         <span class="${platformClass(s.platform)}">${escapeHtml(platformLabel(s.platform))}</span>
+        ${ratingHTML(s.rating)}
         <span class="card-category">${escapeHtml(s.category || "General")}</span>
       </div>
       ${desc ? `<p class="skill-desc">${escapeHtml(desc)}</p>` : ""}
       ${tags ? `<div class="badges">${tags}</div>` : ""}
     </div>
     <div class="sk-foot">
-      <span class="sk-when">${when ? `Updated ${escapeHtml(when)}` : ""}</span>
+      <span class="sk-when">${when ? `Updated ${escapeHtml(when)}` : ""}${s.downloads ? `${when ? " · " : ""}${s.downloads.toLocaleString()} download${s.downloads === 1 ? "" : "s"}` : ""}</span>
       ${hasBody ? `<button type="button" class="btn btn-sm" data-copy="${escapeHtml(s.id)}">Copy</button>` : ""}
       ${hasBody ? `<button type="button" class="btn btn-sm btn-primary" data-dl="${escapeHtml(s.id)}">${hasPackage(s) ? "Package ↓" : s.platform === "Claude" ? "SKILL.md ↓" : ".md ↓"}</button>` : ""}
       ${!hasBody && s.link ? `<a class="btn btn-sm" href="${escapeHtml(s.link)}" target="_blank" rel="noopener">Open source ↗</a>` : ""}
@@ -298,16 +328,33 @@ function controlsHTML() {
       .join("");
   const sortOpts = [
     ["", "Recently updated"],
+    ["rating", "Top rated"],
+    ["downloads", "Most downloaded"],
     ["name", "Name A→Z"],
     ["platform", "Platform"],
   ]
     .map(([v, label]) => `<option value="${v}" ${sort === v ? "selected" : ""}>${label}</option>`)
     .join("");
+  // Filter by curator rating, mirroring the prompts controls.
+  const nAtLeast = (n) => list.filter((s) => (s.rating || 0) >= n).length;
+  const nUnrated = list.filter((s) => !s.rating).length;
+  const ratingSelect =
+    `<select id="sRatingFilter" class="select" aria-label="Filter by rating">` +
+    `<option value="">Any rating</option>` +
+    [5, 4, 3, 2, 1]
+      .map(
+        (n) =>
+          `<option value="${n}" ${minRating === String(n) ? "selected" : ""}>${"★".repeat(n)}${n < 5 ? " & up" : ""} (${nAtLeast(n)})</option>`
+      )
+      .join("") +
+    `<option value="unrated" ${minRating === "unrated" ? "selected" : ""}>Unrated (${nUnrated})</option>` +
+    `</select>`;
   const favCount = skillFavoriteCount();
   return `<div class="prompts-controls">
     <div class="seg-group" role="group" aria-label="Filter by platform">${platBtns}</div>
     ${cats.length ? `<select id="sCatFilter" class="select" aria-label="Filter by category">${catOpts}</select>` : ""}
     ${tags.length ? `<select id="sTagFilter" class="select" aria-label="Filter by tag">${tagOpts}</select>` : ""}
+    ${ratingSelect}
     <select id="sSort" class="select" aria-label="Sort skills">${sortOpts}</select>
     <button type="button" id="sFav" class="btn btn-icon ${favOnly ? "active" : ""}" aria-pressed="${favOnly}" title="${favOnly ? `Showing favorites (${favCount})` : "Show favorites"}" aria-label="Show favorite skills">${favOnly ? ICONS.starFill : ICONS.star}</button>
     <div class="seg-group" role="group" aria-label="Skill layout">
@@ -334,7 +381,7 @@ function render() {
   }
   const admin = adminState().admin;
   const items = filtered();
-  const hasFilter = !!query.trim() || !!activePlatform || !!activeCategory || !!activeTag || favOnly;
+  const hasFilter = !!query.trim() || !!activePlatform || !!activeCategory || !!activeTag || !!minRating || favOnly;
   const body = !items.length
     ? !loaded
       ? `<div class="gallery gallery--list">${Array.from({ length: 8 }, () => '<div class="skeleton skeleton-card"></div>').join("")}</div>`
@@ -369,6 +416,8 @@ function render() {
   if (catSel) catSel.addEventListener("change", (e) => { activeCategory = e.target.value; render(); });
   const tagSel = view.querySelector("#sTagFilter");
   if (tagSel) tagSel.addEventListener("change", (e) => { activeTag = e.target.value; render(); });
+  const ratingSel = view.querySelector("#sRatingFilter");
+  if (ratingSel) ratingSel.addEventListener("change", (e) => { minRating = e.target.value; render(); });
   const sortSel = view.querySelector("#sSort");
   if (sortSel) sortSel.addEventListener("change", (e) => { sort = e.target.value; render(); });
   const favBtn = view.querySelector("#sFav");
@@ -457,9 +506,10 @@ function renderDetail() {
         ${
           hasPackage(s)
             ? `<div class="sd-steps"><h6>Package files</h6>${s.resources
-                .map(
-                  (r, i) =>
-                    `<details class="sd-resource"><summary><span>${escapeHtml(r.path)}</span><span class="muted">${(r.text.length / 1024).toFixed(1)} KB</span><button type="button" class="btn btn-sm" data-rescopy="${i}">Copy</button></summary><pre class="sd-codebody">${escapeHtml(r.text)}</pre></details>`
+                .map((r, i) =>
+                  r.encoding === "base64"
+                    ? `<details class="sd-resource"><summary><span>${escapeHtml(r.path)}</span><span class="muted">binary · ${((r.text.length * 0.75) / 1024).toFixed(1)} KB</span></summary><p class="muted" style="padding:8px 0 12px">Binary file — included in the package download.</p></details>`
+                    : `<details class="sd-resource"><summary><span>${escapeHtml(r.path)}</span><span class="muted">${(r.text.length / 1024).toFixed(1)} KB</span><button type="button" class="btn btn-sm" data-rescopy="${i}">Copy</button></summary><pre class="sd-codebody">${escapeHtml(r.text)}</pre></details>`
                 )
                 .join("")}</div>`
             : ""
@@ -470,15 +520,19 @@ function renderDetail() {
       <aside class="sd-aside">
         <div class="sd-meta-row"><span>Platform</span><b>${escapeHtml(s.platform || "Other")}</b></div>
         <div class="sd-meta-row"><span>Category</span><b>${escapeHtml(s.category || "General")}</b></div>
+        ${s.rating ? `<div class="sd-meta-row"><span>Rating</span><b>${ratingHTML(s.rating)}</b></div>` : ""}
         ${s.version ? `<div class="sd-meta-row"><span>Version</span><b>${escapeHtml(s.version)}</b></div>` : ""}
         ${s.updated ? `<div class="sd-meta-row"><span>Updated</span><b>${escapeHtml(formatDate(s.updated))}</b></div>` : ""}
         ${s.author ? `<div class="sd-meta-row"><span>Author</span><b>${escapeHtml(s.author)}</b></div>` : ""}
+        ${s.downloads ? `<div class="sd-meta-row"><span>Downloads</span><b>${s.downloads.toLocaleString()}</b></div>` : ""}
         <div class="sd-meta-row"><span>Files</span><b>${files}</b></div>
         ${hasBody ? `<button type="button" class="btn btn-primary" data-sd-dl>Download ${hasPackage(s) ? "package (.zip)" : s.platform === "Claude" ? "SKILL.md" : "Markdown"}</button>` : ""}
         ${hasBody ? `<button type="button" class="btn" data-sd-copy2>Copy instructions</button>` : ""}
         <button type="button" class="btn" data-sd-link>Copy share link</button>
         ${s.link ? `<a class="btn" href="${escapeHtml(s.link)}" target="_blank" rel="noopener">Open source ↗</a>` : ""}
-        ${admin ? `<button type="button" class="btn" data-sd-edit>Edit</button><button type="button" class="btn btn-ghost btn-danger" data-sd-del>Delete</button>` : ""}
+        ${admin ? `<button type="button" class="btn" data-sd-edit>Edit</button>` : ""}
+        ${admin && s._seed ? `<button type="button" class="btn" data-sd-revert title="Discard your edits; the original seed returns">Reset to original</button>` : ""}
+        ${admin ? `<button type="button" class="btn btn-ghost btn-danger" data-sd-del>Delete</button>` : ""}
       </aside>
     </div>`;
 
@@ -501,6 +555,16 @@ function renderDetail() {
   q("[data-sd-dl]")?.addEventListener("click", () => downloadSkill(s));
   q("[data-sd-link]").addEventListener("click", () => copyText(skillURL(s), "Link copied"));
   q("[data-sd-edit]")?.addEventListener("click", () => openForm(s));
+  q("[data-sd-revert]")?.addEventListener("click", async () => {
+    if (!confirm(`Reset "${s.name}" to its original version? Your edits are discarded.`)) return;
+    try {
+      await api.revertSkill(s.id);
+      toast("Reset to original");
+      await refresh();
+    } catch (e) {
+      toast(e.message);
+    }
+  });
   q("[data-sd-del]")?.addEventListener("click", async () => {
     if (!confirm(`Delete skill "${s.name}"?`)) return;
     try {
@@ -518,6 +582,23 @@ function renderDetail() {
 function setStatus(m, isErr = false) {
   refs.status.textContent = m;
   refs.status.classList.toggle("error", isErr);
+}
+
+function renderRatingPicker() {
+  refs.rating.innerHTML =
+    [1, 2, 3, 4, 5]
+      .map(
+        (n) =>
+          `<button type="button" class="rate-star ${n <= formRating ? "on" : ""}" data-rate="${n}" aria-pressed="${n <= formRating}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`
+      )
+      .join("") +
+    (formRating ? `<button type="button" class="btn btn-sm btn-ghost" data-rate="0">Clear</button>` : `<span class="field-help">Not rated</span>`);
+  refs.rating.querySelectorAll("[data-rate]").forEach((b) =>
+    b.addEventListener("click", () => {
+      formRating = Number(b.dataset.rate);
+      renderRatingPicker();
+    })
+  );
 }
 
 // ---------- import existing skills (SKILL.md / .zip / .skill / .json) ----------
@@ -603,7 +684,7 @@ async function readZip(file) {
   };
   // fatal: true rejects binary files instead of silently mangling them.
   const readText = async (e, fatal = false) => new TextDecoder("utf-8", { fatal }).decode(await readBytes(e));
-  return { entries, readText };
+  return { entries, readText, readBytes };
 }
 
 function fillFormFromImport(parsed, files, filename) {
@@ -627,7 +708,7 @@ function renderFormResources() {
       formResources
         .map(
           (r, i) =>
-            `<div class="resource-row"><span class="resource-path">${escapeHtml(r.path)}</span><span class="muted">${(r.text.length / 1024).toFixed(1)} KB</span><button type="button" class="btn btn-sm btn-ghost btn-danger" data-resdel="${i}" aria-label="Remove ${escapeHtml(r.path)}">✕</button></div>`
+            `<div class="resource-row"><span class="resource-path">${escapeHtml(r.path)}</span><span class="muted">${r.encoding === "base64" ? "binary · " : ""}${((r.text.length * (r.encoding === "base64" ? 0.75 : 1)) / 1024).toFixed(1)} KB</span><button type="button" class="btn btn-sm btn-ghost btn-danger" data-resdel="${i}" aria-label="Remove ${escapeHtml(r.path)}">✕</button></div>`
         )
         .join("")
     : "";
@@ -735,14 +816,15 @@ async function importSkillFile(file) {
       return;
     }
     if (ext === "zip" || ext === "skill") {
-      const { entries, readText } = await readZip(file);
+      const { entries, readText, readBytes } = await readZip(file);
       const files = entries.filter((e) => !e.name.endsWith("/")).map((e) => e.name);
       const md = entries.find((e) => /(^|\/)skill\.md$/i.test(e.name));
       if (!md) throw new Error("No SKILL.md found inside the archive.");
       const parsed = parseSkillMarkdown(await readText(md));
       fillFormFromImport(parsed, files, file.name);
-      // Capture every text file that ships with the skill (references,
-      // patterns, scripts…) so the download can rebuild the full package.
+      // Capture every file that ships with the skill (references, patterns,
+      // scripts…) so the download can rebuild the full package. Text files
+      // store as-is; binaries (images, fonts) store base64 up to ~300 KB.
       formResources = [];
       let skipped = 0;
       for (const e of entries) {
@@ -754,7 +836,13 @@ async function importSkillFile(file) {
         try {
           formResources.push({ path: e.name, text: (await readText(e, true)).slice(0, 200000) });
         } catch {
-          skipped++; // binary file (images etc.) — listed in Files, not stored
+          try {
+            const bytes = await readBytes(e);
+            if (bytes.length > 300000) throw new Error("too large");
+            formResources.push({ path: e.name, text: bytesToBase64(bytes), encoding: "base64" });
+          } catch {
+            skipped++; // oversized binary — listed in Files, not stored
+          }
         }
       }
       renderFormResources();
@@ -762,7 +850,7 @@ async function importSkillFile(file) {
         file.name,
         parsed.hasFrontmatter,
         (formResources.length ? ` Captured ${formResources.length} package file${formResources.length === 1 ? "" : "s"}.` : "") +
-          (skipped ? ` ${skipped} binary/oversized file${skipped === 1 ? "" : "s"} listed but not stored.` : "")
+          (skipped ? ` ${skipped} oversized file${skipped === 1 ? "" : "s"} listed but not stored.` : "")
       );
       return;
     }
@@ -823,6 +911,8 @@ function openForm(s) {
   refs.author.value = s?.author || "";
   refs.files.value = (s?.files || []).join(", ");
   refs.nl.value = "";
+  formRating = s?.rating || 0;
+  renderRatingPicker();
   formResources = (s?.resources || []).map((r) => ({ ...r }));
   renderFormResources();
   checklistActive = false;
@@ -871,6 +961,7 @@ async function onSave() {
     author: refs.author.value.trim(),
     files: refs.files.value,
     resources: formResources,
+    rating: formRating,
   };
   if (!skill.name) {
     setStatus("A name is required.", true);
@@ -929,6 +1020,7 @@ export function initSkills(opts = {}) {
     file: el("sFile"),
     checklist: el("sChecklist"),
     resources: el("sResources"),
+    rating: el("sRating"),
   };
   // The "still needed" checklist tracks typing after an import.
   for (const [k] of CHECKLIST_FIELDS) {

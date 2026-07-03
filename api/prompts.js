@@ -1,5 +1,5 @@
 import { requireAdmin } from "../lib/auth.js";
-import { kvAvailable, getPrompts, savePrompt, deletePrompt, getDeletedPromptIds } from "../lib/store.js";
+import { kvAvailable, getPrompts, savePrompt, deletePrompt, getDeletedPromptIds, pushTrash, revertPrompt } from "../lib/store.js";
 import { sanitizePrompt, slugify, mergePrompts } from "../lib/prompt.js";
 import { seedPrompts } from "../lib/promptSeeds.js";
 
@@ -29,7 +29,17 @@ export default async function handler(req, res) {
   try {
     if (action === "delete") {
       if (!id) return res.status(400).json({ error: "id is required to delete." });
+      // Keep the full record in the trash so the delete is restorable.
+      const record =
+        (await getPrompts()).find((p) => p.id === id) || seedPrompts().find((p) => p.id === id) || null;
       await deletePrompt(id);
+      if (record) await pushTrash("prompt", record);
+      return res.status(200).json({ ok: true });
+    }
+    if (action === "revert") {
+      // Remove the record shadowing a seed (no tombstone): seed reappears.
+      if (!id) return res.status(400).json({ error: "id is required to revert." });
+      await revertPrompt(id);
       return res.status(200).json({ ok: true });
     }
     const clean = sanitizePrompt(prompt || {});
