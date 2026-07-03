@@ -338,7 +338,10 @@ mark { background: none; color: inherit; font-weight: 650; }
 
 /* ---------- List view ---------- */
 .gallery--list { grid-template-columns: 1fr; gap: 8px; }
-.gallery--list .card { flex-direction: row; align-items: center; gap: 16px; padding: 12px 16px; }
+.gallery--list .card { flex-direction: row; align-items: center; gap: 16px; padding: 12px 48px 12px 16px; position: relative; }
+/* Favorites form one straight column at the row's edge, whatever the card
+   type or title length — never scattered mid-row. */
+.gallery--list .card-head .fav { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); }
 .gallery--list .card-thumb { width: 72px; aspect-ratio: 16 / 10; flex-shrink: 0; }
 .gallery--list .card-band { width: 96px; height: 40px; flex-shrink: 0; border-radius: 8px; }
 .gallery--list .card-teaser { display: none; }
