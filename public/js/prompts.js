@@ -140,19 +140,28 @@ function filtered() {
   return out;
 }
 
+// "2026-07-03" -> "Jul 2026" (empty/invalid dates render nothing).
+function formatUpdated(iso) {
+  if (!iso) return "";
+  const d = new Date(`${iso}T00:00:00`);
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
+
 function cardHTML(p, admin) {
   const tags = (p.tags || []).map((t) => `<span class="badge">${escapeHtml(t)}</span>`).join("");
   const models = (p.models || []).join(", ");
   const preview = p.body.length > 240 ? p.body.slice(0, 240) + "…" : p.body;
   const nResults = (p.results || []).length;
   const fav = isPromptFavorite(p.id);
+  const when = formatUpdated(p.updated);
   return `<article class="card prompt-card" data-id="${escapeHtml(p.id)}" tabindex="0" role="button" aria-label="Open ${escapeHtml(p.title)}">
     <div class="card-body">
       <div class="card-head">
         <div class="card-title">${escapeHtml(p.title)}</div>
         <button type="button" class="fav ${fav ? "on" : ""}" data-fav="${escapeHtml(p.id)}" aria-pressed="${fav}" title="${fav ? "Remove from favorites" : "Add to favorites"}" aria-label="Favorite">${fav ? "★" : "☆"}</button>
       </div>
-      <div class="card-category">${escapeHtml(p.category)}${models ? ` · ${escapeHtml(models)}` : ""}</div>
+      <div class="card-category">${escapeHtml(p.category)}${models ? ` · ${escapeHtml(models)}` : ""}${when ? ` · Updated ${escapeHtml(when)}` : ""}</div>
       ${tags ? `<div class="badges">${tags}</div>` : ""}
       <pre class="prompt-preview">${escapeHtml(preview)}</pre>
     </div>
@@ -171,7 +180,7 @@ function cardHTML(p, admin) {
 }
 
 function promptLink(id) {
-  return `${location.origin}${location.pathname}?prompt=${encodeURIComponent(id)}`;
+  return `${location.origin}/prompts?prompt=${encodeURIComponent(id)}`;
 }
 
 function controlsHTML() {
@@ -304,7 +313,7 @@ function openPromptDetail(p) {
         <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
       </div>
     </div>
-    <div class="card-category">${escapeHtml(p.category)}</div>
+    <div class="card-category">${escapeHtml(p.category)}${p.updated ? ` · Last updated ${escapeHtml(formatUpdated(p.updated))}` : ""}</div>
     ${models || tags ? `<div class="badges pd-badges">${models}${tags}</div>` : ""}
     ${p.notes ? `<div class="pd-section"><span class="detail-label">Notes</span><p class="pd-notes">${escapeHtml(p.notes)}</p></div>` : ""}
     <div class="prompt-block">

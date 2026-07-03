@@ -301,7 +301,7 @@ export function openDetail(style, ctx) {
     el.addEventListener("click", () => openLightbox(imgs[Number(el.dataset.img)], el.alt))
   );
   body.querySelector("[data-copy-link]")?.addEventListener("click", () =>
-    copyText(`${location.origin}${location.pathname}?style=${encodeURIComponent(style.id)}`, "Link copied")
+    copyText(`${location.origin}/styles?style=${encodeURIComponent(style.id)}`, "Link copied")
   );
   // Print just the open style as a clean spec sheet (see @media print in styles.css).
   body.querySelector("[data-print]")?.addEventListener("click", () => {

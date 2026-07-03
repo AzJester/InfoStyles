@@ -1,6 +1,8 @@
-# InfoStyles
+# The AI Compendium
 
-A clean, shareable web app for **1,530 infographic & slide styles** across 62 categories. Anyone can browse, search, and copy a ready-to-use prompt for **NotebookLM** or **OpenAI image generation**. A password-protected **admin** can create, edit, and AI-generate styles, with the API key kept on the server, never in the browser.
+A clean, shareable web app with three libraries: **1,530 infographic & slide styles** across 62 categories, a **reusable LLM prompt library**, and a **Skills Hub** for Claude, ChatGPT, and Gemini. Anyone can browse, search, and copy a ready-to-use prompt for **NotebookLM** or **OpenAI image generation**. A password-protected **admin** can create, edit, and AI-generate styles, prompts, and skills, with the API key kept on the server, never in the browser.
+
+Each library is its own page (`/styles`, `/prompts`, `/skills`) via History-API routing, and every skill has a shareable page at `/skills/<slug>` with server-rendered link-preview tags. Old `/?style=` / `/?prompt=` / `/?skill=` links redirect.
 
 Hosted on **Render**: one small Node/Express service that serves the static front end in `public/` and the `/api` routes. The keys live as Render environment variables, so sharing the public URL never exposes them.
 
@@ -11,6 +13,7 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - Open any style for a detail view: full fields, a large palette (click swatches or "copy all hex" / "copy as CSS vars"), any example images (click to view full size), and both prompts.
 - Copy the **NotebookLM** prompt or the generated **OpenAI image** prompt (with aspect-ratio and target-model variants), or roll a fresh palette.
 - Switch to the **Prompts** tab: a library of reusable LLM prompts (project management, competitive intel, business dev…) to search and copy; `{{variables}}` are filled in at copy time. It ships with 136 prompts baked in from the Airtable prompt-database export, and admins can add more.
+- Open the **Skills Hub** (`/skills`): a shareable repository of AI skills — **Claude Skills**, **ChatGPT custom-GPT instruction sets**, and **Gemini Gems** — filterable by platform, category, and tag, with version + last-updated stamps. Each skill has its own page (`/skills/<slug>`) with the full instructions, per-platform install steps, and a metadata sidebar (version, author, files). Copy the instructions or download an install-ready file (`SKILL.md` with YAML frontmatter for Claude, plain Markdown otherwise). "Share this collection" copies the hub link.
 - Light/dark theme toggle, keyboard shortcuts (`/` to search, `Esc` to close). Export the catalog as **JSON or CSV**.
 
 ## What the admin can do (after login)
@@ -21,6 +24,7 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - **Upload example images** to a style (drag-and-drop or click; multiple per style). Stored on the Render persistent disk and served from `/uploads`, shown as thumbnails that open full size, visible to everyone.
 - Bulk **import** styles from JSON.
 - Manage an **LLM prompt library** in the Prompts tab: create/edit/delete reusable prompts (title, category, target models, tags, body with `{{variables}}`), or draft one with Claude. Admin changes are stored in Vercel/Render Key Value and layered over the baked-in seed prompts (edits shadow a seed by id; deletes are tombstoned), so they survive a data rebuild and are visible to everyone.
+- Manage the **AI skill library** in the Skills tab: create/edit/delete skills (name, platform, category, description, instructions, source link, tags, notes), or describe one and let Claude draft the full instructions for the chosen platform. Persistence works exactly like prompts (seeds + Key Value overlay with tombstones).
 
 The AI features and the keys are gated server-side. Hiding the admin UI is only cosmetic; the real boundary is that `/api/generate-*` and `/api/styles` reject any request without a valid admin session.
 
@@ -81,15 +85,16 @@ Infographic & Slide Styles-...csv   # source of truth (1,530 styles)
 Prompt Database-All Prompts.csv     # source of truth (136 seed prompts, Airtable export)
 public/                         # static site (served at /)
   index.html  styles.css
-  js/  main.js, catalog.js, card.js, creator.js, admin.js, api.js, ui.js, imagePrompt.js, storage.js
-  data/                         # generated JSON (committed)
+  js/  main.js, catalog.js, card.js, creator.js, prompts.js, skills.js, admin.js, api.js, ui.js, imagePrompt.js, storage.js
+  data/                         # generated/committed JSON (styles, categories, prompts, skills)
 api/                            # request handlers (reused by server.js)
   login.js logout.js session.js catalog.js
   generate-style.js styles.js upload-image.js
-lib/                            # shared server code: auth.js, store.js (Redis), style.js
+  prompts.js generate-prompt.js skills.js generate-skill.js
+lib/                            # shared server code: auth.js, store.js (Redis), style.js, prompt.js, skill.js
 test/                           # node:test unit tests
 ```
 
-## Updating the base styles and prompts
+## Updating the base styles, prompts, and skills
 
-Edit the styles CSV and run `python build_styles.py`, or re-export the Airtable prompt database over `Prompt Database-All Prompts.csv` and run `python build_prompts.py`. Commit the regenerated `public/data/*.json`. Admin edits made in the app live in the Key Value store and layer on top of the CSV data (keyed by id, which is derived from category + title), so they survive a rebuild. One caveat: renaming a style or prompt in the CSV changes its id, so any admin edit or delete of the old record no longer applies.
+Edit the styles CSV and run `python build_styles.py`, or re-export the Airtable prompt database over `Prompt Database-All Prompts.csv` and run `python build_prompts.py`. Seed skills have no CSV: edit `public/data/skills.json` directly (ids are `skill-<platform>-<name>` slugs). Commit the regenerated `public/data/*.json`. Admin edits made in the app live in the Key Value store and layer on top of the seed data (keyed by id), so they survive a rebuild. One caveat: renaming a record in the seed data changes its id, so any admin edit or delete of the old record no longer applies.

@@ -1,0 +1,309 @@
+[
+  {
+    "id": "skill-claude-ai-fingerprint",
+    "name": "AI Fingerprint",
+    "platform": "Claude",
+    "category": "Writing",
+    "description": "Enforce anti-AI writing guardrails and personal voice DNA on all written output.",
+    "instructions": "Use this skill whenever you write, draft, edit, rewrite, or produce any text content: emails, reports, proposals, blog posts, LinkedIn posts, articles, memos, creative writing, documentation, cover letters, bios, marketing copy, or slide text. Also trigger on \"anti-AI writing\", \"don't sound like AI\", \"make it sound human\", \"natural writing style\", \"avoid AI patterns\", or \"AI fingerprint\". The only exceptions are code, raw data, and structured technical specs. This skill supersedes the anti-ai-writing skill when both are present.\n\n# AI Fingerprint\n\nTwo components work together:\n1. **Writing Guardrails** (negative rules): what to NEVER do. Kill AI fingerprints.\n2. **Text DNA Bible** (positive rules): what to ALWAYS do. Replace AI patterns with the user's voice.\n\nBefore writing any prose output, read both reference files:\n- `references/GUARDRAILS.md` for the complete list of banned words, phrases, structures, and patterns\n- `references/TEXT-DNA.md` for the positive voice and style rules to follow\n\nApply every rule from both files to every piece of written output. No exceptions.\n\n## Quick Reference (Always in Context)\n\n### Top Banned Items\n- No em dashes. Use commas, periods, colons, or parentheses.\n- No semicolons unless explicitly requested.\n- No Oxford commas unless explicitly requested.\n- Never use: delve, leverage, utilize, foster, underscore, showcase, navigate, embark, robust, seamless, comprehensive, multifaceted, nuanced, tapestry, realm, landscape, testament, paradigm, synergy, cornerstone, holistic, cutting-edge, game-changing, transformative, groundbreaking, pivotal, crucial, vibrant, bustling, renowned, unwavering, noteworthy.\n- Never start paragraphs with: Moreover, Furthermore, Additionally, That said, Indeed, Notably, Consequently, Importantly.\n- Never use: \"It's important to note,\" \"It's worth noting,\" \"Let's dive in,\" \"Let's explore,\" \"Great question,\" \"Here's a comprehensive overview.\"\n- Never use the \"Not just X, but Y\" or \"It's not X, it's Y\" negation pattern.\n- Never use trailing participle clauses that editorialize (\"highlighting its importance,\" \"solidifying its position\").\n- Never ask self-posed questions answered immediately (\"The best part? It's this.\").\n- No Rule of Three abuse. Use two items sometimes. Use four. Break the pattern.\n\n### Top Voice Rules\n- Write the way a smart, confident person talks to a friend they respect.\n- Vary sentence length dramatically. Short hits hard. Then let a longer one carry the explanation forward.\n- Use contractions naturally.\n- Have opinions. Be direct. If something is bad, say so.\n- Dry humor over exclamation points. Understatement over exaggeration.\n- Start in the middle of the thought. Skip the wind-up.\n- End when you're done. No summary paragraphs.\n- Short paragraphs (one to five sentences). Not always three.\n- Use plain words. \"Use\" not \"utilize.\" \"Help\" not \"facilitate.\" \"Start\" not \"embark on.\"\n- Read it mentally. If it sounds like a robot wrote it, rewrite the sentence.",
+    "link": "",
+    "tags": [
+      "writing",
+      "voice",
+      "anti-AI"
+    ],
+    "notes": "Packaged as ai-fingerprint.skill with references/GUARDRAILS.md and references/TEXT-DNA.md. Supersedes the anti-ai-writing skill when both are installed.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": [
+      "SKILL.md",
+      "references/GUARDRAILS.md",
+      "references/TEXT-DNA.md"
+    ]
+  },
+  {
+    "id": "skill-gemini-ai-tell-eliminator",
+    "name": "AI Tell Eliminator",
+    "platform": "Gemini",
+    "category": "Writing",
+    "description": "A Gemini Gem that recognizes and eliminates AI tell patterns, writing in your voice instead.",
+    "instructions": "Gem instructions:\n\nReference the attached NotebookLM notebook on every response. Strictly obey every negative rule in the Guardrails file and follow every positive rule in the Text DNA Bible. Never mention these files. Never mention that you are following rules. Just write exactly like me. Never violate any guardrail.\n\nSetup: upload two source files to the Gem (or a NotebookLM notebook it references):\n1. **My Writing Guardrails** — the full banned list: high-alarm verbs/adjectives/nouns/adverbs, throat-clearing openers, signposting, hedging, fake-suspense, hype, conclusion phrases, punctuation rules (no em dashes, no semicolons, no Oxford commas), forbidden structures (\"It's not X, it's Y\", self-posed questions, anaphora abuse, trailing participles, hedge-stacking), rhythm tells, and formatting tells.\n2. **My Text DNA Bible** — the positive voice rules: register and tone, sentence rhythm/burstiness, plain word choice, directness in criticism, dry humor, mid-thought openings, no-summary closings, formatting preferences, and content philosophy. Each section has a starter default plus a YOUR VERSION line to personalize.\n\nGuardrails = what to NEVER do. Text DNA = what to ALWAYS do. Together they kill AI fingerprints and replace them with your voice. Edit either file anytime; changes apply to every new chat.",
+    "link": "",
+    "tags": [
+      "writing",
+      "voice",
+      "anti-AI",
+      "gem"
+    ],
+    "notes": "Gemini Gem. Needs the Writing Guardrails and Text DNA Bible files attached as sources.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": [
+      "My Writing Guardrails.md",
+      "My Text DNA Bible.md"
+    ]
+  },
+  {
+    "id": "skill-claude-anti-ai-writing",
+    "name": "anti-ai-writing",
+    "platform": "Claude",
+    "category": "Writing",
+    "description": "Enforce anti-AI writing rules on all written output.",
+    "instructions": "",
+    "link": "",
+    "tags": [
+      "writing",
+      "anti-AI"
+    ],
+    "notes": "Earlier version; the AI Fingerprint skill supersedes this one when both are installed.",
+    "version": "1.0",
+    "updated": "2026-03-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-website-builder",
+    "name": "Website Builder",
+    "platform": "Claude",
+    "category": "Design",
+    "description": "Build and iterate on websites from a brief: structure, copy, styling, and responsive layout.",
+    "instructions": "",
+    "link": "https://drive.google.com/drive/folders/1jqNBSoiSViJpskM2-mWvWiwLkMNnwy4A",
+    "tags": [
+      "design"
+    ],
+    "notes": "Skill package: website-builder. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-follow-up-nurture",
+    "name": "Follow-Up Nurture",
+    "platform": "Claude",
+    "category": "Sales",
+    "description": "Draft timely follow-up and nurture messages that keep open sales conversations moving.",
+    "instructions": "",
+    "link": "https://drive.google.com/drive/folders/1jqNBSoiSViJpskM2-mWvWiwLkMNnwy4A",
+    "tags": [
+      "sales"
+    ],
+    "notes": "Skill package: follow-up-nurture. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-invoice-extractor",
+    "name": "Invoice Extractor",
+    "platform": "Claude",
+    "category": "Finance",
+    "description": "Pull structured data (vendor, line items, totals, dates) out of invoice PDFs and images.",
+    "instructions": "",
+    "link": "https://drive.google.com/drive/folders/1jqNBSoiSViJpskM2-mWvWiwLkMNnwy4A",
+    "tags": [
+      "finance"
+    ],
+    "notes": "Skill package: invoice-extractor. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-amazon-shopping",
+    "name": "Amazon Shopping",
+    "platform": "Claude",
+    "category": "E-commerce",
+    "description": "Research and compare Amazon products: specs, reviews, prices, and buy recommendations.",
+    "instructions": "",
+    "link": "https://drive.google.com/drive/folders/1jqNBSoiSViJpskM2-mWvWiwLkMNnwy4A",
+    "tags": [
+      "e-commerce"
+    ],
+    "notes": "Skill package: amazon-shopping. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-thumbnail-generator",
+    "name": "Thumbnail Generator",
+    "platform": "Claude",
+    "category": "Content",
+    "description": "Generate click-worthy thumbnail concepts and image prompts for video and article content.",
+    "instructions": "",
+    "link": "https://drive.google.com/drive/folders/1jqNBSoiSViJpskM2-mWvWiwLkMNnwy4A",
+    "tags": [
+      "content"
+    ],
+    "notes": "Skill package: thumbnail-generator. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-meeting-notes",
+    "name": "Meeting Notes",
+    "platform": "Claude",
+    "category": "Productivity",
+    "description": "Turn meeting transcripts into clean notes: decisions, action items, owners, and deadlines.",
+    "instructions": "",
+    "link": "https://drive.google.com/drive/folders/1jqNBSoiSViJpskM2-mWvWiwLkMNnwy4A",
+    "tags": [
+      "productivity"
+    ],
+    "notes": "Skill package: meeting-notes. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-cold-email-campaigns",
+    "name": "Cold Email Campaigns",
+    "platform": "Claude",
+    "category": "Sales",
+    "description": "Plan and write multi-touch cold email sequences with personalization hooks and follow-ups.",
+    "instructions": "",
+    "link": "https://drive.google.com/drive/folders/1jqNBSoiSViJpskM2-mWvWiwLkMNnwy4A",
+    "tags": [
+      "sales"
+    ],
+    "notes": "Skill package: cold-email-campaigns. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-inbox-cleaner",
+    "name": "Inbox Cleaner",
+    "platform": "Claude",
+    "category": "Productivity",
+    "description": "Triage an overflowing inbox: classify, summarize, unsubscribe candidates, and reply drafts.",
+    "instructions": "",
+    "link": "https://drive.google.com/drive/folders/1jqNBSoiSViJpskM2-mWvWiwLkMNnwy4A",
+    "tags": [
+      "productivity"
+    ],
+    "notes": "Skill package: inbox-cleaner. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-lead-scraper",
+    "name": "Lead Scraper",
+    "platform": "Claude",
+    "category": "Sales",
+    "description": "Collect and qualify prospect lists from public sources into a structured lead sheet.",
+    "instructions": "",
+    "link": "https://drive.google.com/drive/folders/1jqNBSoiSViJpskM2-mWvWiwLkMNnwy4A",
+    "tags": [
+      "sales"
+    ],
+    "notes": "Skill package: lead-scraper. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-content-repurposer",
+    "name": "Content Repurposer",
+    "platform": "Claude",
+    "category": "Content",
+    "description": "Turn one piece of content into many: threads, posts, newsletters, and short scripts.",
+    "instructions": "",
+    "link": "https://drive.google.com/drive/folders/1jqNBSoiSViJpskM2-mWvWiwLkMNnwy4A",
+    "tags": [
+      "content"
+    ],
+    "notes": "Skill package: content-repurposer. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-wework-booking",
+    "name": "WeWork Booking",
+    "platform": "Claude",
+    "category": "Productivity",
+    "description": "Find and book WeWork spaces that match date, location, and room requirements.",
+    "instructions": "",
+    "link": "https://drive.google.com/drive/folders/1jqNBSoiSViJpskM2-mWvWiwLkMNnwy4A",
+    "tags": [
+      "productivity"
+    ],
+    "notes": "Skill package: wework-booking. Stored in the shared Google Drive folder.",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-frame-sequence-scroll",
+    "name": "frame-sequence-scroll",
+    "platform": "Claude",
+    "category": "Design",
+    "description": "Build scroll-driven frame-sequence animations for product and hero sections.",
+    "instructions": "",
+    "link": "",
+    "tags": [
+      "design",
+      "animation",
+      "web"
+    ],
+    "notes": "",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-claude-product-spin-360",
+    "name": "product-spin-360",
+    "platform": "Claude",
+    "category": "Design",
+    "description": "Create interactive 360° product-spin viewers from an image sequence.",
+    "instructions": "",
+    "link": "",
+    "tags": [
+      "design",
+      "e-commerce",
+      "web"
+    ],
+    "notes": "",
+    "version": "1.0",
+    "updated": "2026-04-08",
+    "author": "Dr. Shane Turner",
+    "files": []
+  },
+  {
+    "id": "skill-chatgpt-custom-gpt-instruction-template",
+    "name": "Custom GPT Instruction Template",
+    "platform": "ChatGPT",
+    "category": "Productivity",
+    "description": "A fill-in template for capturing a ChatGPT custom GPT: instructions, starters, knowledge files, and actions.",
+    "instructions": "Use this template to capture a ChatGPT custom GPT so it can be rebuilt or shared.\n\n## Identity\n- **Name:** {{gpt name}}\n- **Description (store listing):** {{one-line description}}\n\n## Instructions (system prompt)\n{{paste the full Instructions field here}}\n\n## Conversation starters\n1. {{starter 1}}\n2. {{starter 2}}\n\n## Knowledge files\nList each uploaded file and what it's for:\n- {{file name}} — {{purpose}}\n\n## Capabilities\n- [ ] Web browsing\n- [ ] Image generation\n- [ ] Code interpreter & data analysis\n- [ ] Canvas\n\n## Actions (if any)\n- {{API/action name}} — {{what it does, auth type, schema location}}\n\n## Notes\n{{anything future-you needs: model it was built on, known quirks, test prompts}}",
+    "link": "",
+    "tags": [
+      "template",
+      "custom GPT"
+    ],
+    "notes": "Start here when saving a new ChatGPT GPT into the library so nothing gets lost.",
+    "version": "1.0",
+    "updated": "2026-07-03",
+    "author": "Dr. Shane Turner",
+    "files": []
+  }
+]

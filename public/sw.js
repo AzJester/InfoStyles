@@ -1,8 +1,8 @@
-// InfoStyles service worker: makes the app installable and usable offline.
+// The AI Compendium service worker: makes the app installable and usable offline.
 // - Navigations: network-first, falling back to the cached shell when offline.
 // - Static assets (JS/CSS/JSON/icons): cache-first with a background refresh.
 // - /api/* and /uploads/*: always go to the network (must stay fresh / dynamic).
-const CACHE = "infostyles-v6";
+const CACHE = "infostyles-v8";
 const PRECACHE = [
   "/",
   "/index.html",
