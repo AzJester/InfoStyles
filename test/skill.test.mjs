@@ -35,6 +35,25 @@ test("slugify is url-safe", () => {
   assert.equal(slugify("Claude", "My Skill!"), "claude-my-skill");
 });
 
+test("sanitizeSkill keeps package resources, drops junk and traversal paths", () => {
+  const s = sanitizeSkill({
+    name: "X",
+    resources: [
+      { path: "references/GUARDRAILS.md", text: "rules" },
+      { path: "/leading/slash.md", text: "kept, slash stripped" },
+      { path: "../evil.md", text: "dropped" },
+      { path: "references/GUARDRAILS.md", text: "duplicate dropped" },
+      { path: "empty.md", text: "" },
+      "not an object",
+    ],
+  });
+  assert.deepEqual(
+    s.resources.map((r) => r.path),
+    ["references/GUARDRAILS.md", "leading/slash.md"]
+  );
+  assert.equal(s.resources[0].text, "rules");
+});
+
 // The platform list lives in three places (lib/skill.js, public/js/skills.js,
 // and the #sPlatform <select> in index.html) because the static frontend can't
 // import server code. This guards against the copies drifting apart.

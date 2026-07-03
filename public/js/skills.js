@@ -30,6 +30,7 @@ let activeTag = "";
 let sort = ""; // "" newest | "name" | "platform"
 let favOnly = false;
 let detailSlug = null; // non-null => detail page mode
+let formResources = []; // package files attached to the skill being edited
 let view, refs;
 let navigate = () => {};
 
@@ -122,9 +123,69 @@ function toSkillFile(s) {
   return { filename: `${fileSlug(s.name)}.md`, text: parts.join("\n\n") + "\n" };
 }
 
-function downloadSkill(s) {
-  const { filename, text } = toSkillFile(s);
-  const url = URL.createObjectURL(new Blob([text], { type: "text/markdown" }));
+// ---------- zip writer (STORE method) for full skill packages ----------
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+// Build an uncompressed (STORE) zip from [{path, text}] — no library needed.
+function buildZip(files) {
+  const enc = new TextEncoder();
+  const chunks = [];
+  const central = [];
+  let offset = 0;
+  for (const f of files) {
+    const nameB = enc.encode(f.path);
+    const data = enc.encode(f.text);
+    const crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true);
+    lh.setUint16(4, 20, true); // version needed; flags/method/time/date stay 0 (STORE)
+    lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true);
+    lh.setUint32(22, data.length, true);
+    lh.setUint16(26, nameB.length, true);
+    chunks.push(new Uint8Array(lh.buffer), nameB, data);
+    central.push({ nameB, crc, size: data.length, offset });
+    offset += 30 + nameB.length + data.length;
+  }
+  const cdStart = offset;
+  for (const e of central) {
+    const cd = new DataView(new ArrayBuffer(46));
+    cd.setUint32(0, 0x02014b50, true);
+    cd.setUint16(4, 20, true); // version made by
+    cd.setUint16(6, 20, true); // version needed
+    cd.setUint32(16, e.crc, true);
+    cd.setUint32(20, e.size, true);
+    cd.setUint32(24, e.size, true);
+    cd.setUint16(28, e.nameB.length, true);
+    cd.setUint32(42, e.offset, true);
+    chunks.push(new Uint8Array(cd.buffer), e.nameB);
+    offset += 46 + e.nameB.length;
+  }
+  const eocd = new DataView(new ArrayBuffer(22));
+  eocd.setUint32(0, 0x06054b50, true);
+  eocd.setUint16(8, central.length, true);
+  eocd.setUint16(10, central.length, true);
+  eocd.setUint32(12, offset - cdStart, true);
+  eocd.setUint32(16, cdStart, true);
+  chunks.push(new Uint8Array(eocd.buffer));
+  return new Blob(chunks, { type: "application/zip" });
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
@@ -132,6 +193,20 @@ function downloadSkill(s) {
   URL.revokeObjectURL(url);
   toast(`Downloaded ${filename}`);
 }
+
+// With package files (references, patterns…) stored, download the whole
+// folder as a zip; otherwise just the single markdown file.
+function downloadSkill(s) {
+  const main = toSkillFile(s);
+  if ((s.resources || []).length) {
+    const zip = buildZip([{ path: main.filename, text: main.text }, ...s.resources]);
+    downloadBlob(zip, `${fileSlug(s.name)}.zip`);
+    return;
+  }
+  downloadBlob(new Blob([main.text], { type: "text/markdown" }), main.filename);
+}
+
+const hasPackage = (s) => (s.resources || []).length > 0;
 
 // Per-platform install steps shown on detail pages and the hub guide.
 function installSteps(s) {
@@ -181,7 +256,7 @@ function cardHTML(s, admin) {
     <div class="sk-foot">
       <span class="sk-when">${when ? `Updated ${escapeHtml(when)}` : ""}</span>
       ${hasBody ? `<button type="button" class="btn btn-sm" data-copy="${escapeHtml(s.id)}">Copy</button>` : ""}
-      ${hasBody ? `<button type="button" class="btn btn-sm btn-primary" data-dl="${escapeHtml(s.id)}">${s.platform === "Claude" ? "SKILL.md ↓" : ".md ↓"}</button>` : ""}
+      ${hasBody ? `<button type="button" class="btn btn-sm btn-primary" data-dl="${escapeHtml(s.id)}">${hasPackage(s) ? "Package ↓" : s.platform === "Claude" ? "SKILL.md ↓" : ".md ↓"}</button>` : ""}
       ${!hasBody && s.link ? `<a class="btn btn-sm" href="${escapeHtml(s.link)}" target="_blank" rel="noopener">Open source ↗</a>` : ""}
       ${
         admin
@@ -379,6 +454,16 @@ function renderDetail() {
                </div>`
             : `<p class="muted">No instructions captured yet${s.link ? " — see the source link in the sidebar" : ""}.</p>`
         }
+        ${
+          hasPackage(s)
+            ? `<div class="sd-steps"><h6>Package files</h6>${s.resources
+                .map(
+                  (r, i) =>
+                    `<details class="sd-resource"><summary><span>${escapeHtml(r.path)}</span><span class="muted">${(r.text.length / 1024).toFixed(1)} KB</span><button type="button" class="btn btn-sm" data-rescopy="${i}">Copy</button></summary><pre class="sd-codebody">${escapeHtml(r.text)}</pre></details>`
+                )
+                .join("")}</div>`
+            : ""
+        }
         ${hasBody ? `<div class="sd-steps"><h6>Install in ${escapeHtml(PLATFORMS.includes(s.platform) ? s.platform : "your tool")}</h6>${steps}</div>` : ""}
         ${s.notes ? `<p class="sd-notes"><b>Notes.</b> ${escapeHtml(s.notes)}</p>` : ""}
       </div>
@@ -389,7 +474,7 @@ function renderDetail() {
         ${s.updated ? `<div class="sd-meta-row"><span>Updated</span><b>${escapeHtml(formatDate(s.updated))}</b></div>` : ""}
         ${s.author ? `<div class="sd-meta-row"><span>Author</span><b>${escapeHtml(s.author)}</b></div>` : ""}
         <div class="sd-meta-row"><span>Files</span><b>${files}</b></div>
-        ${hasBody ? `<button type="button" class="btn btn-primary" data-sd-dl>Download ${s.platform === "Claude" ? "SKILL.md" : "Markdown"}</button>` : ""}
+        ${hasBody ? `<button type="button" class="btn btn-primary" data-sd-dl>Download ${hasPackage(s) ? "package (.zip)" : s.platform === "Claude" ? "SKILL.md" : "Markdown"}</button>` : ""}
         ${hasBody ? `<button type="button" class="btn" data-sd-copy2>Copy instructions</button>` : ""}
         <button type="button" class="btn" data-sd-link>Copy share link</button>
         ${s.link ? `<a class="btn" href="${escapeHtml(s.link)}" target="_blank" rel="noopener">Open source ↗</a>` : ""}
@@ -407,6 +492,12 @@ function renderDetail() {
   };
   q("[data-sd-copy]")?.addEventListener("click", () => copyText(s.instructions, "Skill instructions copied"));
   q("[data-sd-copy2]")?.addEventListener("click", () => copyText(s.instructions, "Skill instructions copied"));
+  view.querySelectorAll("[data-rescopy]").forEach((b) =>
+    b.addEventListener("click", (e) => {
+      e.preventDefault(); // keep the <details> from toggling
+      copyText(s.resources[Number(b.dataset.rescopy)].text, "File copied");
+    })
+  );
   q("[data-sd-dl]")?.addEventListener("click", () => downloadSkill(s));
   q("[data-sd-link]").addEventListener("click", () => copyText(skillURL(s), "Link copied"));
   q("[data-sd-edit]")?.addEventListener("click", () => openForm(s));
@@ -495,20 +586,23 @@ async function readZip(file) {
     entries.push({ name, method, csize, lho });
     off += 46 + nameLen + extraLen + cmtLen;
   }
-  const readText = async (e) => {
+  const readBytes = async (e) => {
     // The local header's own name/extra lengths locate the data (they can
     // differ from the central directory's).
     const lnameLen = dv.getUint16(e.lho + 26, true);
     const lextraLen = dv.getUint16(e.lho + 28, true);
     const start = e.lho + 30 + lnameLen + lextraLen;
     const data = buf.slice(start, start + e.csize);
-    if (e.method === 0) return new TextDecoder().decode(data);
+    if (e.method === 0) return data;
     if (e.method === 8) {
       const ds = new DecompressionStream("deflate-raw");
-      return await new Response(new Blob([data]).stream().pipeThrough(ds)).text();
+      const ab = await new Response(new Blob([data]).stream().pipeThrough(ds)).arrayBuffer();
+      return new Uint8Array(ab);
     }
     throw new Error(`Unsupported zip compression (method ${e.method}).`);
   };
+  // fatal: true rejects binary files instead of silently mangling them.
+  const readText = async (e, fatal = false) => new TextDecoder("utf-8", { fatal }).decode(await readBytes(e));
   return { entries, readText };
 }
 
@@ -521,6 +615,100 @@ function fillFormFromImport(parsed, files, filename) {
   if (files.length) refs.files.value = files.join(", ");
   // Frontmatter means it's a Claude SKILL.md package.
   if (parsed.hasFrontmatter) refs.platform.value = "Claude";
+}
+
+// Captured package files shown in the editor, each removable.
+function renderFormResources() {
+  const box = refs.resources;
+  if (!box) return;
+  box.hidden = !formResources.length;
+  box.innerHTML = formResources.length
+    ? `<span class="field-label">Package files (stored with the skill)</span>` +
+      formResources
+        .map(
+          (r, i) =>
+            `<div class="resource-row"><span class="resource-path">${escapeHtml(r.path)}</span><span class="muted">${(r.text.length / 1024).toFixed(1)} KB</span><button type="button" class="btn btn-sm btn-ghost btn-danger" data-resdel="${i}" aria-label="Remove ${escapeHtml(r.path)}">✕</button></div>`
+        )
+        .join("")
+    : "";
+  box.querySelectorAll("[data-resdel]").forEach((b) =>
+    b.addEventListener("click", () => {
+      formResources.splice(Number(b.dataset.resdel), 1);
+      renderFormResources();
+    })
+  );
+}
+
+// ---------- post-import auto-fill + "still needed" checklist ----------
+// After an upload, Claude fills in whatever the file didn't declare; anything
+// that still needs a human answer is surfaced as a highlighted checklist.
+const CHECKLIST_FIELDS = [
+  ["description", "Add a one-line description"],
+  ["category", "Pick a category"],
+  ["tags", "Add a few tags"],
+  ["version", "Set a version (e.g. 1.0)"],
+  ["author", "Say who built it"],
+];
+let checklistActive = false;
+
+function missingFields() {
+  return CHECKLIST_FIELDS.filter(([k]) => !refs[k].value.trim());
+}
+
+function renderChecklist() {
+  const box = refs.checklist;
+  if (!box) return;
+  for (const [k] of CHECKLIST_FIELDS) {
+    refs[k].closest(".field")?.classList.toggle("field-attn", checklistActive && !refs[k].value.trim());
+  }
+  const missing = checklistActive ? missingFields() : [];
+  if (!missing.length) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+  box.hidden = false;
+  box.innerHTML =
+    `<span class="checklist-label">Still needed:</span>` +
+    missing
+      .map(([k, label]) => `<button type="button" class="btn btn-sm" data-focus="${k}">${escapeHtml(label)}</button>`)
+      .join("");
+  box.querySelectorAll("[data-focus]").forEach((b) =>
+    b.addEventListener("click", () => refs[b.dataset.focus].focus())
+  );
+}
+
+// Ask the server to infer metadata from the uploaded instructions, filling
+// only fields the file (or the admin) hasn't already set. `platformImplied`
+// stops the AI from second-guessing a platform the file declared.
+async function autoCompleteImport(filename, platformImplied, statusSuffix = "") {
+  checklistActive = true;
+  const instructions = refs.instructions.value.trim();
+  const missing = missingFields().map(([k]) => k);
+  if (!instructions || !["description", "category", "tags"].some((k) => missing.includes(k))) {
+    setStatus(`Imported — review and Save.${statusSuffix}`);
+    renderChecklist();
+    return;
+  }
+  setStatus("Imported — asking Claude to fill in the details…");
+  try {
+    const { meta } = await api.analyzeSkill({ instructions, name: refs.name.value.trim(), filename });
+    if (!refs.description.value.trim() && meta.description) refs.description.value = meta.description;
+    if (!refs.category.value.trim() && meta.category) refs.category.value = meta.category;
+    if (!refs.tags.value.trim() && meta.tags?.length) refs.tags.value = meta.tags.join(", ");
+    if (!refs.notes.value.trim() && meta.notes) refs.notes.value = meta.notes;
+    if (!platformImplied && PLATFORMS.includes(meta.platform)) refs.platform.value = meta.platform;
+    if (!refs.name.value.trim() && meta.name) refs.name.value = meta.name;
+    const left = missingFields();
+    setStatus(
+      (left.length
+        ? "Auto-filled with Claude — a few details still need you (highlighted)."
+        : "Auto-filled with Claude — review and Save.") + statusSuffix
+    );
+  } catch (e) {
+    setStatus(`Imported. AI auto-fill unavailable (${e.message}) — fill the highlighted fields.${statusSuffix}`);
+  }
+  renderChecklist();
 }
 
 async function importSkillFile(file) {
@@ -543,7 +731,7 @@ async function importSkillFile(file) {
       if (parsed.tags) refs.tags.value = Array.isArray(parsed.tags) ? parsed.tags.join(", ") : String(parsed.tags);
       if (parsed.link) refs.link.value = parsed.link;
       if (parsed.notes) refs.notes.value = parsed.notes;
-      setStatus("Imported — review and Save.");
+      await autoCompleteImport(file.name, !!parsed.platform);
       return;
     }
     if (ext === "zip" || ext === "skill") {
@@ -551,17 +739,37 @@ async function importSkillFile(file) {
       const files = entries.filter((e) => !e.name.endsWith("/")).map((e) => e.name);
       const md = entries.find((e) => /(^|\/)skill\.md$/i.test(e.name));
       if (!md) throw new Error("No SKILL.md found inside the archive.");
-      fillFormFromImport(parseSkillMarkdown(await readText(md)), files, file.name);
-      setStatus(
-        files.length > 1
-          ? "Imported from SKILL.md — review and Save. Reference file contents aren't stored; keep the package at the source link."
-          : "Imported — review and Save."
+      const parsed = parseSkillMarkdown(await readText(md));
+      fillFormFromImport(parsed, files, file.name);
+      // Capture every text file that ships with the skill (references,
+      // patterns, scripts…) so the download can rebuild the full package.
+      formResources = [];
+      let skipped = 0;
+      for (const e of entries) {
+        if (e === md || e.name.endsWith("/")) continue;
+        if (formResources.length >= 20 || e.csize > 400000) {
+          skipped++;
+          continue;
+        }
+        try {
+          formResources.push({ path: e.name, text: (await readText(e, true)).slice(0, 200000) });
+        } catch {
+          skipped++; // binary file (images etc.) — listed in Files, not stored
+        }
+      }
+      renderFormResources();
+      await autoCompleteImport(
+        file.name,
+        parsed.hasFrontmatter,
+        (formResources.length ? ` Captured ${formResources.length} package file${formResources.length === 1 ? "" : "s"}.` : "") +
+          (skipped ? ` ${skipped} binary/oversized file${skipped === 1 ? "" : "s"} listed but not stored.` : "")
       );
       return;
     }
     // .md / .markdown / .txt
-    fillFormFromImport(parseSkillMarkdown(await file.text()), [], file.name);
-    setStatus("Imported — review and Save.");
+    const parsed = parseSkillMarkdown(await file.text());
+    fillFormFromImport(parsed, [], file.name);
+    await autoCompleteImport(file.name, parsed.hasFrontmatter);
   } catch (e) {
     setStatus(`Import failed: ${e.message}`, true);
   }
@@ -615,6 +823,10 @@ function openForm(s) {
   refs.author.value = s?.author || "";
   refs.files.value = (s?.files || []).join(", ");
   refs.nl.value = "";
+  formResources = (s?.resources || []).map((r) => ({ ...r }));
+  renderFormResources();
+  checklistActive = false;
+  renderChecklist();
   setStatus("");
   openModal(refs.modal);
 }
@@ -658,6 +870,7 @@ async function onSave() {
     version: refs.version.value.trim(),
     author: refs.author.value.trim(),
     files: refs.files.value,
+    resources: formResources,
   };
   if (!skill.name) {
     setStatus("A name is required.", true);
@@ -714,7 +927,15 @@ export function initSkills(opts = {}) {
     newBtn: el("newSkillBtn"),
     dropzone: el("sDropzone"),
     file: el("sFile"),
+    checklist: el("sChecklist"),
+    resources: el("sResources"),
   };
+  // The "still needed" checklist tracks typing after an import.
+  for (const [k] of CHECKLIST_FIELDS) {
+    refs[k].addEventListener("input", () => {
+      if (checklistActive) renderChecklist();
+    });
+  }
   wireModalDismiss(refs.modal);
   refs.newBtn.addEventListener("click", () => openForm());
   refs.gen.addEventListener("click", onGenerate);
