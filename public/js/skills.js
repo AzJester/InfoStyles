@@ -274,13 +274,9 @@ function render() {
         <h2>Skills Hub</h2>
         <p>Every skill here is install-ready: download the file, copy the instructions, or share the link.</p>
       </div>
-      <button type="button" class="btn btn-primary" data-share-hub>Share this collection</button>
     </div>
     ${controlsHTML()}${body}${INSTALL_GUIDE}`;
 
-  view.querySelector("[data-share-hub]").addEventListener("click", () =>
-    copyText(`${location.origin}/skills`, "Skills Hub link copied")
-  );
   view.querySelectorAll("[data-plat]").forEach((b) =>
     b.addEventListener("click", () => {
       activePlatform = b.dataset.plat;
