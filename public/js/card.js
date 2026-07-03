@@ -152,6 +152,7 @@ export function openDetail(style, ctx) {
            <button type="button" class="btn btn-sm" data-edit>Edit style</button>
            <button type="button" class="btn btn-sm" data-duplicate>Duplicate</button>
            <button type="button" class="btn btn-sm" data-remix>Remix with AI</button>
+           ${style._edited ? `<button type="button" class="btn btn-sm" data-revert title="Discard your edits; the CSV original returns">Reset to original</button>` : ""}
            <button type="button" class="btn btn-sm btn-danger" data-delete>Delete</button>
          </div>`
       : "";
@@ -324,6 +325,17 @@ export function openDetail(style, ctx) {
   });
 
   // admin actions
+  body.querySelector("[data-revert]")?.addEventListener("click", async () => {
+    if (!confirm(`Reset "${style.style}" to its original version? Your edits are discarded.`)) return;
+    try {
+      await api.revertStyle(style.id);
+      toast("Reset to original");
+      ctx.afterChange();
+      document.getElementById("detailModal").hidden = true;
+    } catch (err) {
+      toast(err.message);
+    }
+  });
   body.querySelector("[data-edit]")?.addEventListener("click", () => ctx.onEdit(style));
   body.querySelector("[data-duplicate]")?.addEventListener("click", () => ctx.onDuplicate(style));
   body.querySelector("[data-remix]")?.addEventListener("click", () => ctx.onRemix(style));

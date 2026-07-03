@@ -215,6 +215,18 @@ main { max-width: 1280px; margin: 0 auto; padding: 36px 28px 88px; }
 .featured-name { font-size: 0.9rem; font-weight: 600; line-height: 1.3; }
 .featured-count { font-size: 0.75rem; color: var(--muted); }
 
+/* ---------- Home: recently updated strip ---------- */
+.recent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 26px; }
+.recent-card {
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
+  background: var(--surface); color: inherit; text-decoration: none;
+  border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.recent-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--lift); }
+.recent-name { font-size: 0.88rem; font-weight: 600; line-height: 1.35; }
+.recent-date { font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
 /* ---------- Home: how it works ---------- */
 .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 0 12px; }
 .how-step {
@@ -338,7 +350,10 @@ mark { background: none; color: inherit; font-weight: 650; }
 
 /* ---------- List view ---------- */
 .gallery--list { grid-template-columns: 1fr; gap: 8px; }
-.gallery--list .card { flex-direction: row; align-items: center; gap: 16px; padding: 12px 48px 12px 16px; position: relative; }
+/* min-width: 0 on the grid item and the flexed title: without it, nowrap
+   titles set a huge min-content and rows overflow the viewport on phones. */
+.gallery--list .card { flex-direction: row; align-items: center; gap: 16px; padding: 12px 48px 12px 16px; position: relative; min-width: 0; }
+.gallery--list .card-title { min-width: 0; }
 /* Favorites form one straight column at the row's edge, whatever the card
    type or title length — never scattered mid-row. */
 .gallery--list .card-head .fav { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); }

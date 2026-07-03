@@ -27,6 +27,11 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - Manage the **AI skill library** in the Skills tab: create/edit/delete skills (name, platform, category, description, instructions, source link, tags, notes), or describe one and let Claude draft the full instructions for the chosen platform. Persistence works exactly like prompts (seeds + Key Value overlay with tombstones).
 - **Upload skills you've already built**: the skill editor accepts a `SKILL.md` (frontmatter parsed into name/description, body into instructions), a `.zip`/`.skill` package, or a `.json` array for bulk import. Package uploads capture **all text files** inside (references, patterns, scripts…) and store them with the skill, so the public download rebuilds the full folder as a `.zip`; binary files are listed but not stored. After an upload, Claude auto-fills whatever metadata the file didn't declare (`/api/analyze-skill`), and anything still missing is surfaced as a highlighted checklist in the form.
 
+- **Rate skills and prompts** (1–5 stars) with "Top rated" sorts and star filters; skill downloads are counted publicly (`/api/track`, rate-limited) with a "Most downloaded" sort.
+- **Backups & undo** (Settings, admin): download one JSON snapshot of everything stored in Redis, or restore from one (full replace). A daily snapshot is also written to `UPLOAD_DIR/backups/` (last 14 kept). Every delete lands in a restorable trash (last 50), and any edited seed (style, prompt, or skill) offers "Reset to original".
+- **Export the Skills Hub**: one JSON of every skill, or every install-ready package in a single zip (binary package files round-trip via base64).
+- **Sharing/SEO**: `/styles?style=` and `/prompts?prompt=` links get server-rendered titles/OG like skill pages; skill pages also carry JSON-LD; `robots.txt` + `sitemap.xml` list every page.
+
 The AI features and the keys are gated server-side. Hiding the admin UI is only cosmetic; the real boundary is that `/api/generate-*` and `/api/styles` reject any request without a valid admin session.
 
 ## Deploy to Render

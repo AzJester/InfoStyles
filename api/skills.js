@@ -1,5 +1,5 @@
 import { requireAdmin } from "../lib/auth.js";
-import { kvAvailable, getSkills, saveSkill, deleteSkill, getDeletedSkillIds } from "../lib/store.js";
+import { kvAvailable, getSkills, saveSkill, deleteSkill, getDeletedSkillIds, pushTrash, revertSkill, getSkillStats } from "../lib/store.js";
 import { sanitizeSkill, slugify, mergeSkills } from "../lib/skill.js";
 import { seedSkills } from "../lib/skillSeeds.js";
 
@@ -9,8 +9,11 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     res.setHeader("Cache-Control", "no-store");
     try {
-      const [saved, deleted] = await Promise.all([getSkills(), getDeletedSkillIds()]);
-      return res.status(200).json({ skills: mergeSkills(seedSkills(), saved, deleted) });
+      const [saved, deleted, stats] = await Promise.all([getSkills(), getDeletedSkillIds(), getSkillStats()]);
+      const skills = mergeSkills(seedSkills(), saved, deleted).map((s) =>
+        stats[s.id] ? { ...s, downloads: stats[s.id] } : s
+      );
+      return res.status(200).json({ skills });
     } catch (err) {
       // Seeds still work when Redis is down; only admin edits go missing.
       // Don't echo backend errors (host/auth details) to public visitors.
@@ -29,7 +32,17 @@ export default async function handler(req, res) {
   try {
     if (action === "delete") {
       if (!id) return res.status(400).json({ error: "id is required to delete." });
+      // Keep the full record in the trash so the delete is restorable.
+      const record =
+        (await getSkills()).find((s) => s.id === id) || seedSkills().find((s) => s.id === id) || null;
       await deleteSkill(id);
+      if (record) await pushTrash("skill", record);
+      return res.status(200).json({ ok: true });
+    }
+    if (action === "revert") {
+      // Remove the record shadowing a seed (no tombstone): seed reappears.
+      if (!id) return res.status(400).json({ error: "id is required to revert." });
+      await revertSkill(id);
       return res.status(200).json({ ok: true });
     }
     const clean = sanitizeSkill(skill || {});

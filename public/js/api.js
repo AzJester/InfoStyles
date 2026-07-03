@@ -64,3 +64,29 @@ export const saveSkill = (payload) => post("/api/skills", { action: "save", ...p
 export const deleteSkillApi = (id) => post("/api/skills", { action: "delete", id });
 export const generateSkill = (payload) => post("/api/generate-skill", payload);
 export const analyzeSkill = (payload) => post("/api/analyze-skill", payload);
+
+// Reset an edited seed back to its committed original (removes the overlay).
+export const revertPrompt = (id) => post("/api/prompts", { action: "revert", id });
+export const revertSkill = (id) => post("/api/skills", { action: "revert", id });
+export const revertStyle = (id) => post("/api/styles", { action: "revert", id });
+
+// Backup (admin): GET downloads everything the app stores; POST restores it.
+export async function getBackup() {
+  const res = await fetch("/api/backup", { headers: { "cache-control": "no-store" } });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status}).`);
+  return data;
+}
+export const restoreBackup = (snapshot) => post("/api/backup", snapshot);
+
+// Recently deleted (admin): list + restore by index.
+export async function getTrash() {
+  const res = await fetch("/api/trash", { headers: { "cache-control": "no-store" } });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status}).`);
+  return data;
+}
+export const restoreTrash = (index) => post("/api/trash", { index });
+
+// Fire-and-forget download counter; failures never surface to the user.
+export const trackDownload = (id) => post("/api/track", { id }).catch(() => {});

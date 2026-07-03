@@ -79,3 +79,9 @@ test("mergePrompts handles missing arguments", () => {
   assert.deepEqual(mergePrompts(), []);
   assert.deepEqual(mergePrompts([{ id: "s1" }]).map((p) => p.id), ["s1"]);
 });
+
+test("mergePrompts marks saved records that shadow a seed with _seed", () => {
+  const merged = mergePrompts([{ id: "s1" }], [{ id: "s1", title: "edited" }, { id: "new" }], []);
+  assert.equal(merged.find((p) => p.id === "s1")._seed, true);
+  assert.ok(!("_seed" in merged.find((p) => p.id === "new")));
+});

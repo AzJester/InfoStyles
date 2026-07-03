@@ -355,7 +355,9 @@ function openPromptDetail(p) {
     <div class="pd-actions">
       <button type="button" class="btn btn-primary" data-pd-use>Customize &amp; copy</button>
       ${nResults ? `<button type="button" class="btn" data-pd-results>Saved outputs (${nResults})</button>` : ""}
-      ${admin ? `<button type="button" class="btn" data-pd-edit>Edit</button><button type="button" class="btn btn-ghost btn-danger" data-pd-del>Delete</button>` : ""}
+      ${admin ? `<button type="button" class="btn" data-pd-edit>Edit</button>` : ""}
+      ${admin && p._seed ? `<button type="button" class="btn" data-pd-revert title="Discard your edits; the original seed returns">Reset to original</button>` : ""}
+      ${admin ? `<button type="button" class="btn btn-ghost btn-danger" data-pd-del>Delete</button>` : ""}
     </div>`;
 
   const q = (sel) => refs.detailBody.querySelector(sel);
@@ -380,6 +382,17 @@ function openPromptDetail(p) {
   q("[data-pd-edit]")?.addEventListener("click", () => {
     closeModal(refs.detailModal);
     openForm(p);
+  });
+  q("[data-pd-revert]")?.addEventListener("click", async () => {
+    if (!confirm(`Reset "${p.title}" to its original version? Your edits are discarded.`)) return;
+    try {
+      await api.revertPrompt(p.id);
+      closeModal(refs.detailModal);
+      toast("Reset to original");
+      await refresh();
+    } catch (e) {
+      toast(e.message);
+    }
   });
   q("[data-pd-del]")?.addEventListener("click", async () => {
     if (!confirm(`Delete prompt "${p.title}"?`)) return;

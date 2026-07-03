@@ -1,5 +1,5 @@
 import { requireAdmin } from "../lib/auth.js";
-import { kvAvailable, saveOverride, saveCustom, deleteOverride, deleteCustom } from "../lib/store.js";
+import { kvAvailable, saveOverride, saveCustom, deleteOverride, deleteCustom, getCatalog, pushTrash, revertOverride } from "../lib/store.js";
 import { sanitizeStyle, slugify } from "../lib/style.js";
 
 // Admin-only create / edit / delete of styles, persisted to Vercel KV.
@@ -18,8 +18,24 @@ export default async function handler(req, res) {
   try {
     if (action === "delete") {
       if (!id) return res.status(400).json({ error: "id is required to delete." });
-      if (kind === "custom") await deleteCustom(id);
-      else await deleteOverride(id);
+      const cat = await getCatalog();
+      if (kind === "custom") {
+        const record = cat.custom.find((s) => s.id === id) || null;
+        await deleteCustom(id);
+        if (record) await pushTrash("style-custom", record);
+      } else {
+        // Deleting a built-in tombstones its override; keep any prior edits so
+        // restore brings the style back exactly as it was.
+        const { _deleted, ...fields } = cat.overrides[id] || {};
+        await deleteOverride(id);
+        await pushTrash("style-override", { id, fields });
+      }
+      return res.status(200).json({ ok: true });
+    }
+    if (action === "revert") {
+      // Drop the override entirely: the CSV original reappears unedited.
+      if (!id) return res.status(400).json({ error: "id is required to revert." });
+      await revertOverride(id);
       return res.status(200).json({ ok: true });
     }
 
