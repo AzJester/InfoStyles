@@ -522,6 +522,36 @@ mark { background: none; color: inherit; font-weight: 650; }
 .card-updated { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
 .gallery--list .prompt-card .card-updated { display: none; }
 
+/* ---------- Prompt Studio + review queue ---------- */
+.studio-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 16px; align-items: start; }
+@media (max-width: 720px) { .studio-grid { grid-template-columns: 1fr; } }
+.studio-improved-label { color: var(--accent); }
+.studio-improved { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 10px; max-height: 240px; overflow: auto; }
+.hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.studio-thanks { text-align: center; padding: 18px 8px 8px; }
+.studio-check { width: 52px; height: 52px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); display: grid; place-items: center; font-size: 1.5rem; margin: 0 auto 12px; }
+.studio-thanks h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.studio-ref { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); background: var(--bg); border: 1px dashed var(--border-strong); border-radius: 8px; padding: 5px 12px; display: inline-block; margin: 10px 0 0; }
+
+.queue-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--accent-soft); border: 1px solid var(--accent);
+  border-radius: 10px; padding: 10px 14px; font-size: 0.85rem; margin-bottom: 16px;
+}
+.queue-banner .btn { margin-left: auto; }
+.queue-dot { background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 700; border-radius: 999px; padding: 1px 8px; }
+:root[data-theme="dark"] .queue-dot { color: #0e1116; }
+
+.sub-card { display: flex; flex-direction: column; gap: 8px; }
+.sub-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sub-meta { font-size: 0.72rem; }
+.chip-verdict { font-size: 0.66rem; font-weight: 700; border-radius: 999px; padding: 2px 9px; }
+.chip-verdict.ok { background: color-mix(in srgb, #177a53 12%, var(--surface)); color: #177a53; }
+.chip-verdict.warn { background: color-mix(in srgb, var(--warn) 12%, var(--surface)); color: var(--warn); }
+.chip-verdict.bad { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger); }
+.chip-verdict.info { background: var(--accent-soft); color: var(--accent); }
+:root[data-theme="dark"] .chip-verdict.ok { color: #4cc394; }
+
 /* Curator rating: read-only stars on cards/detail + the picker in the editor. */
 .rating { color: var(--warn); letter-spacing: 1px; white-space: nowrap; }
 .rating .rating-off { color: var(--border-strong); }

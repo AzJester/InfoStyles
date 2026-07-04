@@ -186,6 +186,7 @@
             <h2>Prompt Library</h2>
             <p>Reusable LLM prompts — customize the variables, then copy or open in your tool.</p>
           </div>
+          <button type="button" class="btn btn-primary" id="studioBtn" hidden>✨ Create a prompt</button>
         </div>
         <div id="promptsView"></div>
       </section>
@@ -389,6 +390,7 @@
             <div id="pRating" class="rate-pick" role="group" aria-label="Rating out of 5"></div>
             <span class="field-help">Shown on the card and detail view; "Top rated" sorts by it.</span>
           </div>
+          <label class="field"><span class="field-label">Credit (optional)</span><input id="pCredit" class="input" placeholder="Submitted by…" /></label>
           <label class="field span-2"><span class="field-label">Prompt body</span><textarea id="pBody" class="input textarea" rows="6" placeholder="Use {{variables}} for parts to fill in at copy time."></textarea></label>
           <label class="field span-2"><span class="field-label">Notes (optional)</span><textarea id="pNotes" class="input textarea" rows="2"></textarea></label>
           <div class="field span-2">
@@ -441,6 +443,62 @@
     <!-- Prompt detail: full text, notes, tags, outputs (click a prompt card) -->
     <div id="promptDetailModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="pdTitle">
       <div class="modal-card modal-wide" id="pdBody"></div>
+    </div>
+
+    <!-- Prompt Studio (public): draft -> AI improve -> copy; saved to the review queue -->
+    <div id="studioModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="stTitleHead">
+      <div class="modal-card modal-wide">
+        <div class="modal-head"><h2 id="stTitleHead">✨ Prompt Studio</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <div id="stWork">
+          <p class="field-help">Write a rough prompt, let Claude sharpen it, then copy the improved version for your own use.</p>
+          <div class="studio-grid">
+            <div class="field">
+              <span class="field-label">Your draft</span>
+              <textarea id="stDraft" class="input textarea" rows="7" placeholder="e.g. write a weekly status report for my project. mention what went well and the risks and what i need from my boss. short."></textarea>
+              <input id="stWebsite" type="text" name="website" tabindex="-1" autocomplete="off" class="hp-field" aria-hidden="true" />
+              <div class="ai-controls">
+                <button type="button" id="stImprove" class="btn btn-primary">✨ Improve with AI</button>
+                <span id="stLeft" class="field-help"></span>
+              </div>
+            </div>
+            <div class="field" id="stResult" hidden>
+              <span class="field-label studio-improved-label">Claude's improved version — <span id="stTitle"></span></span>
+              <pre class="prompt-text studio-improved" id="stBody"></pre>
+              <div class="badges" id="stChips"></div>
+              <p class="field-help" id="stChanged"></p>
+            </div>
+          </div>
+          <label class="field">
+            <span class="field-label">Credit me as (optional — shown publicly if the owner adds it to the library)</span>
+            <input id="stCredit" class="input" placeholder="Your name or handle" />
+          </label>
+          <div class="modal-foot">
+            <span class="status" id="stStatus">Prompts created here are saved to the site owner's private review queue and may be published to the library.</span>
+            <button type="button" class="btn btn-primary" id="stCopy" disabled>Copy improved prompt</button>
+          </div>
+        </div>
+        <div id="stDone" hidden>
+          <div class="studio-thanks">
+            <div class="studio-check" aria-hidden="true">✓</div>
+            <h3>Copied — it's yours to use</h3>
+            <p class="field-help">A copy was also saved for the site owner — if it makes the library, it'll carry your credit.</p>
+            <p class="studio-ref" id="stRef"></p>
+          </div>
+          <div class="modal-foot" style="justify-content:center">
+            <button type="button" class="btn" id="stAgain">Make another</button>
+            <button type="button" class="btn" data-close>Back to the library</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review queue (admin): approve / edit & approve / reject submissions -->
+    <div id="subsModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="subsTitle">
+      <div class="modal-card modal-wide">
+        <div class="modal-head"><h2 id="subsTitle">Submissions</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <p class="field-help">Nothing here is public. Approve, clean up, or reject — rejects land in the trash (restorable).</p>
+        <div id="subsBody" class="results-list"></div>
+      </div>
     </div>
 
     <!-- Create / edit an AI skill (admin) -->

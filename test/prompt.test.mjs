@@ -39,6 +39,12 @@ test("sanitizePrompt tolerates a missing/invalid results field", () => {
   assert.deepEqual(sanitizePrompt({ title: "X", body: "Y", results: "nope" }).results, []);
 });
 
+test("sanitizePrompt keeps credit only when present", () => {
+  assert.equal(sanitizePrompt({ title: "X", body: "Y", credit: "Jamie R." }).credit, "Jamie R.");
+  assert.ok(!("credit" in sanitizePrompt({ title: "X", body: "Y" })));
+  assert.ok(!("credit" in sanitizePrompt({ title: "X", body: "Y", credit: "   " })));
+});
+
 test("sanitizePrompt keeps valid ratings and omits the key otherwise", () => {
   assert.equal(sanitizePrompt({ title: "X", body: "Y", rating: 4 }).rating, 4);
   assert.equal(sanitizePrompt({ title: "X", body: "Y", rating: "5" }).rating, 5);

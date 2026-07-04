@@ -1,5 +1,5 @@
 import { requireAdmin } from "../lib/auth.js";
-import { kvAvailable, getTrash, removeTrashAt, savePrompt, saveSkill, saveCustom, saveOverride } from "../lib/store.js";
+import { kvAvailable, getTrash, removeTrashAt, savePrompt, saveSkill, saveCustom, saveOverride, upsertSubmission } from "../lib/store.js";
 
 // Recently deleted records (last 50), restorable. GET lists; POST restores by
 // index: the record goes back through the normal save path for its kind,
@@ -26,6 +26,7 @@ export default async function handler(req, res) {
     else if (kind === "skill") await saveSkill(record);
     else if (kind === "style-custom") await saveCustom(record);
     else if (kind === "style-override") await saveOverride(record.id, record.fields);
+    else if (kind === "submission") await upsertSubmission(record); // back into the review queue
     else return res.status(400).json({ error: `Unknown trash kind "${kind}".` });
 
     return res.status(200).json({ ok: true, kind });

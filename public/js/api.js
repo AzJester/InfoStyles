@@ -90,3 +90,16 @@ export const restoreTrash = (index) => post("/api/trash", { index });
 
 // Fire-and-forget download counter; failures never surface to the user.
 export const trackDownload = (id) => post("/api/track", { id }).catch(() => {});
+
+// Prompt Studio (public): improve a draft; note that the visitor copied it.
+export const studioImprove = (payload) => post("/api/studio", { action: "improve", ...payload });
+export const studioCopied = (payload) => post("/api/studio", { action: "copied", ...payload }).catch(() => {});
+
+// Review queue (admin).
+export async function getSubmissions() {
+  const res = await fetch("/api/submissions", { headers: { "cache-control": "no-store" } });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status}).`);
+  return data;
+}
+export const submissionAction = (payload) => post("/api/submissions", payload);

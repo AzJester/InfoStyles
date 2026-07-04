@@ -36,6 +36,8 @@ import analyzeSkill from "./api/analyze-skill.js";
 import backup from "./api/backup.js";
 import trash from "./api/trash.js";
 import track from "./api/track.js";
+import studio from "./api/studio.js";
+import submissions from "./api/submissions.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -104,6 +106,9 @@ app.post("/api/backup", wrap(backup));
 app.get("/api/trash", wrap(trash));
 app.post("/api/trash", wrap(trash));
 app.post("/api/track", wrap(track));
+app.post("/api/studio", wrap(studio));
+app.get("/api/submissions", wrap(submissions));
+app.post("/api/submissions", wrap(submissions));
 
 // Serve admin-uploaded sample images from the persistent disk, when configured.
 if (process.env.UPLOAD_DIR) {

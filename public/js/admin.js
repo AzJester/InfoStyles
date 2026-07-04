@@ -3,7 +3,7 @@
 import * as api from "./api.js";
 import { openModal, closeModal, wireModalDismiss, toast } from "./ui.js";
 
-const state = { admin: false, kv: false, uploadEnabled: false };
+const state = { admin: false, kv: false, uploadEnabled: false, studio: false };
 let onChange = () => {};
 
 export function adminState() {
@@ -15,6 +15,7 @@ async function refreshSession() {
   state.admin = !!s.admin;
   state.kv = !!s.kv;
   state.uploadEnabled = !!s.uploadEnabled;
+  state.studio = !!s.studio;
   reflect();
   onChange();
 }
@@ -27,6 +28,9 @@ function reflect() {
     loginBtn.title = state.admin ? "Admin (signed in)" : "Admin sign in";
     loginBtn.setAttribute("aria-label", loginBtn.title);
   }
+  // The public Prompt Studio button only shows when the server can run it.
+  const studioBtn = document.getElementById("studioBtn");
+  if (studioBtn) studioBtn.hidden = !state.studio;
 }
 
 export async function initAdmin(opts = {}) {
