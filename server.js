@@ -106,6 +106,7 @@ app.post("/api/backup", wrap(backup));
 app.get("/api/trash", wrap(trash));
 app.post("/api/trash", wrap(trash));
 app.post("/api/track", wrap(track));
+app.get("/api/studio", wrap(studio));
 app.post("/api/studio", wrap(studio));
 app.get("/api/submissions", wrap(submissions));
 app.post("/api/submissions", wrap(submissions));

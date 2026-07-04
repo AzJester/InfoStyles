@@ -523,6 +523,15 @@ mark { background: none; color: inherit; font-weight: 650; }
 .gallery--list .prompt-card .card-updated { display: none; }
 
 /* ---------- Prompt Studio + review queue ---------- */
+.studio-out {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: color-mix(in srgb, var(--warn) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border));
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+}
+.studio-out > span { font-size: 1.2rem; line-height: 1; }
+.studio-out b { font-size: 0.9rem; }
+.studio-out p { margin: 3px 0 0; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
 .studio-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 16px; align-items: start; }
 @media (max-width: 720px) { .studio-grid { grid-template-columns: 1fr; } }
 .studio-improved-label { color: var(--accent); }
