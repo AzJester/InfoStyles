@@ -328,6 +328,9 @@ mark { background: none; color: inherit; font-weight: 650; }
 #puPreview { max-height: 220px; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
 #puCount { font-weight: 400; }
 .tool-links { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Mobile-only hint under the tool buttons (phones hand off to apps). */
+.touch-hint { display: none; }
+@media (hover: none) and (pointer: coarse) { .touch-hint { display: block; } }
 
 /* Saved-outputs list (prompt editor + viewer) */
 .results-list { display: flex; flex-direction: column; gap: 10px; }

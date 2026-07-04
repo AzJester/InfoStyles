@@ -11,10 +11,20 @@ import { getPromptView, setPromptView, isPromptFavorite, togglePromptFavorite, p
 // NotebookLM have no prefill URL, so for them the flow is copy-then-paste.
 // The buttons are real <a target="_blank"> links (not window.open) so popup
 // blockers and installed-PWA windows can't swallow the navigation.
+//
+// Mobile: gemini.google.com/app bounces on phones (Android hands the URL to
+// an app link and, when that fails, drops the user straight back). On Android
+// we use an explicit intent:// URL that opens the Gemini app when installed
+// and falls back to the web app otherwise; everywhere else the root URL
+// survives the redirect dance better than /app.
+const IS_ANDROID = /Android/i.test(navigator.userAgent);
+const GEMINI_URL = IS_ANDROID
+  ? "intent://gemini.google.com/#Intent;scheme=https;package=com.google.android.apps.bard;S.browser_fallback_url=https%3A%2F%2Fgemini.google.com%2F;end"
+  : "https://gemini.google.com/";
 const TOOLS = {
   chatgpt: { name: "ChatGPT", url: "https://chatgpt.com/", prefill: (t) => `https://chatgpt.com/?q=${encodeURIComponent(t)}` },
   claude: { name: "Claude", url: "https://claude.ai/new", prefill: (t) => `https://claude.ai/new?q=${encodeURIComponent(t)}` },
-  gemini: { name: "Gemini", url: "https://gemini.google.com/app" },
+  gemini: { name: "Gemini", url: GEMINI_URL },
   notebooklm: { name: "NotebookLM", url: "https://notebooklm.google.com/" },
 };
 // Both prefill targets sit behind Cloudflare (rejects URLs past ~32k); stay
