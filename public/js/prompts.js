@@ -514,10 +514,32 @@ function resetStudio() {
   refs.stCopy.disabled = true;
   refs.stWork.hidden = false;
   refs.stDone.hidden = true;
+  refs.stOut.hidden = true;
+  refs.stImprove.disabled = false;
   refs.stLeft.textContent = "";
   refs.stStatus.textContent =
     "Prompts created here are saved to the site owner's private review queue and may be published to the library.";
   refs.stStatus.classList.remove("error");
+}
+
+// The daily allowance is gone: show the disclaimer and lock the improver.
+function studioOutOfTokens() {
+  refs.stOut.hidden = false;
+  refs.stImprove.disabled = true;
+  refs.stStatus.textContent = "Out of AI improvements for today — the Studio resets at midnight UTC.";
+  refs.stStatus.classList.remove("error");
+}
+
+// On open, ask the server whether today's allowance is already used up so the
+// disclaimer shows before the visitor types anything.
+async function checkStudioOpen() {
+  try {
+    const res = await fetch("/api/studio", { headers: { "cache-control": "no-store" } });
+    const d = await res.json();
+    if (d && d.open === false && d.reason === "daily") studioOutOfTokens();
+  } catch {
+    /* fail open — the improve call still enforces the cap */
+  }
 }
 
 async function studioImprove() {
@@ -554,6 +576,11 @@ async function studioImprove() {
     refs.stStatus.textContent =
       "Prompts created here are saved to the site owner's private review queue and may be published to the library.";
   } catch (e) {
+    if (/daily limit/i.test(e.message)) {
+      // The cap was crossed mid-session: swap to the disclaimer state.
+      studioOutOfTokens();
+      return;
+    }
     refs.stStatus.textContent = e.message;
     refs.stStatus.classList.add("error");
     refs.stImprove.disabled = false;
@@ -906,6 +933,7 @@ export function initPrompts() {
     stStatus: el("stStatus"),
     stRef: el("stRef"),
     stAgain: el("stAgain"),
+    stOut: el("stOut"),
     nl: el("pNl"),
     gen: el("pGenerate"),
     save: el("pSave"),
@@ -949,6 +977,7 @@ export function initPrompts() {
   refs.studioBtn.addEventListener("click", () => {
     resetStudio();
     openModal(refs.studioModal);
+    checkStudioOpen();
   });
   refs.stImprove.addEventListener("click", studioImprove);
   refs.stCopy.addEventListener("click", studioCopy);

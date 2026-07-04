@@ -1,4 +1,4 @@
-import { kvAvailable, upsertSubmission, bumpStudioDaily } from "../lib/store.js";
+import { kvAvailable, upsertSubmission, bumpStudioDaily, getStudioDaily } from "../lib/store.js";
 import { getPrompts as storedPrompts, getDeletedPromptIds } from "../lib/store.js";
 import { mergePrompts } from "../lib/prompt.js";
 import { seedPrompts } from "../lib/promptSeeds.js";
@@ -88,6 +88,19 @@ async function findDuplicate(body) {
 }
 
 export default async function handler(req, res) {
+  // GET: availability check for the UI, so the out-of-tokens disclaimer can
+  // show as soon as the Studio opens (never increments the counter).
+  if (req.method === "GET") {
+    res.setHeader("Cache-Control", "no-store");
+    const configured = process.env.STUDIO_DISABLED !== "1" && kvAvailable() && !!process.env.ANTHROPIC_API_KEY;
+    if (!configured) return res.status(200).json({ open: false, reason: "off" });
+    try {
+      const used = await getStudioDaily();
+      return res.status(200).json({ open: used < DAILY_CAP, reason: used < DAILY_CAP ? "" : "daily" });
+    } catch {
+      return res.status(200).json({ open: true }); // fail open; the POST path still enforces
+    }
+  }
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   if (process.env.STUDIO_DISABLED === "1") return res.status(503).json({ error: "The Prompt Studio is currently turned off." });
   if (!kvAvailable()) return res.status(503).json({ error: "The Prompt Studio isn't available right now." });
