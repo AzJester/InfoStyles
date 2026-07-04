@@ -84,6 +84,9 @@ let activeCategory = ""; // category selected in the filter dropdown
 let minRating = ""; // "" any | "1".."5" (at least N stars) | "unrated"
 let sort = ""; // "" newest | "rating" | "title" | "outputs"
 let favOnly = false;
+let subs = []; // pending Prompt Studio submissions (admin only)
+let approveId = null; // when set, saving the form approves this submission
+const studio = { id: null, left: 0, body: "" }; // public studio state
 let view, refs;
 
 const byId = (id) => list.find((p) => p.id === id);
@@ -172,7 +175,7 @@ function cardHTML(p, admin) {
         <div class="card-title">${escapeHtml(p.title)}</div>
         <button type="button" class="fav ${fav ? "on" : ""}" data-fav="${escapeHtml(p.id)}" aria-pressed="${fav}" title="${fav ? "Remove from favorites" : "Add to favorites"}" aria-label="Favorite">${fav ? "★" : "☆"}</button>
       </div>
-      <div class="card-category">${ratingHTML(p.rating)}${p.rating ? " · " : ""}${escapeHtml(p.category)}${models ? ` · ${escapeHtml(models)}` : ""}</div>
+      <div class="card-category">${ratingHTML(p.rating)}${p.rating ? " · " : ""}${escapeHtml(p.category)}${models ? ` · ${escapeHtml(models)}` : ""}${p.credit ? ` · by ${escapeHtml(p.credit)}` : ""}</div>
       ${when ? `<div class="card-updated">Updated ${escapeHtml(when)}</div>` : ""}
       ${tags ? `<div class="badges">${tags}</div>` : ""}
       <pre class="prompt-preview">${escapeHtml(preview)}</pre>
@@ -264,7 +267,13 @@ function render() {
           favOnly ? "No favorite prompts yet — tap ☆ on a prompt." : hasFilter ? "No prompts match your filters." : "No prompts yet."
         }${admin && !hasFilter ? ' Use "+ New prompt" to add one.' : ""}</div>`
     : `<div class="gallery ${viewMode === "list" ? "gallery--list" : ""}">${items.map((p) => cardHTML(p, admin)).join("")}</div>`;
-  view.innerHTML = controlsHTML() + body;
+  // Admin-only banner: pending Prompt Studio submissions.
+  const banner =
+    admin && subs.length
+      ? `<div class="queue-banner"><span class="queue-dot">${subs.length}</span> <b>${subs.length} submission${subs.length === 1 ? "" : "s"} waiting for review</b> <span class="muted">· visible only to you</span> <button type="button" class="btn btn-sm" data-open-queue>Open queue</button></div>`
+      : "";
+  view.innerHTML = banner + controlsHTML() + body;
+  view.querySelector("[data-open-queue]")?.addEventListener("click", openQueue);
 
   view.querySelectorAll("[data-pview]").forEach((b) =>
     b.addEventListener("click", () => {
@@ -344,7 +353,7 @@ function openPromptDetail(p) {
         <button type="button" class="btn btn-icon" data-close aria-label="Close">✕</button>
       </div>
     </div>
-    <div class="card-category">${ratingHTML(p.rating)}${p.rating ? " · " : ""}${escapeHtml(p.category)}</div>
+    <div class="card-category">${ratingHTML(p.rating)}${p.rating ? " · " : ""}${escapeHtml(p.category)}${p.credit ? ` · Submitted by ${escapeHtml(p.credit)}` : ""}</div>
     ${p.updated ? `<div class="card-updated">Last updated ${escapeHtml(formatUpdated(p.updated))}</div>` : ""}
     ${models || tags ? `<div class="badges pd-badges">${models}${tags}</div>` : ""}
     ${p.notes ? `<div class="pd-section"><span class="detail-label">Notes</span><p class="pd-notes">${escapeHtml(p.notes)}</p></div>` : ""}
@@ -407,6 +416,157 @@ function openPromptDetail(p) {
   });
 
   openModal(refs.detailModal);
+}
+
+// ---------- review queue (admin): Prompt Studio submissions ----------
+async function loadSubs() {
+  if (!adminState().admin) {
+    subs = [];
+    return;
+  }
+  try {
+    subs = (await api.getSubmissions()).submissions || [];
+  } catch {
+    subs = [];
+  }
+}
+
+function verdictChips(s) {
+  const v = s.verdict || {};
+  const chips = [];
+  if (v.quality === "solid") chips.push(`<span class="chip-verdict ok">Claude: looks solid</span>`);
+  else if (v.quality === "spam") chips.push(`<span class="chip-verdict bad">Claude: likely spam</span>`);
+  else if (v.quality) chips.push(`<span class="chip-verdict warn">Claude: usable but thin</span>`);
+  if (v.duplicateOf) chips.push(`<span class="chip-verdict warn">near-duplicate of “${escapeHtml(v.duplicateOf)}” (${v.similarity}%)</span>`);
+  if (s.copied) chips.push(`<span class="chip-verdict info">copied by creator</span>`);
+  return chips.join("");
+}
+
+function openQueue() {
+  const bodyEl = refs.subsBody;
+  bodyEl.innerHTML = subs.length
+    ? subs
+        .map(
+          (s) => `<div class="result-item sub-card" data-sid="${escapeHtml(s.id)}">
+            <div class="sub-head"><b>${escapeHtml(s.title || "Untitled")}</b>${verdictChips(s)}</div>
+            <div class="muted sub-meta">via Prompt Studio · ${escapeHtml(s.category || "General")}${(s.tags || []).length ? ` · tags: ${escapeHtml(s.tags.join(", "))}` : ""}${s.credit ? ` · credit: ${escapeHtml(s.credit)}` : ""}${s.at ? ` · ${escapeHtml(new Date(s.at).toLocaleString())}` : ""} · ${escapeHtml(s.id)}</div>
+            <pre class="prompt-preview">${escapeHtml(s.body || "")}</pre>
+            ${s.verdict?.note ? `<p class="field-help">🤖 ${escapeHtml(s.verdict.note)}</p>` : ""}
+            <div class="pd-actions" style="justify-content:flex-start">
+              <button type="button" class="btn btn-sm btn-primary" data-sapprove="${escapeHtml(s.id)}">✓ Approve</button>
+              <button type="button" class="btn btn-sm" data-sedit="${escapeHtml(s.id)}">Edit &amp; approve</button>
+              <button type="button" class="btn btn-sm btn-ghost btn-danger" data-sreject="${escapeHtml(s.id)}">Reject</button>
+            </div>
+          </div>`
+        )
+        .join("")
+    : `<p class="field-help">The queue is empty.</p>`;
+
+  bodyEl.querySelectorAll("[data-sapprove]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      try {
+        await api.submissionAction({ action: "approve", id: b.dataset.sapprove });
+        toast("Published to the library ✓");
+        await loadSubs();
+        openQueue();
+        await refresh();
+      } catch (e) {
+        toast(e.message);
+      }
+    })
+  );
+  bodyEl.querySelectorAll("[data-sedit]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const s = subs.find((x) => x.id === b.dataset.sedit);
+      if (!s) return;
+      closeModal(refs.subsModal);
+      openForm({ title: s.title, category: s.category, tags: s.tags, body: s.body, credit: s.credit });
+      approveId = s.id;
+      refs.modalTitle.textContent = "Edit & approve submission";
+    })
+  );
+  bodyEl.querySelectorAll("[data-sreject]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      if (!confirm("Reject this submission? It moves to the trash (restorable).")) return;
+      try {
+        await api.submissionAction({ action: "reject", id: b.dataset.sreject });
+        toast("Rejected");
+        await loadSubs();
+        openQueue();
+        render();
+      } catch (e) {
+        toast(e.message);
+      }
+    })
+  );
+  openModal(refs.subsModal);
+}
+
+// ---------- Prompt Studio (public): draft -> improve -> copy ----------
+function resetStudio() {
+  studio.id = null;
+  studio.left = 2;
+  studio.body = "";
+  refs.stDraft.value = "";
+  refs.stCredit.value = "";
+  refs.stWebsite.value = "";
+  refs.stResult.hidden = true;
+  refs.stCopy.disabled = true;
+  refs.stWork.hidden = false;
+  refs.stDone.hidden = true;
+  refs.stLeft.textContent = "";
+  refs.stStatus.textContent =
+    "Prompts created here are saved to the site owner's private review queue and may be published to the library.";
+  refs.stStatus.classList.remove("error");
+}
+
+async function studioImprove() {
+  const draft = refs.stDraft.value.trim();
+  if (draft.length < 20) {
+    refs.stStatus.textContent = "Write a bit more first — at least a sentence about what the prompt should do.";
+    refs.stStatus.classList.add("error");
+    return;
+  }
+  if (studio.left <= 0) return;
+  refs.stImprove.disabled = true;
+  refs.stStatus.classList.remove("error");
+  refs.stStatus.textContent = "Improving with Claude…";
+  try {
+    const out = await api.studioImprove({
+      draft,
+      id: studio.id || undefined,
+      credit: refs.stCredit.value.trim() || undefined,
+      website: refs.stWebsite.value, // honeypot
+    });
+    studio.id = out.id;
+    studio.left--;
+    studio.body = out.prompt.body;
+    refs.stResult.hidden = false;
+    refs.stTitle.textContent = out.prompt.title;
+    refs.stBody.textContent = out.prompt.body;
+    refs.stChips.innerHTML = extractVariables(out.prompt.body)
+      .map((v) => `<span class="badge">{{${escapeHtml(v)}}}</span>`)
+      .join("");
+    refs.stChanged.textContent = `🤖 What changed: ${out.prompt.whatChanged}`;
+    refs.stCopy.disabled = false;
+    refs.stLeft.textContent = studio.left > 0 ? `${studio.left} improvement${studio.left === 1 ? "" : "s"} left for this prompt` : "No improvements left for this prompt";
+    refs.stImprove.disabled = studio.left <= 0;
+    refs.stStatus.textContent =
+      "Prompts created here are saved to the site owner's private review queue and may be published to the library.";
+  } catch (e) {
+    refs.stStatus.textContent = e.message;
+    refs.stStatus.classList.add("error");
+    refs.stImprove.disabled = false;
+  }
+}
+
+function studioCopy() {
+  if (!studio.body) return;
+  copyText(studio.body, "Prompt copied");
+  api.studioCopied({ id: studio.id, credit: refs.stCredit.value.trim() || undefined });
+  refs.stWork.hidden = true;
+  refs.stDone.hidden = false;
+  refs.stRef.textContent = `Reference: ${studio.id || ""}`;
 }
 
 // ---------- customize & copy ----------
@@ -587,10 +747,12 @@ function fillResultModel() {
 
 function openForm(p) {
   editId = p?.id || null;
+  approveId = null; // only the Edit & approve path re-sets this after calling
   refs.modalTitle.textContent = p ? "Edit prompt" : "New prompt";
   refs.title.value = p?.title || "";
   refs.category.value = p?.category || "";
   refs.tags.value = (p?.tags || []).join(", ");
+  refs.credit.value = p?.credit || "";
   refs.body.value = p?.body || "";
   refs.notes.value = p?.notes || "";
   refs.nl.value = "";
@@ -659,6 +821,7 @@ async function onSave() {
     notes: refs.notes.value.trim(),
     results: formResults,
     rating: formRating,
+    credit: refs.credit.value.trim(),
   };
   if (!prompt.title || !prompt.body) {
     setStatus("Title and body are required.", true);
@@ -667,8 +830,16 @@ async function onSave() {
   refs.save.disabled = true;
   setStatus("Saving…");
   try {
-    await api.savePrompt({ id: editId || undefined, prompt });
-    toast("Saved ✓");
+    if (approveId) {
+      // Edit & approve: publish the submission with the edited fields.
+      await api.submissionAction({ action: "approve", id: approveId, prompt });
+      approveId = null;
+      await loadSubs();
+      toast("Published to the library ✓");
+    } else {
+      await api.savePrompt({ id: editId || undefined, prompt });
+      toast("Saved ✓");
+    }
     closeModal(refs.modal);
     await refresh();
   } catch (e) {
@@ -686,6 +857,7 @@ async function ensureLoaded() {
 async function refresh() {
   list = (await api.getPrompts()).prompts || [];
   loaded = true;
+  await loadSubs();
   render();
 }
 
@@ -709,8 +881,31 @@ export function initPrompts() {
     category: el("pCategory"),
     tags: el("pTags"),
     rating: el("pRating"),
+    credit: el("pCredit"),
     body: el("pBody"),
     notes: el("pNotes"),
+    // review queue (admin)
+    subsModal: el("subsModal"),
+    subsBody: el("subsBody"),
+    // Prompt Studio (public)
+    studioBtn: el("studioBtn"),
+    studioModal: el("studioModal"),
+    stWork: el("stWork"),
+    stDone: el("stDone"),
+    stDraft: el("stDraft"),
+    stWebsite: el("stWebsite"),
+    stImprove: el("stImprove"),
+    stLeft: el("stLeft"),
+    stResult: el("stResult"),
+    stTitle: el("stTitle"),
+    stBody: el("stBody"),
+    stChips: el("stChips"),
+    stChanged: el("stChanged"),
+    stCredit: el("stCredit"),
+    stCopy: el("stCopy"),
+    stStatus: el("stStatus"),
+    stRef: el("stRef"),
+    stAgain: el("stAgain"),
     nl: el("pNl"),
     gen: el("pGenerate"),
     save: el("pSave"),
@@ -749,6 +944,15 @@ export function initPrompts() {
   wireModalDismiss(refs.useModal);
   wireModalDismiss(refs.resModal);
   wireModalDismiss(refs.detailModal);
+  wireModalDismiss(refs.studioModal);
+  wireModalDismiss(refs.subsModal);
+  refs.studioBtn.addEventListener("click", () => {
+    resetStudio();
+    openModal(refs.studioModal);
+  });
+  refs.stImprove.addEventListener("click", studioImprove);
+  refs.stCopy.addEventListener("click", studioCopy);
+  refs.stAgain.addEventListener("click", resetStudio);
   fillKnob(refs.useTone, KNOBS.tone);
   fillKnob(refs.useAudience, KNOBS.audience);
   fillKnob(refs.useLength, KNOBS.length);
@@ -783,9 +987,11 @@ export function initPrompts() {
   return {
     show: async () => {
       await ensureLoaded();
+      await loadSubs();
       render();
     },
-    rerender: render,
+    // Re-check the queue too: admin may have just signed in.
+    rerender: () => loadSubs().then(render),
     setQuery: (q) => {
       query = q;
       if (view && !view.hidden) render();
