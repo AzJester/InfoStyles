@@ -189,7 +189,11 @@ function cardHTML(p, admin) {
   const nResults = (p.results || []).length;
   const fav = isPromptFavorite(p.id);
   const when = formatUpdated(p.updated);
+  // First image from the saved outputs fronts the card (grid: banner,
+  // list: small square) so image prompts are recognizable at a glance.
+  const thumb = (p.results || []).flatMap((r) => r.images || [])[0] || "";
   return `<article class="card prompt-card" data-id="${escapeHtml(p.id)}" tabindex="0" role="button" aria-label="Open ${escapeHtml(p.title)}">
+    ${thumb ? `<img class="card-thumb" loading="lazy" alt="" src="${escapeHtml(thumb)}" />` : ""}
     <div class="card-body">
       <div class="card-head">
         <div class="card-title">${escapeHtml(p.title)}</div>
