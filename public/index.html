@@ -404,15 +404,13 @@
               </div>
               <textarea id="pResultOutput" class="input textarea" rows="3" placeholder="Paste the output this prompt generated… Markdown formatting is kept."></textarea>
               <div id="pResultImgRow" hidden>
-                <input type="file" id="pResultFile" accept="image/*" multiple hidden />
-                <input type="file" id="pResultDoc" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.rtf,.zip" multiple hidden />
+                <div id="pDropzone" class="dropzone" tabindex="0" role="button" aria-label="Add images or documents">
+                  <input type="file" id="pResultFile" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.rtf,.zip" multiple hidden />
+                  <p class="dropzone-hint">Drag &amp; drop images or documents here, or <span class="linkish">click to browse</span></p>
+                </div>
                 <div id="pResultImages" class="thumb-grid"></div>
                 <div id="pResultFiles" class="chip-tokens"></div>
-                <div class="chips-add">
-                  <button type="button" id="pResultAttach" class="btn btn-sm">🖼 Attach image…</button>
-                  <button type="button" id="pResultDocBtn" class="btn btn-sm">📎 Attach document…</button>
-                  <span id="pResultImgStatus" class="field-help"></span>
-                </div>
+                <span id="pResultImgStatus" class="field-help"></span>
               </div>
               <button type="button" id="pResultAdd" class="btn btn-sm">+ Add output</button>
             </div>
