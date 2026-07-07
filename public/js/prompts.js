@@ -3,6 +3,7 @@
 import * as api from "./api.js";
 import { adminState } from "./admin.js";
 import { extractVariables, applyVariables } from "./imagePrompt.js";
+import { renderMarkdown } from "./markdown.js";
 import { escapeHtml, copyText, toast, openModal, closeModal, wireModalDismiss, openLightbox, downscaleImage, ICONS } from "./ui.js";
 import { getPromptView, setPromptView, isPromptFavorite, togglePromptFavorite, promptFavoriteCount } from "./storage.js";
 
@@ -87,6 +88,7 @@ let loaded = false;
 let editId = null;
 let formResults = [];
 let formResultImages = []; // uploaded image URLs queued for the next "+ Add output"
+let formResultFiles = []; // uploaded documents ({url, name}) queued for the next "+ Add output"
 let formModels = []; // models attached to the prompt being edited
 let formRating = 0; // curator rating (0 = unrated) for the prompt being edited
 let viewMode = "list"; // "grid" | "list"
@@ -718,6 +720,23 @@ function wireResultImageZoom(rootEl, results) {
   );
 }
 
+// Download links for the documents attached to a saved output.
+function resultFilesHTML(r) {
+  const files = r.files || [];
+  if (!files.length) return "";
+  return `<div class="file-links">${files
+    .map(
+      (f) =>
+        `<a class="badge file-link" href="${escapeHtml(f.url)}" target="_blank" rel="noopener">📎 ${escapeHtml(f.name || "file")}</a>`
+    )
+    .join("")}</div>`;
+}
+
+// A saved output's text, rendered as rich text (Markdown subset).
+function resultOutputHTML(r) {
+  return r.output ? `<div class="md-body">${renderMarkdown(r.output)}</div>` : "";
+}
+
 function openResults(p) {
   refs.resTitle.textContent = `Saved outputs — ${p.title}`;
   refs.resBody.innerHTML = (p.results || [])
@@ -728,7 +747,8 @@ function openResults(p) {
              ${r.at ? `<span class="muted">${escapeHtml(new Date(r.at).toLocaleDateString())}</span>` : ""}
              ${r.output ? `<button type="button" class="btn btn-sm" data-rcopy="${i}">Copy</button>` : ""}</div>
            ${resultImagesHTML(r, i)}
-           ${r.output ? `<pre class="prompt-preview">${escapeHtml(r.output)}</pre>` : ""}
+           ${resultFilesHTML(r)}
+           ${resultOutputHTML(r)}
          </div>`
     )
     .join("");
@@ -749,7 +769,8 @@ function renderFormResults() {
                <div class="result-head"><span class="badge">${escapeHtml(r.model || "unknown model")}</span>
                  <button type="button" class="btn btn-sm btn-ghost btn-danger" data-rdel="${i}">Remove</button></div>
                ${resultImagesHTML(r, i)}
-               ${r.output ? `<pre class="prompt-preview">${escapeHtml(r.output)}</pre>` : ""}
+               ${resultFilesHTML(r)}
+               ${resultOutputHTML(r)}
              </div>`
         )
         .join("")
@@ -806,6 +827,45 @@ async function attachResultImages(fileList) {
   }
   refs.resultImgStatus.textContent = `${done} image${done === 1 ? "" : "s"} attached — “+ Add output” saves them to this prompt`;
   refs.resultFile.value = "";
+}
+
+// Documents queued for the next "+ Add output", as removable chips.
+function renderPendingFiles() {
+  refs.resultFiles.innerHTML = formResultFiles
+    .map(
+      (f, i) =>
+        `<span class="token">📎 ${escapeHtml(f.name)}<button type="button" class="token-x" data-fdel="${i}" aria-label="Remove ${escapeHtml(f.name)}">✕</button></span>`
+    )
+    .join("");
+  refs.resultFiles.querySelectorAll("[data-fdel]").forEach((b) =>
+    b.addEventListener("click", () => {
+      formResultFiles.splice(Number(b.dataset.fdel), 1);
+      renderPendingFiles();
+    })
+  );
+}
+
+// Upload documents (raw bytes, no downscale) and queue them for "+ Add output".
+async function attachResultDocs(fileList) {
+  const files = [...(fileList || [])];
+  if (!files.length) return;
+  refs.resultImgStatus.classList.remove("error");
+  let done = 0;
+  for (const file of files) {
+    refs.resultImgStatus.textContent = `Uploading ${done + 1}/${files.length}…`;
+    try {
+      const { url, name } = await api.uploadFile(file);
+      formResultFiles.push({ url, name: name || file.name });
+      renderPendingFiles();
+      done++;
+    } catch (err) {
+      refs.resultImgStatus.textContent = err.message;
+      refs.resultImgStatus.classList.add("error");
+      return;
+    }
+  }
+  refs.resultImgStatus.textContent = `${done} document${done === 1 ? "" : "s"} attached — “+ Add output” saves them to this prompt`;
+  refs.resultDoc.value = "";
 }
 
 function setStatus(m, isErr = false) {
@@ -902,12 +962,15 @@ function openForm(p) {
   formResults = (p?.results || []).map((r) => ({ ...r }));
   fillResultModel();
   refs.resultOutput.value = "";
-  // Image attach needs the uploads disk (same gate as the style creator).
+  // Image/document attach needs the uploads disk (same gate as the style creator).
   refs.resultImgRow.hidden = !adminState().uploadEnabled;
   formResultImages = [];
   renderPendingImages();
+  formResultFiles = [];
+  renderPendingFiles();
   refs.resultImgStatus.textContent = "";
   refs.resultFile.value = "";
+  refs.resultDoc.value = "";
   renderFormResults();
   setStatus("");
   openModal(refs.modal);
@@ -916,19 +979,23 @@ function openForm(p) {
 function addFormResult() {
   const output = refs.resultOutput.value.trim();
   const images = formResultImages.slice();
-  if (!output && !images.length) {
-    setStatus("Paste the output or attach an image before adding it.", true);
+  const files = formResultFiles.slice();
+  if (!output && !images.length && !files.length) {
+    setStatus("Paste the output or attach an image/document before adding it.", true);
     return;
   }
   const model =
     refs.resultModel.value === "__other__" ? refs.resultModelOther.value.trim() : refs.resultModel.value;
   const rec = { model, output, at: new Date().toISOString() };
   if (images.length) rec.images = images;
+  if (files.length) rec.files = files;
   formResults.unshift(rec);
   fillResultModel();
   refs.resultOutput.value = "";
   formResultImages = [];
   renderPendingImages();
+  formResultFiles = [];
+  renderPendingFiles();
   refs.resultImgStatus.textContent = "";
   setStatus("");
   renderFormResults();
@@ -1072,11 +1139,14 @@ export function initPrompts() {
     resultModelOther: el("pResultModelOther"),
     resultOutput: el("pResultOutput"),
     resultAdd: el("pResultAdd"),
-    // saved-output image attachments
+    // saved-output image / document attachments
     resultImgRow: el("pResultImgRow"),
     resultImages: el("pResultImages"),
     resultFile: el("pResultFile"),
     resultAttach: el("pResultAttach"),
+    resultDoc: el("pResultDoc"),
+    resultDocBtn: el("pResultDocBtn"),
+    resultFiles: el("pResultFiles"),
     resultImgStatus: el("pResultImgStatus"),
     // use (customize & copy) modal
     useModal: el("promptUseModal"),
@@ -1121,6 +1191,8 @@ export function initPrompts() {
   refs.resultAdd.addEventListener("click", addFormResult);
   refs.resultAttach.addEventListener("click", () => refs.resultFile.click());
   refs.resultFile.addEventListener("change", (e) => attachResultImages(e.target.files));
+  refs.resultDocBtn.addEventListener("click", () => refs.resultDoc.click());
+  refs.resultDoc.addEventListener("change", (e) => attachResultDocs(e.target.files));
 
   // Models picker: pick from the dropdown, or type a new one and Add / Enter.
   refs.modelPick.addEventListener("change", (e) => {

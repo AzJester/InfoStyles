@@ -38,6 +38,18 @@ export const saveStyle = (payload) => post("/api/styles", { action: "save", ...p
 export const deleteStyle = (payload) => post("/api/styles", { action: "delete", ...payload });
 export const uploadImage = (dataUrl, filename) => post("/api/upload-image", { dataUrl, filename });
 
+// Upload a document as raw bytes (filename via query). Returns { url, name }.
+export async function uploadFile(file) {
+  const res = await fetch(`/api/upload-file?filename=${encodeURIComponent(file.name)}`, {
+    method: "POST",
+    headers: { "content-type": file.type || "application/octet-stream" },
+    body: file,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Upload failed (${res.status}).`);
+  return data;
+}
+
 export async function getPrompts() {
   try {
     const res = await fetch("/api/prompts", { headers: { "cache-control": "no-store" } });
