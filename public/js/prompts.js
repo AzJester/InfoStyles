@@ -804,20 +804,27 @@ function renderPendingImages() {
   );
 }
 
-// Downscale in the browser, upload to /uploads (admin-only endpoint shared
-// with the style creator), and queue the returned URLs for "+ Add output".
-async function attachResultImages(fileList) {
-  const files = [...(fileList || [])].filter((f) => f.type.startsWith("image/"));
+// One handler for dropped or browsed files: images upload downscaled through
+// upload-image (thumbnails); everything else goes raw through upload-file
+// (download links). Both queue for the next "+ Add output".
+async function attachResultUploads(fileList) {
+  const files = [...(fileList || [])];
   if (!files.length) return;
   refs.resultImgStatus.classList.remove("error");
   let done = 0;
   for (const file of files) {
     refs.resultImgStatus.textContent = `Uploading ${done + 1}/${files.length}…`;
     try {
-      const dataUrl = await downscaleImage(file, 1400, 0.82);
-      const { url } = await api.uploadImage(dataUrl, file.name);
-      formResultImages.push(url);
-      renderPendingImages();
+      if (file.type.startsWith("image/")) {
+        const dataUrl = await downscaleImage(file, 1400, 0.82);
+        const { url } = await api.uploadImage(dataUrl, file.name);
+        formResultImages.push(url);
+        renderPendingImages();
+      } else {
+        const { url, name } = await api.uploadFile(file);
+        formResultFiles.push({ url, name: name || file.name });
+        renderPendingFiles();
+      }
       done++;
     } catch (err) {
       refs.resultImgStatus.textContent = err.message;
@@ -825,7 +832,7 @@ async function attachResultImages(fileList) {
       return;
     }
   }
-  refs.resultImgStatus.textContent = `${done} image${done === 1 ? "" : "s"} attached — “+ Add output” saves them to this prompt`;
+  refs.resultImgStatus.textContent = `${done} file${done === 1 ? "" : "s"} attached — “+ Add output” saves them to this prompt`;
   refs.resultFile.value = "";
 }
 
@@ -845,28 +852,6 @@ function renderPendingFiles() {
   );
 }
 
-// Upload documents (raw bytes, no downscale) and queue them for "+ Add output".
-async function attachResultDocs(fileList) {
-  const files = [...(fileList || [])];
-  if (!files.length) return;
-  refs.resultImgStatus.classList.remove("error");
-  let done = 0;
-  for (const file of files) {
-    refs.resultImgStatus.textContent = `Uploading ${done + 1}/${files.length}…`;
-    try {
-      const { url, name } = await api.uploadFile(file);
-      formResultFiles.push({ url, name: name || file.name });
-      renderPendingFiles();
-      done++;
-    } catch (err) {
-      refs.resultImgStatus.textContent = err.message;
-      refs.resultImgStatus.classList.add("error");
-      return;
-    }
-  }
-  refs.resultImgStatus.textContent = `${done} document${done === 1 ? "" : "s"} attached — “+ Add output” saves them to this prompt`;
-  refs.resultDoc.value = "";
-}
 
 function setStatus(m, isErr = false) {
   refs.status.textContent = m;
@@ -970,7 +955,6 @@ function openForm(p) {
   renderPendingFiles();
   refs.resultImgStatus.textContent = "";
   refs.resultFile.value = "";
-  refs.resultDoc.value = "";
   renderFormResults();
   setStatus("");
   openModal(refs.modal);
@@ -1143,9 +1127,7 @@ export function initPrompts() {
     resultImgRow: el("pResultImgRow"),
     resultImages: el("pResultImages"),
     resultFile: el("pResultFile"),
-    resultAttach: el("pResultAttach"),
-    resultDoc: el("pResultDoc"),
-    resultDocBtn: el("pResultDocBtn"),
+    dropzone: el("pDropzone"),
     resultFiles: el("pResultFiles"),
     resultImgStatus: el("pResultImgStatus"),
     // use (customize & copy) modal
@@ -1189,10 +1171,32 @@ export function initPrompts() {
   refs.gen.addEventListener("click", onGenerate);
   refs.save.addEventListener("click", onSave);
   refs.resultAdd.addEventListener("click", addFormResult);
-  refs.resultAttach.addEventListener("click", () => refs.resultFile.click());
-  refs.resultFile.addEventListener("change", (e) => attachResultImages(e.target.files));
-  refs.resultDocBtn.addEventListener("click", () => refs.resultDoc.click());
-  refs.resultDoc.addEventListener("change", (e) => attachResultDocs(e.target.files));
+  // Attachments dropzone: drag & drop or click/keyboard to browse (same
+  // interaction as the style creator's example-images dropzone).
+  refs.resultFile.addEventListener("change", (e) => attachResultUploads(e.target.files));
+  refs.dropzone.addEventListener("click", (e) => {
+    if (e.target !== refs.resultFile) refs.resultFile.click();
+  });
+  refs.dropzone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      refs.resultFile.click();
+    }
+  });
+  ["dragenter", "dragover"].forEach((ev) =>
+    refs.dropzone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      refs.dropzone.classList.add("dragover");
+    })
+  );
+  ["dragleave", "drop"].forEach((ev) =>
+    refs.dropzone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      if (ev === "dragleave" && refs.dropzone.contains(e.relatedTarget)) return;
+      refs.dropzone.classList.remove("dragover");
+    })
+  );
+  refs.dropzone.addEventListener("drop", (e) => attachResultUploads(e.dataTransfer?.files));
 
   // Models picker: pick from the dropdown, or type a new one and Add / Enter.
   refs.modelPick.addEventListener("change", (e) => {
