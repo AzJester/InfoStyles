@@ -836,7 +836,7 @@ async function attachResultUploads(fileList) {
       return;
     }
   }
-  refs.resultImgStatus.textContent = `${done} file${done === 1 ? "" : "s"} attached — “+ Add output” saves them to this prompt`;
+  refs.resultImgStatus.textContent = `${done} file${done === 1 ? "" : "s"} attached — included when you save this prompt`;
   refs.resultFile.value = "";
 }
 
@@ -964,14 +964,15 @@ function openForm(p) {
   openModal(refs.modal);
 }
 
-function addFormResult() {
+// Move whatever sits in the "add output" area (text, attached images,
+// attached documents) into a result record. Returns false when it's empty.
+// Called by "+ Add output" AND by Save, so attaching a file and hitting Save
+// directly never silently discards it.
+function flushPendingResult() {
   const output = refs.resultOutput.value.trim();
   const images = formResultImages.slice();
   const files = formResultFiles.slice();
-  if (!output && !images.length && !files.length) {
-    setStatus("Paste the output or attach an image/document before adding it.", true);
-    return;
-  }
+  if (!output && !images.length && !files.length) return false;
   const model =
     refs.resultModel.value === "__other__" ? refs.resultModelOther.value.trim() : refs.resultModel.value;
   const rec = { model, output, at: new Date().toISOString() };
@@ -985,6 +986,14 @@ function addFormResult() {
   formResultFiles = [];
   renderPendingFiles();
   refs.resultImgStatus.textContent = "";
+  return true;
+}
+
+function addFormResult() {
+  if (!flushPendingResult()) {
+    setStatus("Paste the output or attach an image/document before adding it.", true);
+    return;
+  }
   setStatus("");
   renderFormResults();
 }
@@ -1016,6 +1025,9 @@ async function onGenerate() {
 }
 
 async function onSave() {
+  // Anything still pending in the "add output" area rides along with the
+  // save — "attach, then Save" must work without clicking "+ Add output".
+  if (flushPendingResult()) renderFormResults();
   const prompt = {
     title: refs.title.value.trim(),
     category: refs.category.value.trim(),
