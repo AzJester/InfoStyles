@@ -1,7 +1,7 @@
 // Style editor: AI-assisted create, AI remix, and manual edit — all saving to the
 // server (KV) so changes are global. The form doubles as the editor for old styles.
 import * as api from "./api.js";
-import { openModal, closeModal, wireModalDismiss, toast, escapeHtml, openLightbox } from "./ui.js";
+import { openModal, closeModal, wireModalDismiss, toast, escapeHtml, openLightbox, downscaleImage } from "./ui.js";
 import { MODELS, getModel, setModel } from "./storage.js";
 import { toNotebookLMPrompt } from "./imagePrompt.js";
 
@@ -117,7 +117,7 @@ export function initCreator(ctx) {
     for (const file of files) {
       refs.sampleStatus.textContent = `Uploading ${done + 1}/${files.length}…`;
       try {
-        const dataUrl = await downscale(file, 1400, 0.82);
+        const dataUrl = await downscaleImage(file, 1400, 0.82);
         const { url } = await api.uploadImage(dataUrl, file.name);
         images.push(url);
         renderThumbs();
@@ -285,30 +285,6 @@ export function initCreator(ctx) {
     openRemix: (style) => open("remix", style),
     openDuplicate: (style) => open("duplicate", style),
   };
-}
-
-// Downscale an image file in the browser to keep the upload small and fast.
-function downscale(file, maxDim, quality) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-      const w = Math.max(1, Math.round(img.width * scale));
-      const h = Math.max(1, Math.round(img.height * scale));
-      const c = document.createElement("canvas");
-      c.width = w;
-      c.height = h;
-      c.getContext("2d").drawImage(img, 0, 0, w, h);
-      resolve(c.toDataURL("image/jpeg", quality));
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Could not read that image file."));
-    };
-    img.src = url;
-  });
 }
 
 function parsePalette(raw) {

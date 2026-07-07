@@ -374,7 +374,7 @@
         </section>
         <div class="editor-grid">
           <label class="field"><span class="field-label">Title</span><input id="pTitle" class="input" /></label>
-          <label class="field"><span class="field-label">Category</span><input id="pCategory" class="input" placeholder="Research, Chat, Coding…" /></label>
+          <label class="field"><span class="field-label">Category</span><input id="pCategory" class="input" list="pCategoryList" placeholder="Images, Research, Coding…" /><datalist id="pCategoryList"></datalist></label>
           <div class="field">
             <span class="field-label">Models</span>
             <div id="pModelChips" class="chip-tokens"></div>
@@ -395,7 +395,7 @@
           <label class="field span-2"><span class="field-label">Notes (optional)</span><textarea id="pNotes" class="input textarea" rows="2"></textarea></label>
           <div class="field span-2">
             <span class="field-label">Saved outputs</span>
-            <span class="field-help">Keep what this prompt produced, and on which model, for later reference.</span>
+            <span class="field-help">Keep what this prompt produced — text, images, or both — and on which model, for later reference.</span>
             <div id="pResults" class="results-list"></div>
             <div class="result-add">
               <div class="chips-add">
@@ -403,6 +403,14 @@
                 <input id="pResultModelOther" class="input" placeholder="Model name" hidden />
               </div>
               <textarea id="pResultOutput" class="input textarea" rows="3" placeholder="Paste the output this prompt generated…"></textarea>
+              <div id="pResultImgRow" hidden>
+                <input type="file" id="pResultFile" accept="image/*" multiple hidden />
+                <div id="pResultImages" class="thumb-grid"></div>
+                <div class="chips-add">
+                  <button type="button" id="pResultAttach" class="btn btn-sm">🖼 Attach image…</button>
+                  <span id="pResultImgStatus" class="field-help"></span>
+                </div>
+              </div>
               <button type="button" id="pResultAdd" class="btn btn-sm">+ Add output</button>
             </div>
           </div>

@@ -34,6 +34,33 @@ test("sanitizePrompt normalizes saved outputs and drops empty ones", () => {
   assert.equal(p.results[1].output, "no model is fine");
 });
 
+test("sanitizePrompt keeps image-only outputs and drops unsafe image URLs", () => {
+  const p = sanitizePrompt({
+    title: "X",
+    body: "Y",
+    results: [
+      { model: "Midjourney", output: "", images: ["/uploads/samples/a.jpg", "https://example.com/b.png"] },
+      { model: "GPT-5.5", output: "text + image", images: ["/uploads/samples/c.jpg"] },
+      { output: "", images: ["javascript:alert(1)", "data:image/png;base64,xxxx", "../etc/passwd"] }, // dropped: no safe image, no text
+      { output: "plain text, no images key" },
+    ],
+  });
+  assert.equal(p.results.length, 3);
+  assert.deepEqual(p.results[0].images, ["/uploads/samples/a.jpg", "https://example.com/b.png"]);
+  assert.equal(p.results[0].output, "");
+  assert.deepEqual(p.results[1].images, ["/uploads/samples/c.jpg"]);
+  // text-only records round-trip without an images key (seed compatibility)
+  assert.ok(!("images" in p.results[2]));
+});
+
+test("sanitizePrompt caps images per output and tolerates junk", () => {
+  const many = Array.from({ length: 20 }, (_, i) => `/uploads/samples/${i}.jpg`);
+  const p = sanitizePrompt({ title: "X", body: "Y", results: [{ output: "o", images: many }] });
+  assert.equal(p.results[0].images.length, 8);
+  const junk = sanitizePrompt({ title: "X", body: "Y", results: [{ output: "o", images: "not-an-array" }] });
+  assert.ok(!("images" in junk.results[0]));
+});
+
 test("sanitizePrompt tolerates a missing/invalid results field", () => {
   assert.deepEqual(sanitizePrompt({ title: "X", body: "Y" }).results, []);
   assert.deepEqual(sanitizePrompt({ title: "X", body: "Y", results: "nope" }).results, []);

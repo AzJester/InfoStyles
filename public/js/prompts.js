@@ -3,7 +3,7 @@
 import * as api from "./api.js";
 import { adminState } from "./admin.js";
 import { extractVariables, applyVariables } from "./imagePrompt.js";
-import { escapeHtml, copyText, toast, openModal, closeModal, wireModalDismiss, ICONS } from "./ui.js";
+import { escapeHtml, copyText, toast, openModal, closeModal, wireModalDismiss, openLightbox, downscaleImage, ICONS } from "./ui.js";
 import { getPromptView, setPromptView, isPromptFavorite, togglePromptFavorite, promptFavoriteCount } from "./storage.js";
 
 // External tools an end user might send a prompt to. ChatGPT and Claude accept
@@ -86,6 +86,7 @@ let query = "";
 let loaded = false;
 let editId = null;
 let formResults = [];
+let formResultImages = []; // uploaded image URLs queued for the next "+ Add output"
 let formModels = []; // models attached to the prompt being edited
 let formRating = 0; // curator rating (0 = unrated) for the prompt being edited
 let viewMode = "list"; // "grid" | "list"
@@ -108,9 +109,16 @@ function allTags() {
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 }
 
-// Categories across all prompts, with counts, alphabetical.
+// Categories offered even before any prompt uses them, so prompts get filed
+// consistently (image-generation prompts under "Images").
+const BASE_CATEGORIES = ["Images"];
+
+// Categories across all prompts, with counts, alphabetical. Base categories
+// are always present (count 0 when unused) so they show up in the filter and
+// the form's category picker from day one.
 function allCategories() {
   const counts = new Map();
+  for (const c of BASE_CATEGORIES) counts.set(c, 0);
   for (const p of list) {
     const c = p.category || "General";
     counts.set(c, (counts.get(c) || 0) + 1);
@@ -354,6 +362,17 @@ function openPromptDetail(p) {
   const models = (p.models || []).map((m) => `<span class="badge">${escapeHtml(m)}</span>`).join("");
   const tags = (p.tags || []).map((t) => `<span class="badge">${escapeHtml(t)}</span>`).join("");
   const nResults = (p.results || []).length;
+  // Images from the saved outputs, surfaced right on the detail view — for
+  // image-generation prompts they ARE the example.
+  const exampleImgs = (p.results || []).flatMap((r) => r.images || []).slice(0, 12);
+  const exampleHTML = exampleImgs.length
+    ? `<div class="pd-section"><span class="detail-label">Example images</span><div class="thumb-grid">${exampleImgs
+        .map(
+          (u, i) =>
+            `<div class="thumb"><img src="${escapeHtml(u)}" alt="Example image ${i + 1}" data-pd-img="${i}" loading="lazy" /></div>`
+        )
+        .join("")}</div></div>`
+    : "";
   refs.detailBody.innerHTML = `
     <div class="modal-head">
       <h2 id="pdTitle">${escapeHtml(p.title)}</h2>
@@ -367,6 +386,7 @@ function openPromptDetail(p) {
     ${p.updated ? `<div class="card-updated">Last updated ${escapeHtml(formatUpdated(p.updated))}</div>` : ""}
     ${models || tags ? `<div class="badges pd-badges">${models}${tags}</div>` : ""}
     ${p.notes ? `<div class="pd-section"><span class="detail-label">Notes</span><p class="pd-notes">${escapeHtml(p.notes)}</p></div>` : ""}
+    ${exampleHTML}
     <div class="prompt-block">
       <div class="prompt-head"><span>Prompt</span><button type="button" class="btn btn-sm" data-pd-copy>Copy</button></div>
       <pre class="prompt-text pd-text">${escapeHtml(p.body)}</pre>
@@ -380,6 +400,9 @@ function openPromptDetail(p) {
     </div>`;
 
   const q = (sel) => refs.detailBody.querySelector(sel);
+  refs.detailBody.querySelectorAll("[data-pd-img]").forEach((img) =>
+    img.addEventListener("click", () => openLightbox(exampleImgs[Number(img.dataset.pdImg)], img.alt))
+  );
   q("[data-pd-fav]").onclick = (e) => {
     togglePromptFavorite(p.id);
     const on = isPromptFavorite(p.id);
@@ -672,6 +695,29 @@ function openUse(p) {
 }
 
 // ---------- saved outputs viewer ----------
+// Thumbnails for the images attached to a saved output (form list + viewer).
+function resultImagesHTML(r, ri) {
+  const imgs = r.images || [];
+  if (!imgs.length) return "";
+  return `<div class="thumb-grid">${imgs
+    .map(
+      (u, i) =>
+        `<div class="thumb"><img src="${escapeHtml(u)}" alt="Example image ${i + 1}" data-rimg="${ri}:${i}" loading="lazy" /></div>`
+    )
+    .join("")}</div>`;
+}
+
+// Click a saved-output thumbnail to view it full size.
+function wireResultImageZoom(rootEl, results) {
+  rootEl.querySelectorAll("[data-rimg]").forEach((img) =>
+    img.addEventListener("click", () => {
+      const [ri, ii] = img.dataset.rimg.split(":").map(Number);
+      const u = results[ri]?.images?.[ii];
+      if (u) openLightbox(u, img.alt);
+    })
+  );
+}
+
 function openResults(p) {
   refs.resTitle.textContent = `Saved outputs — ${p.title}`;
   refs.resBody.innerHTML = (p.results || [])
@@ -680,11 +726,13 @@ function openResults(p) {
         `<div class="result-item">
            <div class="result-head"><span class="badge">${escapeHtml(r.model || "unknown model")}</span>
              ${r.at ? `<span class="muted">${escapeHtml(new Date(r.at).toLocaleDateString())}</span>` : ""}
-             <button type="button" class="btn btn-sm" data-rcopy="${i}">Copy</button></div>
-           <pre class="prompt-preview">${escapeHtml(r.output)}</pre>
+             ${r.output ? `<button type="button" class="btn btn-sm" data-rcopy="${i}">Copy</button>` : ""}</div>
+           ${resultImagesHTML(r, i)}
+           ${r.output ? `<pre class="prompt-preview">${escapeHtml(r.output)}</pre>` : ""}
          </div>`
     )
     .join("");
+  wireResultImageZoom(refs.resBody, p.results || []);
   refs.resBody.querySelectorAll("[data-rcopy]").forEach((b) =>
     b.addEventListener("click", () => copyText(p.results[Number(b.dataset.rcopy)].output, "Output copied"))
   );
@@ -700,17 +748,64 @@ function renderFormResults() {
             `<div class="result-item">
                <div class="result-head"><span class="badge">${escapeHtml(r.model || "unknown model")}</span>
                  <button type="button" class="btn btn-sm btn-ghost btn-danger" data-rdel="${i}">Remove</button></div>
-               <pre class="prompt-preview">${escapeHtml(r.output)}</pre>
+               ${resultImagesHTML(r, i)}
+               ${r.output ? `<pre class="prompt-preview">${escapeHtml(r.output)}</pre>` : ""}
              </div>`
         )
         .join("")
     : `<p class="field-help">No saved outputs yet.</p>`;
+  wireResultImageZoom(refs.results, formResults);
   refs.results.querySelectorAll("[data-rdel]").forEach((b) =>
     b.addEventListener("click", () => {
       formResults.splice(Number(b.dataset.rdel), 1);
       renderFormResults();
     })
   );
+}
+
+// ---------- images attached to the output being composed ----------
+function renderPendingImages() {
+  refs.resultImages.innerHTML = formResultImages
+    .map(
+      (url, i) =>
+        `<div class="thumb"><img src="${escapeHtml(url)}" alt="Attached image ${i + 1}" data-iview="${i}" />` +
+        `<button type="button" class="thumb-remove" data-idel="${i}" aria-label="Remove image" title="Remove">✕</button></div>`
+    )
+    .join("");
+  refs.resultImages.querySelectorAll("[data-iview]").forEach((img) =>
+    img.addEventListener("click", () => openLightbox(formResultImages[Number(img.dataset.iview)], img.alt))
+  );
+  refs.resultImages.querySelectorAll("[data-idel]").forEach((b) =>
+    b.addEventListener("click", () => {
+      formResultImages.splice(Number(b.dataset.idel), 1);
+      renderPendingImages();
+    })
+  );
+}
+
+// Downscale in the browser, upload to /uploads (admin-only endpoint shared
+// with the style creator), and queue the returned URLs for "+ Add output".
+async function attachResultImages(fileList) {
+  const files = [...(fileList || [])].filter((f) => f.type.startsWith("image/"));
+  if (!files.length) return;
+  refs.resultImgStatus.classList.remove("error");
+  let done = 0;
+  for (const file of files) {
+    refs.resultImgStatus.textContent = `Uploading ${done + 1}/${files.length}…`;
+    try {
+      const dataUrl = await downscaleImage(file, 1400, 0.82);
+      const { url } = await api.uploadImage(dataUrl, file.name);
+      formResultImages.push(url);
+      renderPendingImages();
+      done++;
+    } catch (err) {
+      refs.resultImgStatus.textContent = err.message;
+      refs.resultImgStatus.classList.add("error");
+      return;
+    }
+  }
+  refs.resultImgStatus.textContent = `${done} image${done === 1 ? "" : "s"} attached — “+ Add output” saves them to this prompt`;
+  refs.resultFile.value = "";
 }
 
 function setStatus(m, isErr = false) {
@@ -788,6 +883,11 @@ function openForm(p) {
   refs.modalTitle.textContent = p ? "Edit prompt" : "New prompt";
   refs.title.value = p?.title || "";
   refs.category.value = p?.category || "";
+  // Category picker: every known category (incl. the always-on base ones)
+  // as datalist suggestions; free text still works for brand-new categories.
+  refs.categoryList.innerHTML = allCategories()
+    .map(([c]) => `<option value="${escapeHtml(c)}"></option>`)
+    .join("");
   refs.tags.value = (p?.tags || []).join(", ");
   refs.credit.value = p?.credit || "";
   refs.body.value = p?.body || "";
@@ -802,6 +902,12 @@ function openForm(p) {
   formResults = (p?.results || []).map((r) => ({ ...r }));
   fillResultModel();
   refs.resultOutput.value = "";
+  // Image attach needs the uploads disk (same gate as the style creator).
+  refs.resultImgRow.hidden = !adminState().uploadEnabled;
+  formResultImages = [];
+  renderPendingImages();
+  refs.resultImgStatus.textContent = "";
+  refs.resultFile.value = "";
   renderFormResults();
   setStatus("");
   openModal(refs.modal);
@@ -809,15 +915,21 @@ function openForm(p) {
 
 function addFormResult() {
   const output = refs.resultOutput.value.trim();
-  if (!output) {
-    setStatus("Paste the output before adding it.", true);
+  const images = formResultImages.slice();
+  if (!output && !images.length) {
+    setStatus("Paste the output or attach an image before adding it.", true);
     return;
   }
   const model =
     refs.resultModel.value === "__other__" ? refs.resultModelOther.value.trim() : refs.resultModel.value;
-  formResults.unshift({ model, output, at: new Date().toISOString() });
+  const rec = { model, output, at: new Date().toISOString() };
+  if (images.length) rec.images = images;
+  formResults.unshift(rec);
   fillResultModel();
   refs.resultOutput.value = "";
+  formResultImages = [];
+  renderPendingImages();
+  refs.resultImgStatus.textContent = "";
   setStatus("");
   renderFormResults();
 }
@@ -916,6 +1028,7 @@ export function initPrompts() {
     modalTitle: el("pModalTitle"),
     title: el("pTitle"),
     category: el("pCategory"),
+    categoryList: el("pCategoryList"),
     tags: el("pTags"),
     rating: el("pRating"),
     credit: el("pCredit"),
@@ -959,6 +1072,12 @@ export function initPrompts() {
     resultModelOther: el("pResultModelOther"),
     resultOutput: el("pResultOutput"),
     resultAdd: el("pResultAdd"),
+    // saved-output image attachments
+    resultImgRow: el("pResultImgRow"),
+    resultImages: el("pResultImages"),
+    resultFile: el("pResultFile"),
+    resultAttach: el("pResultAttach"),
+    resultImgStatus: el("pResultImgStatus"),
     // use (customize & copy) modal
     useModal: el("promptUseModal"),
     useTitle: el("puTitle"),
@@ -1000,6 +1119,8 @@ export function initPrompts() {
   refs.gen.addEventListener("click", onGenerate);
   refs.save.addEventListener("click", onSave);
   refs.resultAdd.addEventListener("click", addFormResult);
+  refs.resultAttach.addEventListener("click", () => refs.resultFile.click());
+  refs.resultFile.addEventListener("change", (e) => attachResultImages(e.target.files));
 
   // Models picker: pick from the dropdown, or type a new one and Add / Enter.
   refs.modelPick.addEventListener("change", (e) => {
