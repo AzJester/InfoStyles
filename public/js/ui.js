@@ -187,3 +187,28 @@ document.addEventListener("keydown", (e) => {
     }
   }
 });
+
+// Downscale an image file in the browser so uploads stay small and fast.
+// Returns a JPEG data URL capped at maxDim on the longest side.
+export function downscaleImage(file, maxDim = 1400, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const c = document.createElement("canvas");
+      c.width = w;
+      c.height = h;
+      c.getContext("2d").drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read that image file."));
+    };
+    img.src = url;
+  });
+}

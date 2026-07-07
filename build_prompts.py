@@ -40,6 +40,12 @@ OUT_PATH = ROOT / "public" / "data" / "prompts.json"
 
 SLUG_RE = re.compile(r"[^a-z0-9]+")
 
+# Canonical category names. The app treats "Images" as a first-class category
+# (always offered in the prompt form's picker), so CSV variants fold into it.
+# Ids keep deriving from the RAW category (see below) so aliasing a category
+# never changes existing ids.
+CATEGORY_ALIASES = {"image": "Images"}
+
 # Field caps from lib/prompt.js sanitizePrompt.
 TITLE_MAX = 200
 CATEGORY_MAX = 120
@@ -144,7 +150,8 @@ def main() -> None:
             # (the app's category filter is single-valued).
             cat_parts = [js_trim(c) for c in (row.get("Category") or "").split(",")]
             cat_parts = [c for c in cat_parts if c]
-            category = clean(cat_parts[0], CATEGORY_MAX) if cat_parts else "General"
+            raw_category = clean(cat_parts[0], CATEGORY_MAX) if cat_parts else "General"
+            category = CATEGORY_ALIASES.get(raw_category.lower(), raw_category)
             tag_parts = [js_trim(t) for t in (row.get("Tags") or "").split(",")]
             tags = str_array([t for t in tag_parts if t] + cat_parts[1:], TAGS_CAP, TAGS_LEN)
             models = str_array(
@@ -175,7 +182,9 @@ def main() -> None:
                 continue
             seen_content.add(content_key)
 
-            base_id = f"prompt-{slugify(category, title) or i}"
+            # Raw (pre-alias) category: renaming a category via CATEGORY_ALIASES
+            # must not change ids, or admin edits/deletes of those seeds orphan.
+            base_id = f"prompt-{slugify(raw_category, title) or i}"
             prompt_id = base_id
             n = 2
             while prompt_id in used_ids:

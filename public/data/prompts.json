@@ -358,7 +358,7 @@
 {
 "id": "prompt-image-wild-bill-vs-zombies",
 "title": "Wild Bill vs Zombies",
-"category": "Image",
+"category": "Images",
 "body": "A movie poster about a 24 year old, athletic, bearded, long haired, Wild Bill Hickock versus a horde of hungry zombies fighting his way out of Deadwood at high noon on a sunny day directed by ridley scott",
 "notes": "Use case: Create an Image\n\nRating: 4/5 · Last used: 2/18/2025",
 "models": [
@@ -374,7 +374,7 @@
 {
 "id": "prompt-image-astrion-color-background",
 "title": "ASTRION Color Background",
-"category": "Image",
+"category": "Images",
 "body": "Generate an image that visually embodies the ASTRION brand promise: 'Results with Impact' and mission 'To deliver the difference that empowers customers and the nation.' Depict a sense of collaboration and powerful, positive outcomes. Use the ASTRION color palette, focusing on ASTRION Blue (#54A7DB) and ASTRION Green (#1ED871) to represent progress and positive change. Incorporate imagery that suggests interconnectedness and impactful solutions, perhaps through abstract representations of data streams or technological networks converging. The style should be professional, clean, and confident, reflecting ASTRION's role as a trusted partner. Maintain a high-quality, high-resolution aesthetic. No people should be depicted in the image.",
 "notes": "Use case: Backgrounds\n\nLast used: 4/18/2025",
 "models": [
@@ -389,7 +389,7 @@
 {
 "id": "prompt-image-memorial-day-2005",
 "title": "Memorial Day 2005",
-"category": "Image",
+"category": "Images",
 "body": "Realistic photo, depicting a standard government-issued grave marker in a field of similar markers at Arlington Cemetery, under bright daylight. The marker is a simple, upright, white marble rectangle. Engraved on the marker, in a standard military format, is text including a name (MEMORIAL DAY), rank (MAY 26), and branch (2025). Below this standard information, a smaller, brief personal inscription reads: \"IF GOOD MEN DO NOTHING, EVIL WILL TRIUMPH\". A standard religious emblem, a cross symbol, is engraved near the top of the marker. Red poppies with dark green leaves are placed neatly at the base of the grave marker. The overall atmosphere is clean, solemn, and respectful, illuminated by natural light, showing clean shadows on the white stone and grass. Composition is vertical, focusing on the marker and the ground directly around it, with the simple background suggesting rows of identical markers.",
 "notes": "Use case: Remembrance for Memorial Day\n\nRating: 5/5 · Last used: 5/4/2025",
 "models": [

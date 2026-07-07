@@ -28,6 +28,7 @@ import catalog from "./api/catalog.js";
 import generateStyle from "./api/generate-style.js";
 import styles from "./api/styles.js";
 import uploadImage from "./api/upload-image.js";
+import uploadFile from "./api/upload-file.js";
 import prompts from "./api/prompts.js";
 import generatePrompt from "./api/generate-prompt.js";
 import skills from "./api/skills.js";
@@ -94,6 +95,9 @@ app.get("/api/catalog", wrap(catalog));
 app.post("/api/generate-style", wrap(generateStyle));
 app.post("/api/styles", wrap(styles));
 app.post("/api/upload-image", wrap(uploadImage));
+// Documents arrive as raw bytes (filename in ?filename=), not JSON — the
+// global express.json only parses application/json bodies, so it skips these.
+app.post("/api/upload-file", express.raw({ type: () => true, limit: "11mb" }), wrap(uploadFile));
 app.get("/api/prompts", wrap(prompts));
 app.post("/api/prompts", wrap(prompts));
 app.post("/api/generate-prompt", wrap(generatePrompt));
@@ -111,9 +115,23 @@ app.post("/api/studio", wrap(studio));
 app.get("/api/submissions", wrap(submissions));
 app.post("/api/submissions", wrap(submissions));
 
-// Serve admin-uploaded sample images from the persistent disk, when configured.
+// Serve admin-uploaded sample images and documents from the persistent disk,
+// when configured. Documents (uploads/files/) download rather than render
+// inline — except PDFs, which browsers display safely — so nothing under
+// /uploads can ever execute in this origin.
 if (process.env.UPLOAD_DIR) {
-  app.use("/uploads", express.static(process.env.UPLOAD_DIR, { maxAge: "1h", index: false }));
+  app.use(
+    "/uploads",
+    express.static(process.env.UPLOAD_DIR, {
+      maxAge: "1h",
+      index: false,
+      setHeaders: (res, filePath) => {
+        if (filePath.includes(`${path.sep}files${path.sep}`) && !filePath.toLowerCase().endsWith(".pdf")) {
+          res.setHeader("Content-Disposition", "attachment");
+        }
+      },
+    })
+  );
 }
 
 // ---- Client-side routes (History API): every page serves the shell. ----
