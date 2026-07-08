@@ -107,6 +107,10 @@ export const trackDownload = (id) => post("/api/track", { id }).catch(() => {});
 export const studioImprove = (payload) => post("/api/studio", { action: "improve", ...payload });
 export const studioCopied = (payload) => post("/api/studio", { action: "copied", ...payload }).catch(() => {});
 
+// Public submissions: a visitor-built skill or style design, sent to the
+// admin's private review queue.
+export const submitToQueue = (payload) => post("/api/submit", payload);
+
 // Review queue (admin).
 export async function getSubmissions() {
   const res = await fetch("/api/submissions", { headers: { "cache-control": "no-store" } });

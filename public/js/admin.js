@@ -3,7 +3,7 @@
 import * as api from "./api.js";
 import { openModal, closeModal, wireModalDismiss, toast } from "./ui.js";
 
-const state = { admin: false, kv: false, uploadEnabled: false, studio: false };
+const state = { admin: false, kv: false, uploadEnabled: false, studio: false, submit: false };
 let onChange = () => {};
 
 export function adminState() {
@@ -16,6 +16,7 @@ async function refreshSession() {
   state.kv = !!s.kv;
   state.uploadEnabled = !!s.uploadEnabled;
   state.studio = !!s.studio;
+  state.submit = !!s.submit;
   reflect();
   onChange();
 }
@@ -31,6 +32,10 @@ function reflect() {
   // The public Prompt Studio button only shows when the server can run it.
   const studioBtn = document.getElementById("studioBtn");
   if (studioBtn) studioBtn.hidden = !state.studio;
+  // Same for the public "Submit a style" button (the Skills Hub renders its
+  // own submit button, gated inside skills.js).
+  const styleSubmitBtn = document.getElementById("styleSubmitBtn");
+  if (styleSubmitBtn) styleSubmitBtn.hidden = !state.submit;
 }
 
 export async function initAdmin(opts = {}) {

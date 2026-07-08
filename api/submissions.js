@@ -1,9 +1,13 @@
 import { requireAdmin } from "../lib/auth.js";
-import { kvAvailable, getSubmissions, removeSubmission, savePrompt, pushTrash } from "../lib/store.js";
-import { sanitizePrompt, slugify } from "../lib/prompt.js";
+import { kvAvailable, getSubmissions, removeSubmission, savePrompt, saveSkill, saveCustom, pushTrash } from "../lib/store.js";
+import { sanitizePrompt, slugify as promptSlug } from "../lib/prompt.js";
+import { sanitizeSkill, slugify as skillSlug } from "../lib/skill.js";
+import { sanitizeStyle, slugify as styleSlug } from "../lib/style.js";
 
-// Admin review queue for Prompt Studio submissions. GET lists pending;
-// POST approves (publishes to the library) or rejects (to the trash).
+// Admin review queue for community submissions: Prompt Studio prompts, plus
+// visitor-submitted skills and styles (kind on the record; missing = prompt).
+// GET lists pending; POST approves (publishes to the matching library) or
+// rejects (to the trash).
 export default async function handler(req, res) {
   if (!requireAdmin(req, res)) return;
   if (!kvAvailable()) {
@@ -16,13 +20,35 @@ export default async function handler(req, res) {
     }
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-    const { action, id, prompt } = req.body || {};
+    const { action, id, prompt, skill, style } = req.body || {};
     if (!id) return res.status(400).json({ error: "id is required." });
 
     if (action === "approve") {
       const sub = (await getSubmissions()).find((s) => s.id === id);
       if (!sub) return res.status(404).json({ error: "That submission no longer exists." });
-      // `prompt` (from Edit & approve) overrides the stored submission fields.
+      // `skill`/`style`/`prompt` (from Edit & approve) override the stored
+      // submission fields. Ids are minted exactly like the admin save routes.
+      const today = new Date().toISOString().slice(0, 10);
+
+      if (sub.kind === "skill") {
+        const clean = sanitizeSkill({ ...(sub.skill || {}), ...(skill || {}) });
+        if (!clean.author && sub.credit) clean.author = String(sub.credit).slice(0, 120);
+        clean.updated = today;
+        const skillId = `skill-${skillSlug(clean.platform, clean.name)}-${Math.abs(hashString(clean.name + clean.platform)).toString(36)}`;
+        const saved = await saveSkill({ id: skillId, ...clean });
+        await removeSubmission(id);
+        return res.status(200).json({ skill: saved });
+      }
+
+      if (sub.kind === "style") {
+        const clean = sanitizeStyle({ ...(sub.style || {}), ...(style || {}) });
+        const styleId = `custom-${styleSlug(clean.category, clean.style)}-${Math.abs(hashString(clean.style + clean.category)).toString(36)}`;
+        const saved = await saveCustom({ id: styleId, _custom: true, ...clean });
+        await removeSubmission(id);
+        return res.status(200).json({ style: saved });
+      }
+
+      // Default: a Prompt Studio prompt (older records carry no kind).
       const clean = sanitizePrompt({
         title: sub.title,
         category: sub.category,
@@ -31,8 +57,8 @@ export default async function handler(req, res) {
         credit: sub.credit,
         ...(prompt || {}),
       });
-      clean.updated = new Date().toISOString().slice(0, 10);
-      const promptId = `prompt-${slugify(clean.category, clean.title)}-${Math.abs(hashString(clean.title + clean.category)).toString(36)}`;
+      clean.updated = today;
+      const promptId = `prompt-${promptSlug(clean.category, clean.title)}-${Math.abs(hashString(clean.title + clean.category)).toString(36)}`;
       const saved = await savePrompt({ id: promptId, ...clean });
       await removeSubmission(id);
       return res.status(200).json({ prompt: saved });
