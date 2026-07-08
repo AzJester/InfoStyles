@@ -139,7 +139,9 @@
             <h2>Style Library</h2>
             <p>Design styles for infographics &amp; slides, each with a palette and copy-ready prompts.</p>
           </div>
+          <button type="button" class="btn btn-primary" id="styleSubmitBtn" hidden>🎨 Submit a style</button>
         </div>
+        <div id="stylesQueueBanner"></div>
         <div class="page-toolbar">
           <select id="categoryFilter" class="select" aria-label="Filter by category"></select>
           <button id="favFilter" class="btn btn-icon" aria-pressed="false" title="Show favorites" aria-label="Show favorites"></button>
@@ -513,8 +515,105 @@
     <div id="subsModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="subsTitle">
       <div class="modal-card modal-wide">
         <div class="modal-head"><h2 id="subsTitle">Submissions</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
-        <p class="field-help">Nothing here is public. Approve, clean up, or reject — rejects land in the trash (restorable).</p>
+        <p class="field-help">Community-submitted prompts, skills, and styles. Nothing here is public. Approve, clean up, or reject — rejects land in the trash (restorable).</p>
         <div id="subsBody" class="results-list"></div>
+      </div>
+    </div>
+
+    <!-- Submit a skill (public): upload or paste; lands in the admin review queue -->
+    <div id="subSkillModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="subSkillTitle">
+      <div class="modal-card modal-wide">
+        <div class="modal-head"><h2 id="subSkillTitle">⚡ Submit a skill</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <div id="subSkillWork">
+          <p class="field-help">Built a skill you'd like to see in the hub? Upload it or fill in the form. The site owner reviews every submission before it's published.</p>
+          <section class="ai-section">
+            <span class="field-label">Upload it (optional)</span>
+            <div id="subSkillDrop" class="dropzone" tabindex="0" role="button" aria-label="Upload a skill file">
+              <input type="file" id="subSkillFile" accept=".md,.markdown,.txt,.zip,.skill" hidden />
+              <p class="dropzone-hint">Drop a <strong>SKILL.md</strong> or a <strong>.zip / .skill</strong> package here, or <span class="linkish">click to browse</span></p>
+            </div>
+            <span id="subSkillFilesNote" class="field-help"></span>
+          </section>
+          <div class="editor-grid">
+            <label class="field"><span class="field-label">Name</span><input id="subSkillName" class="input" /></label>
+            <label class="field">
+              <span class="field-label">Platform</span>
+              <select id="subSkillPlatform" class="input" aria-label="Platform">
+                <option value="Claude">Claude</option>
+                <option value="ChatGPT">ChatGPT</option>
+                <option value="Gemini">Gemini</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+            <label class="field"><span class="field-label">Category</span><input id="subSkillCategory" class="input" placeholder="Writing, Sales, Productivity…" /></label>
+            <label class="field"><span class="field-label">Tags (comma-separated)</span><input id="subSkillTags" class="input" placeholder="writing, voice" /></label>
+            <label class="field span-2"><span class="field-label">Description</span><textarea id="subSkillDescription" class="input textarea" rows="2" placeholder="What the skill does and when it triggers."></textarea></label>
+            <label class="field span-2"><span class="field-label">Instructions</span><textarea id="subSkillInstructions" class="input textarea" rows="8" placeholder="The full skill body: SKILL.md content, custom-GPT instructions, or Gem instructions."></textarea></label>
+            <label class="field"><span class="field-label">Source link (optional)</span><input id="subSkillLink" class="input" placeholder="https://…  (repo, Drive folder, GPT share link)" /></label>
+            <label class="field"><span class="field-label">Credit me as (optional — shown publicly if published)</span><input id="subSkillCredit" class="input" placeholder="Your name or handle" /></label>
+          </div>
+          <input id="subSkillWebsite" type="text" name="website" tabindex="-1" autocomplete="off" class="hp-field" aria-hidden="true" />
+          <div class="modal-foot">
+            <span id="subSkillStatus" class="status">Submissions go to the site owner's private review queue — nothing appears in the hub until they approve it.</span>
+            <button type="button" class="btn btn-primary" id="subSkillSend">Submit for review</button>
+          </div>
+        </div>
+        <div id="subSkillDone" hidden>
+          <div class="studio-thanks">
+            <div class="studio-check" aria-hidden="true">✓</div>
+            <h3>Submitted — thank you</h3>
+            <p class="field-help">The site owner will review it. If it makes the hub, it'll carry your credit.</p>
+            <p class="studio-ref" id="subSkillRef"></p>
+          </div>
+          <div class="modal-foot" style="justify-content:center">
+            <button type="button" class="btn" id="subSkillAgain">Submit another</button>
+            <button type="button" class="btn" data-close>Back to the hub</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit a style (public): lands in the admin review queue -->
+    <div id="subStyleModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="subStyleTitle">
+      <div class="modal-card modal-wide">
+        <div class="modal-head"><h2 id="subStyleTitle">🎨 Submit a style</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <div id="subStyleWork">
+          <p class="field-help">Designed an infographic or slide style worth sharing? Describe it below. The site owner reviews every submission before it's published.</p>
+          <div class="editor-grid">
+            <label class="field"><span class="field-label">Style name</span><input id="subStyleName" class="input" /></label>
+            <label class="field"><span class="field-label">Category</span><input id="subStyleCategory" class="input" placeholder="Minimalist, Retro, Finance…" /></label>
+            <label class="field span-2">
+              <span class="field-label">Palette (hex, space-separated)</span>
+              <input id="subStylePalette" class="input" placeholder="#1F2537 #442C81 #FFFFFF" />
+              <span id="subStylePalettePreview" class="swatches sm-row"></span>
+            </label>
+            <label class="field"><span class="field-label">Type</span><input id="subStyleType" class="input" placeholder="e.g. Flat vector, editorial" /></label>
+            <label class="field"><span class="field-label">Icons</span><input id="subStyleIcons" class="input" placeholder="e.g. thin-line, duotone" /></label>
+            <label class="field"><span class="field-label">Layout</span><input id="subStyleLayout" class="input" placeholder="e.g. modular grid, generous whitespace" /></label>
+            <label class="field"><span class="field-label">Charts</span><input id="subStyleCharts" class="input" placeholder="e.g. clean bar charts, no 3D" /></label>
+            <label class="field"><span class="field-label">Background</span><input id="subStyleBackground" class="input" placeholder="e.g. off-white with subtle texture" /></label>
+            <label class="field"><span class="field-label">Avoid</span><input id="subStyleAvoid" class="input" placeholder="e.g. gradients, drop shadows" /></label>
+            <label class="field span-2"><span class="field-label">NotebookLM prompt (optional — we'll derive one from the fields if left blank)</span><textarea id="subStyleNotebook" class="input textarea" rows="2"></textarea></label>
+            <label class="field span-2"><span class="field-label">Credit me as (optional — shown publicly if published)</span><input id="subStyleCredit" class="input" placeholder="Your name or handle" /></label>
+          </div>
+          <input id="subStyleWebsite" type="text" name="website" tabindex="-1" autocomplete="off" class="hp-field" aria-hidden="true" />
+          <div class="modal-foot">
+            <span id="subStyleStatus" class="status">Submissions go to the site owner's private review queue — nothing appears in the library until they approve it.</span>
+            <button type="button" class="btn btn-primary" id="subStyleSend">Submit for review</button>
+          </div>
+        </div>
+        <div id="subStyleDone" hidden>
+          <div class="studio-thanks">
+            <div class="studio-check" aria-hidden="true">✓</div>
+            <h3>Submitted — thank you</h3>
+            <p class="field-help">The site owner will review it. If it makes the library, it'll carry your credit.</p>
+            <p class="studio-ref" id="subStyleRef"></p>
+          </div>
+          <div class="modal-foot" style="justify-content:center">
+            <button type="button" class="btn" id="subStyleAgain">Submit another</button>
+            <button type="button" class="btn" data-close>Back to the library</button>
+          </div>
+        </div>
       </div>
     </div>
 

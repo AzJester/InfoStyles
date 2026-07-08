@@ -5,6 +5,8 @@
 // create, edit, and AI-draft.
 import * as api from "./api.js";
 import { adminState } from "./admin.js";
+import { loadQueue, queueBannerHTML, wireQueueBanner } from "./queue.js";
+import { parseSkillMarkdown, titleize, readZip, base64ToBytes, bytesToBase64 } from "./skillfile.js";
 import { escapeHtml, copyText, toast, openModal, closeModal, wireModalDismiss, ICONS } from "./ui.js";
 import { getSkillView, setSkillView, isSkillFavorite, toggleSkillFavorite, skillFavoriteCount } from "./storage.js";
 
@@ -33,8 +35,10 @@ let favOnly = false;
 let formRating = 0; // curator rating for the skill being edited (0 = unrated)
 let detailSlug = null; // non-null => detail page mode
 let formResources = []; // package files attached to the skill being edited
+let approveId = null; // when set, saving the form approves this submission
 let view, refs;
 let navigate = () => {};
+let openSkillSubmit = () => {};
 
 const byId = (id) => list.find((s) => s.id === id);
 const bySlug = (slug) => list.find((s) => skillSlug(s.id) === slug || s.id === slug);
@@ -149,20 +153,6 @@ function crc32(bytes) {
   let c = 0xffffffff;
   for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
   return (c ^ 0xffffffff) >>> 0;
-}
-
-function base64ToBytes(b64) {
-  const bin = atob(b64.replace(/\s+/g, ""));
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
-
-function bytesToBase64(bytes) {
-  let bin = "";
-  const CHUNK = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK) bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-  return btoa(bin);
 }
 
 // Build an uncompressed (STORE) zip from [{path, text, encoding?}] — no
@@ -396,8 +386,11 @@ function render() {
         <h2>Skills Hub</h2>
         <p>Every skill here is install-ready: download the file, copy the instructions, or share the link.</p>
       </div>
+      ${adminState().submit ? `<button type="button" class="btn btn-primary" id="skillSubmitBtn">⚡ Submit a skill</button>` : ""}
     </div>
-    ${controlsHTML()}${body}${INSTALL_GUIDE}`;
+    ${queueBannerHTML()}${controlsHTML()}${body}${INSTALL_GUIDE}`;
+  wireQueueBanner(view);
+  view.querySelector("#skillSubmitBtn")?.addEventListener("click", () => openSkillSubmit());
 
   view.querySelectorAll("[data-plat]").forEach((b) =>
     b.addEventListener("click", () => {
@@ -602,91 +595,8 @@ function renderRatingPicker() {
 }
 
 // ---------- import existing skills (SKILL.md / .zip / .skill / .json) ----------
-// Parse a SKILL.md: optional YAML frontmatter (name, description, version,
-// author — description may be a JSON-quoted scalar, which is how this site
-// emits it), body becomes the instructions.
-function parseSkillMarkdown(text) {
-  const out = { instructions: text.trim(), hasFrontmatter: false };
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
-  if (!m) return out;
-  out.hasFrontmatter = true;
-  out.instructions = text.slice(m[0].length).trim();
-  for (const line of m[1].split(/\r?\n/)) {
-    const kv = line.match(/^(name|description|version|author):\s*(.*)$/);
-    if (!kv) continue;
-    let v = kv[2].trim();
-    if (v.startsWith('"')) {
-      try {
-        v = JSON.parse(v);
-      } catch {
-        v = v.replace(/^"+|"+$/g, "");
-      }
-    }
-    out[kv[1]] = v;
-  }
-  return out;
-}
-
-// "ai-fingerprint" / "meeting-notes.skill.zip" -> "Ai Fingerprint" / "Meeting Notes"
-function titleize(s) {
-  let out = String(s || "");
-  // Strip stacked extensions (e.g. ".skill.zip").
-  for (let prev = ""; prev !== out; ) {
-    prev = out;
-    out = out.replace(/\.(md|markdown|txt|zip|skill|json)$/i, "");
-  }
-  return out.replace(/[-_]+/g, " ").trim().replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-// Minimal zip reader — enough to list entries and extract text files. Uses the
-// central directory for names/sizes and DecompressionStream for deflate, so no
-// library is needed (CSP allows same-origin scripts only).
-async function readZip(file) {
-  const buf = new Uint8Array(await file.arrayBuffer());
-  const dv = new DataView(buf.buffer);
-  let eocd = -1;
-  for (let i = buf.length - 22; i >= Math.max(0, buf.length - 22 - 65535); i--) {
-    if (dv.getUint32(i, true) === 0x06054b50) {
-      eocd = i;
-      break;
-    }
-  }
-  if (eocd < 0) throw new Error("That doesn't look like a valid .zip file.");
-  const count = dv.getUint16(eocd + 10, true);
-  let off = dv.getUint32(eocd + 16, true);
-  const entries = [];
-  for (let i = 0; i < count; i++) {
-    if (dv.getUint32(off, true) !== 0x02014b50) break;
-    const method = dv.getUint16(off + 10, true);
-    const csize = dv.getUint32(off + 20, true);
-    const nameLen = dv.getUint16(off + 28, true);
-    const extraLen = dv.getUint16(off + 30, true);
-    const cmtLen = dv.getUint16(off + 32, true);
-    const lho = dv.getUint32(off + 42, true);
-    const name = new TextDecoder().decode(buf.subarray(off + 46, off + 46 + nameLen));
-    entries.push({ name, method, csize, lho });
-    off += 46 + nameLen + extraLen + cmtLen;
-  }
-  const readBytes = async (e) => {
-    // The local header's own name/extra lengths locate the data (they can
-    // differ from the central directory's).
-    const lnameLen = dv.getUint16(e.lho + 26, true);
-    const lextraLen = dv.getUint16(e.lho + 28, true);
-    const start = e.lho + 30 + lnameLen + lextraLen;
-    const data = buf.slice(start, start + e.csize);
-    if (e.method === 0) return data;
-    if (e.method === 8) {
-      const ds = new DecompressionStream("deflate-raw");
-      const ab = await new Response(new Blob([data]).stream().pipeThrough(ds)).arrayBuffer();
-      return new Uint8Array(ab);
-    }
-    throw new Error(`Unsupported zip compression (method ${e.method}).`);
-  };
-  // fatal: true rejects binary files instead of silently mangling them.
-  const readText = async (e, fatal = false) => new TextDecoder("utf-8", { fatal }).decode(await readBytes(e));
-  return { entries, readText, readBytes };
-}
-
+// (Parsing helpers — SKILL.md frontmatter, zip reading — live in skillfile.js,
+// shared with the public submit form.)
 function fillFormFromImport(parsed, files, filename) {
   refs.name.value = titleize(parsed.name) || titleize(filename) || refs.name.value;
   if (parsed.description) refs.description.value = parsed.description;
@@ -886,6 +796,7 @@ async function bulkImport(items) {
 
 function openForm(s) {
   editId = s?.id || null;
+  approveId = null; // only the Edit & approve path re-sets this after calling
   refs.modalTitle.textContent = s ? "Edit skill" : "New skill";
   refs.name.value = s?.name || "";
   // The select ships the four canonical platforms; a stored free-text platform
@@ -919,6 +830,15 @@ function openForm(s) {
   renderChecklist();
   setStatus("");
   openModal(refs.modal);
+}
+
+// Edit & approve a queued submission (opened by the shared queue in queue.js):
+// the editor prefilled with the visitor's skill; Save publishes it.
+function openApprove(sub) {
+  openForm(sub.skill || {});
+  approveId = sub.id;
+  refs.modalTitle.textContent = "Edit & approve submission";
+  if (!refs.author.value && sub.credit) refs.author.value = sub.credit;
 }
 
 async function onGenerate() {
@@ -970,8 +890,16 @@ async function onSave() {
   refs.save.disabled = true;
   setStatus("Saving…");
   try {
-    await api.saveSkill({ id: editId || undefined, skill });
-    toast("Saved ✓");
+    if (approveId) {
+      // Edit & approve: publish the submission with the edited fields.
+      await api.submissionAction({ action: "approve", id: approveId, skill });
+      approveId = null;
+      await loadQueue();
+      toast("Published to the library ✓");
+    } else {
+      await api.saveSkill({ id: editId || undefined, skill });
+      toast("Saved ✓");
+    }
     closeModal(refs.modal);
     await refresh();
   } catch (e) {
@@ -994,6 +922,7 @@ async function refresh() {
 
 export function initSkills(opts = {}) {
   navigate = opts.navigate || (() => {});
+  openSkillSubmit = opts.openSkillSubmit || (() => {});
   view = document.getElementById("skillsView");
   viewMode = getSkillView();
   const el = (id) => document.getElementById(id);
@@ -1068,8 +997,12 @@ export function initSkills(opts = {}) {
     showHub: async () => {
       detailSlug = null;
       await ensureLoaded();
+      await loadQueue();
       render();
     },
+    refresh,
+    // Edit & approve a queued submission (opened by the shared queue).
+    openApprove,
     // /skills/<slug> — a skill's own page.
     openBySlug: async (slug) => {
       detailSlug = slug;

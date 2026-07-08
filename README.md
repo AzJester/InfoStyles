@@ -16,6 +16,7 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - Copy the **NotebookLM** prompt or the generated **OpenAI image** prompt (with aspect-ratio and target-model variants), or roll a fresh palette.
 - Switch to the **Prompts** tab: a library of reusable LLM prompts (project management, competitive intel, business dev…) to search and copy; `{{variables}}` are filled in at copy time. It ships with 136 prompts baked in from the Airtable prompt-database export, and admins can add more.
 - Open the **Skills Hub** (`/skills`): a shareable repository of AI skills — **Claude Skills**, **ChatGPT custom-GPT instruction sets**, and **Gemini Gems** — filterable by platform, category, and tag, with version + last-updated stamps. Each skill has its own page (`/skills/<slug>`) with the full instructions, per-platform install steps, and a metadata sidebar (version, author, files). Copy the instructions or download an install-ready file (`SKILL.md` with YAML frontmatter for Claude, plain Markdown otherwise). "Share this collection" copies the hub link.
+- **Submit their own skills and styles**: "Submit a skill" on the Skills Hub (drop a `SKILL.md` or `.zip`/`.skill` package — parsed in the browser — or fill in the form) and "Submit a style" on the Style Library, each with an optional "credit me as". Nothing goes live: submissions land in the same private review queue as Prompt Studio prompts, and are published only after the admin approves them. Guards: per-IP hourly limit (`SUBMIT_IP_HOURLY`, default 5), a 200 KB size cap per submission (bundled package files are capped at 8; oversized ones are listed by name only), honeypot, duplicate-name hints against the live library, the shared 200-item queue cap, and a `SUBMIT_DISABLED=1` kill switch. No AI calls, so submissions cost nothing.
 - Light/dark theme toggle, keyboard shortcuts (`/` to search, `Esc` to close). Export the catalog as **JSON or CSV**.
 
 ## What the admin can do (after login)
@@ -29,7 +30,8 @@ Hosted on **Render**: one small Node/Express service that serves the static fron
 - Manage the **AI skill library** in the Skills tab: create/edit/delete skills (name, platform, category, description, instructions, source link, tags, notes), or describe one and let Claude draft the full instructions for the chosen platform. Persistence works exactly like prompts (seeds + Key Value overlay with tombstones).
 - **Upload skills you've already built**: the skill editor accepts a `SKILL.md` (frontmatter parsed into name/description, body into instructions), a `.zip`/`.skill` package, or a `.json` array for bulk import. Package uploads capture **all text files** inside (references, patterns, scripts…) and store them with the skill, so the public download rebuilds the full folder as a `.zip`; binary files are listed but not stored. After an upload, Claude auto-fills whatever metadata the file didn't declare (`/api/analyze-skill`), and anything still missing is surfaced as a highlighted checklist in the form.
 
-- **Prompt Studio** (public, on `/prompts`): visitors draft a rough prompt, Claude improves it (structure, constraints, `{{variables}}`, metadata), and they copy the result. Every improved prompt is saved to a **private review queue** the public API never exposes; the admin sees a badge + queue and can approve (publish, with optional "Submitted by" credit), edit-and-approve, or reject-to-trash. Spend guards: per-IP hourly limit (`STUDIO_IP_HOURLY`, default 6), a global daily ceiling (`STUDIO_DAILY_CAP`, default 100 ≈ $1–2/day worst case), honeypot, size caps, 200-item queue cap, and a `STUDIO_DISABLED=1` kill switch.
+- **Prompt Studio** (public, on `/prompts`): visitors draft a rough prompt, Claude improves it (structure, constraints, `{{variables}}`, metadata), and they copy the result. Every improved prompt is saved to a **private review queue** the public API never exposes. Spend guards: per-IP hourly limit (`STUDIO_IP_HOURLY`, default 6), a global daily ceiling (`STUDIO_DAILY_CAP`, default 100 ≈ $1–2/day worst case), honeypot, size caps, 200-item queue cap, and a `STUDIO_DISABLED=1` kill switch.
+- **One review queue for everything the community sends in** — Prompt Studio prompts, submitted skills, and submitted styles. The "N submissions waiting" banner shows on all three library pages (visible only to the admin); each item can be approved as-is, **edited & approved** (opens the matching editor prefilled — prompt form, skill editor, or style editor), or rejected to the restorable trash. Approving publishes to the matching library, stamps the date, and carries the submitter's credit (skills: into the author field).
 - **Rate skills and prompts** (1–5 stars) with "Top rated" sorts and star filters; skill downloads are counted publicly (`/api/track`, rate-limited) with a "Most downloaded" sort.
 - **Backups & undo** (Settings, admin): download one JSON snapshot of everything stored in Redis, or restore from one (full replace). A daily snapshot is also written to `UPLOAD_DIR/backups/` (last 14 kept). Every delete lands in a restorable trash (last 50), and any edited seed (style, prompt, or skill) offers "Reset to original".
 - **Export the Skills Hub**: one JSON of every skill, or every install-ready package in a single zip (binary package files round-trip via base64).
@@ -94,13 +96,14 @@ Infographic & Slide Styles-...csv   # source of truth (1,530 styles)
 Prompt Database-All Prompts.csv     # source of truth (136 seed prompts, Airtable export)
 public/                         # static site (served at /)
   index.html  styles.css
-  js/  main.js, catalog.js, card.js, creator.js, prompts.js, skills.js, admin.js, api.js, ui.js, imagePrompt.js, storage.js
+  js/  main.js, catalog.js, card.js, creator.js, prompts.js, skills.js, queue.js, submit.js, skillfile.js, admin.js, api.js, ui.js, imagePrompt.js, storage.js
   data/                         # generated/committed JSON (styles, categories, prompts, skills)
 api/                            # request handlers (reused by server.js)
   login.js logout.js session.js catalog.js
   generate-style.js styles.js upload-image.js
   prompts.js generate-prompt.js skills.js generate-skill.js
-lib/                            # shared server code: auth.js, store.js (Redis), style.js, prompt.js, skill.js
+  studio.js submit.js submissions.js
+lib/                            # shared server code: auth.js, store.js (Redis), style.js, prompt.js, skill.js, submission.js
 test/                           # node:test unit tests
 ```
 

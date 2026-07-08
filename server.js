@@ -39,6 +39,7 @@ import trash from "./api/trash.js";
 import track from "./api/track.js";
 import studio from "./api/studio.js";
 import submissions from "./api/submissions.js";
+import submit from "./api/submit.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -114,6 +115,7 @@ app.get("/api/studio", wrap(studio));
 app.post("/api/studio", wrap(studio));
 app.get("/api/submissions", wrap(submissions));
 app.post("/api/submissions", wrap(submissions));
+app.post("/api/submit", wrap(submit));
 
 // Serve admin-uploaded sample images and documents from the persistent disk,
 // when configured. Documents (uploads/files/) download rather than render

@@ -1,6 +1,7 @@
 // Style editor: AI-assisted create, AI remix, and manual edit — all saving to the
 // server (KV) so changes are global. The form doubles as the editor for old styles.
 import * as api from "./api.js";
+import { loadQueue } from "./queue.js";
 import { openModal, closeModal, wireModalDismiss, toast, escapeHtml, openLightbox, downscaleImage } from "./ui.js";
 import { MODELS, getModel, setModel } from "./storage.js";
 import { toNotebookLMPrompt } from "./imagePrompt.js";
@@ -38,10 +39,11 @@ export function initCreator(ctx) {
     sampleStatus: el("sampleStatus"),
   };
 
-  let mode = "create"; // create | edit | remix
+  let mode = "create"; // create | edit | remix | duplicate | approve
   let currentId = null;
   let currentKind = "custom";
   let baseStyle = null;
+  let approveSubId = null; // when set, saving publishes this queued submission
   let images = []; // example image URLs for this style
 
   for (const m of MODELS) {
@@ -191,9 +193,18 @@ export function initCreator(ctx) {
   function open(modeName, style) {
     mode = modeName;
     baseStyle = null;
+    approveSubId = null; // only openApprove re-sets this after calling
     setStatus("");
     refs.sampleRow.hidden = !(ctx.uploadEnabled && ctx.uploadEnabled());
-    if (modeName === "edit") {
+    if (modeName === "approve") {
+      currentId = null;
+      currentKind = "custom";
+      refs.title.textContent = "Edit & approve submission";
+      refs.aiHint.textContent = "A visitor submitted this style. Review or revise it, then Save to publish.";
+      refs.nl.placeholder = "Optionally describe an AI revision, then Generate.";
+      refs.nl.value = "";
+      fillForm(style);
+    } else if (modeName === "edit") {
       currentId = style.id;
       currentKind = ctx.kindOf(style.id);
       refs.title.textContent = "Edit style";
@@ -266,10 +277,19 @@ export function initCreator(ctx) {
     refs.save.disabled = true;
     setStatus("Saving…");
     try {
-      const payload =
-        mode === "edit" ? { kind: currentKind, id: currentId, style } : { kind: "custom", style };
-      const { style: saved } = await api.saveStyle(payload);
-      toast("Saved ✓");
+      let saved;
+      if (mode === "approve" && approveSubId) {
+        // Edit & approve: publish the queued submission with the edited fields.
+        ({ style: saved } = await api.submissionAction({ action: "approve", id: approveSubId, style }));
+        approveSubId = null;
+        await loadQueue();
+        toast("Published to the library ✓");
+      } else {
+        const payload =
+          mode === "edit" ? { kind: currentKind, id: currentId, style } : { kind: "custom", style };
+        ({ style: saved } = await api.saveStyle(payload));
+        toast("Saved ✓");
+      }
       closeModal(modal);
       ctx.afterSave(saved);
     } catch (err) {
@@ -284,10 +304,15 @@ export function initCreator(ctx) {
     openEdit: (style) => open("edit", style),
     openRemix: (style) => open("remix", style),
     openDuplicate: (style) => open("duplicate", style),
+    // Edit & approve a queued style submission (opened by the shared queue).
+    openApprove: (sub) => {
+      open("approve", sub.style || { palette: [] });
+      approveSubId = sub.id;
+    },
   };
 }
 
-function parsePalette(raw) {
+export function parsePalette(raw) {
   const found = String(raw || "").match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/g) || [];
   const seen = new Set();
   const out = [];

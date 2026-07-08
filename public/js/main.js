@@ -6,6 +6,8 @@ import { buildCard, openDetail } from "./card.js";
 import { initCreator } from "./creator.js";
 import { initPrompts } from "./prompts.js";
 import { initSkills, skillSlug, buildZip, toSkillFile, fileSlug } from "./skills.js";
+import { initQueue, loadQueue, queueBannerHTML, wireQueueBanner } from "./queue.js";
+import { initSubmit } from "./submit.js";
 import { initAdmin, adminState } from "./admin.js";
 import { isFavorite, favoriteCount, getTheme, setTheme, getView, setView, hasSeenIntro, markIntroSeen } from "./storage.js";
 import { getPrompts, getSkills, getBackup, restoreBackup, getTrash, restoreTrash } from "./api.js";
@@ -90,6 +92,15 @@ export function navigate(path, { replace = false } = {}) {
   route();
 }
 
+// Admin-only "submissions waiting" banner on the Styles page (the other
+// pages render theirs inside their own views).
+function refreshStylesBanner() {
+  const box = document.getElementById("stylesQueueBanner");
+  if (!box) return;
+  box.innerHTML = queueBannerHTML();
+  wireQueueBanner(box);
+}
+
 function route() {
   const r = parsePath() || { section: "home" };
   setSection(r.section);
@@ -133,6 +144,7 @@ function setSection(next) {
     : section === "skills" ? "Search skills…   ( / )"
     : isStyles ? "Search styles…   ( / )"
     : "Search…   ( / )";
+  if (isStyles) refreshStylesBanner();
   updateLanding();
 }
 
@@ -587,7 +599,22 @@ async function init() {
 
   creator = initCreator(ctx);
   promptsUI = initPrompts();
-  skillsUI = initSkills({ navigate });
+  const submitUI = initSubmit();
+  skillsUI = initSkills({ navigate, openSkillSubmit: submitUI.openSkillSubmit });
+  // The shared review queue (community-submitted prompts, skills, styles):
+  // "Edit & approve" opens each kind's existing editor; after the queue
+  // publishes or rejects something, the matching library reloads.
+  initQueue({
+    editPrompt: (sub) => promptsUI.openApprove(sub),
+    editSkill: (sub) => skillsUI.openApprove(sub),
+    editStyle: (sub) => creator.openApprove(sub),
+    onChange: async (kind) => {
+      if (kind === "skill") await skillsUI.refresh();
+      else if (kind === "style") await reloadAndRender();
+      else if (kind === "prompt") await promptsUI.refresh();
+      refreshStylesBanner();
+    },
+  });
 
   // Internal links (nav, brand, library cards, breadcrumbs) route client-side.
   document.addEventListener("click", (e) => {
@@ -618,11 +645,15 @@ async function init() {
   });
 
   await initAdmin({
-    onChange: () => {
+    onChange: async () => {
       els.newStyleBtn.hidden = section !== "styles" || !adminState().admin;
       els.newPromptBtn.hidden = section !== "prompts" || !adminState().admin;
       els.newSkillBtn.hidden = section !== "skills" || !adminState().admin;
-      // Re-render the active section so admin-only controls appear/disappear.
+      // Refresh the shared review queue (admin may have just signed in/out),
+      // then re-render the active section so admin-only controls and the
+      // submissions banner appear/disappear.
+      await loadQueue();
+      refreshStylesBanner();
       if (section === "prompts") promptsUI.rerender();
       else if (section === "skills") skillsUI.rerender();
       else applyFilters();
@@ -919,7 +950,12 @@ function initSettings() {
       }
       box.innerHTML = trash
         .map((t, i) => {
-          const name = t.record?.title || t.record?.name || t.record?.fields?.style || t.record?.style || t.record?.id || "Untitled";
+          const r = t.record || {};
+          // Rejected skill/style submissions nest their record under
+          // skill/style; custom styles carry the name in the string `style`.
+          const name =
+            r.title || r.name || r.skill?.name || r.style?.style || r.fields?.style ||
+            (typeof r.style === "string" ? r.style : "") || r.id || "Untitled";
           const when = t.at ? new Date(t.at).toLocaleDateString() : "";
           return `<div class="result-item"><div class="result-head"><span class="badge">${escapeHtml(t.kind)}</span><span>${escapeHtml(String(name))}</span><span class="muted">${escapeHtml(when)}</span><button type="button" class="btn btn-sm" data-restore="${i}">Restore</button></div></div>`;
         })

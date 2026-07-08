@@ -2,6 +2,7 @@
 // with saved outputs and copy-time customization (tone/audience/length/format).
 import * as api from "./api.js";
 import { adminState } from "./admin.js";
+import { loadQueue, queueBannerHTML, wireQueueBanner } from "./queue.js";
 import { extractVariables, applyVariables } from "./imagePrompt.js";
 import { renderMarkdown } from "./markdown.js";
 import { escapeHtml, copyText, toast, openModal, closeModal, wireModalDismiss, openLightbox, downscaleImage, ICONS } from "./ui.js";
@@ -97,7 +98,6 @@ let activeCategory = ""; // category selected in the filter dropdown
 let minRating = ""; // "" any | "1".."5" (at least N stars) | "unrated"
 let sort = ""; // "" newest | "rating" | "title" | "outputs"
 let favOnly = false;
-let subs = []; // pending Prompt Studio submissions (admin only)
 let approveId = null; // when set, saving the form approves this submission
 const studio = { id: null, left: 0, body: "" }; // public studio state
 let view, refs;
@@ -291,13 +291,9 @@ function render() {
           favOnly ? "No favorite prompts yet — tap ☆ on a prompt." : hasFilter ? "No prompts match your filters." : "No prompts yet."
         }${admin && !hasFilter ? ' Use "+ New prompt" to add one.' : ""}</div>`
     : `<div class="gallery ${viewMode === "list" ? "gallery--list" : ""}">${items.map((p) => cardHTML(p, admin)).join("")}</div>`;
-  // Admin-only banner: pending Prompt Studio submissions.
-  const banner =
-    admin && subs.length
-      ? `<div class="queue-banner"><span class="queue-dot">${subs.length}</span> <b>${subs.length} submission${subs.length === 1 ? "" : "s"} waiting for review</b> <span class="muted">· visible only to you</span> <button type="button" class="btn btn-sm" data-open-queue>Open queue</button></div>`
-      : "";
-  view.innerHTML = banner + controlsHTML() + body;
-  view.querySelector("[data-open-queue]")?.addEventListener("click", openQueue);
+  // Admin-only banner: pending community submissions (shared queue).
+  view.innerHTML = queueBannerHTML() + controlsHTML() + body;
+  wireQueueBanner(view);
 
   view.querySelectorAll("[data-pview]").forEach((b) =>
     b.addEventListener("click", () => {
@@ -457,88 +453,11 @@ function openPromptDetail(p) {
   openModal(refs.detailModal);
 }
 
-// ---------- review queue (admin): Prompt Studio submissions ----------
-async function loadSubs() {
-  if (!adminState().admin) {
-    subs = [];
-    return;
-  }
-  try {
-    subs = (await api.getSubmissions()).submissions || [];
-  } catch {
-    subs = [];
-  }
-}
-
-function verdictChips(s) {
-  const v = s.verdict || {};
-  const chips = [];
-  if (v.quality === "solid") chips.push(`<span class="chip-verdict ok">Claude: looks solid</span>`);
-  else if (v.quality === "spam") chips.push(`<span class="chip-verdict bad">Claude: likely spam</span>`);
-  else if (v.quality) chips.push(`<span class="chip-verdict warn">Claude: usable but thin</span>`);
-  if (v.duplicateOf) chips.push(`<span class="chip-verdict warn">near-duplicate of “${escapeHtml(v.duplicateOf)}” (${v.similarity}%)</span>`);
-  if (s.copied) chips.push(`<span class="chip-verdict info">copied by creator</span>`);
-  return chips.join("");
-}
-
-function openQueue() {
-  const bodyEl = refs.subsBody;
-  bodyEl.innerHTML = subs.length
-    ? subs
-        .map(
-          (s) => `<div class="result-item sub-card" data-sid="${escapeHtml(s.id)}">
-            <div class="sub-head"><b>${escapeHtml(s.title || "Untitled")}</b>${verdictChips(s)}</div>
-            <div class="muted sub-meta">via Prompt Studio · ${escapeHtml(s.category || "General")}${(s.tags || []).length ? ` · tags: ${escapeHtml(s.tags.join(", "))}` : ""}${s.credit ? ` · credit: ${escapeHtml(s.credit)}` : ""}${s.at ? ` · ${escapeHtml(new Date(s.at).toLocaleString())}` : ""} · ${escapeHtml(s.id)}</div>
-            <pre class="prompt-preview">${escapeHtml(s.body || "")}</pre>
-            ${s.verdict?.note ? `<p class="field-help">🤖 ${escapeHtml(s.verdict.note)}</p>` : ""}
-            <div class="pd-actions" style="justify-content:flex-start">
-              <button type="button" class="btn btn-sm btn-primary" data-sapprove="${escapeHtml(s.id)}">✓ Approve</button>
-              <button type="button" class="btn btn-sm" data-sedit="${escapeHtml(s.id)}">Edit &amp; approve</button>
-              <button type="button" class="btn btn-sm btn-ghost btn-danger" data-sreject="${escapeHtml(s.id)}">Reject</button>
-            </div>
-          </div>`
-        )
-        .join("")
-    : `<p class="field-help">The queue is empty.</p>`;
-
-  bodyEl.querySelectorAll("[data-sapprove]").forEach((b) =>
-    b.addEventListener("click", async () => {
-      try {
-        await api.submissionAction({ action: "approve", id: b.dataset.sapprove });
-        toast("Published to the library ✓");
-        await loadSubs();
-        openQueue();
-        await refresh();
-      } catch (e) {
-        toast(e.message);
-      }
-    })
-  );
-  bodyEl.querySelectorAll("[data-sedit]").forEach((b) =>
-    b.addEventListener("click", () => {
-      const s = subs.find((x) => x.id === b.dataset.sedit);
-      if (!s) return;
-      closeModal(refs.subsModal);
-      openForm({ title: s.title, category: s.category, tags: s.tags, body: s.body, credit: s.credit });
-      approveId = s.id;
-      refs.modalTitle.textContent = "Edit & approve submission";
-    })
-  );
-  bodyEl.querySelectorAll("[data-sreject]").forEach((b) =>
-    b.addEventListener("click", async () => {
-      if (!confirm("Reject this submission? It moves to the trash (restorable).")) return;
-      try {
-        await api.submissionAction({ action: "reject", id: b.dataset.sreject });
-        toast("Rejected");
-        await loadSubs();
-        openQueue();
-        render();
-      } catch (e) {
-        toast(e.message);
-      }
-    })
-  );
-  openModal(refs.subsModal);
+// ---------- edit & approve (called by the shared queue in queue.js) ----------
+function openApprove(sub) {
+  openForm({ title: sub.title, category: sub.category, tags: sub.tags, body: sub.body, credit: sub.credit });
+  approveId = sub.id;
+  refs.modalTitle.textContent = "Edit & approve submission";
 }
 
 // ---------- Prompt Studio (public): draft -> improve -> copy ----------
@@ -1050,7 +969,7 @@ async function onSave() {
       // Edit & approve: publish the submission with the edited fields.
       await api.submissionAction({ action: "approve", id: approveId, prompt });
       approveId = null;
-      await loadSubs();
+      await loadQueue();
       toast("Published to the library ✓");
     } else {
       await api.savePrompt({ id: editId || undefined, prompt });
@@ -1073,7 +992,7 @@ async function ensureLoaded() {
 async function refresh() {
   list = (await api.getPrompts()).prompts || [];
   loaded = true;
-  await loadSubs();
+  await loadQueue();
   render();
 }
 
@@ -1101,9 +1020,6 @@ export function initPrompts() {
     credit: el("pCredit"),
     body: el("pBody"),
     notes: el("pNotes"),
-    // review queue (admin)
-    subsModal: el("subsModal"),
-    subsBody: el("subsBody"),
     // Prompt Studio (public)
     studioBtn: el("studioBtn"),
     studioModal: el("studioModal"),
@@ -1170,7 +1086,6 @@ export function initPrompts() {
   wireModalDismiss(refs.resModal);
   wireModalDismiss(refs.detailModal);
   wireModalDismiss(refs.studioModal);
-  wireModalDismiss(refs.subsModal);
   refs.studioBtn.addEventListener("click", () => {
     resetStudio();
     openModal(refs.studioModal);
@@ -1239,11 +1154,14 @@ export function initPrompts() {
   return {
     show: async () => {
       await ensureLoaded();
-      await loadSubs();
+      await loadQueue();
       render();
     },
     // Re-check the queue too: admin may have just signed in.
-    rerender: () => loadSubs().then(render),
+    rerender: () => loadQueue().then(render),
+    refresh,
+    // Edit & approve a queued submission (opened by the shared queue).
+    openApprove,
     setQuery: (q) => {
       query = q;
       if (view && !view.hidden) render();
