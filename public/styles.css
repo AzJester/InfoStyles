@@ -430,7 +430,7 @@ mark { background: none; color: inherit; font-weight: 650; }
 /* Favorites form one straight column at the row's edge, whatever the card
    type or title length — never scattered mid-row. */
 .gallery--list .card-head .fav { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); }
-.gallery--list .card-thumb { width: 72px; aspect-ratio: 16 / 10; flex-shrink: 0; }
+.gallery--list .card-thumb { width: 64px; aspect-ratio: 16 / 10; flex-shrink: 0; }
 /* A thin strip: the row's height follows the title, not the palette. */
 .gallery--list .card-band { width: 64px; height: 24px; flex-shrink: 0; border-radius: var(--radius-sm); }
 .gallery--list .card-teaser { display: none; }
@@ -545,6 +545,11 @@ mark { background: none; color: inherit; font-weight: 650; }
 /* example images in the detail view */
 .detail-images { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .detail-thumb { height: 120px; max-width: 100%; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); cursor: zoom-in; background: var(--bg); }
+/* A style with example images leads with the first one, full width; the
+   palette below it shrinks to small swatches (still click-to-copy). */
+.detail-images .detail-hero { flex: 1 1 100%; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.detail-palette--compact .swatches.lg .swatch { width: 28px; height: 28px; }
+.detail-palette--compact .swatch-aa { font-size: 0.7rem; }
 
 /* lightbox */
 .lightbox {
@@ -775,6 +780,7 @@ mark { background: none; color: inherit; font-weight: 650; }
      their width to the title (the detail view has the same Copy button). */
   .gallery--list .card { gap: 12px; padding-left: 12px; }
   .gallery--list .card-band { width: 52px; height: 20px; }
+  .gallery--list .card-thumb { width: 52px; }
   .gallery--list .card:not(.prompt-card):not(.skill-card) > .card-actions { display: none; }
   /* Skill rows: the name wraps instead of clipping; the download button stays
      and Copy moves to the skill's own page ("Copy instructions"). */
