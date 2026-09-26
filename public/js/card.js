@@ -177,16 +177,16 @@ export function openDetail(style, ctx) {
 
     ${
       imgs.length
-        ? `<div class="detail-images">${imgs
+        ? `<div class="detail-images${imgs.length > 1 ? "" : " single"}">${imgs
             .map(
               (u, i) =>
-                `<img class="detail-thumb" data-img="${i}" loading="lazy" alt="Example ${i + 1} for ${escapeHtml(style.style)}" src="${escapeHtml(u)}" />`
+                `<img class="detail-thumb${i === 0 ? " detail-hero" : ""}" data-img="${i}" loading="lazy" alt="Example ${i + 1} for ${escapeHtml(style.style)}" src="${escapeHtml(u)}" />`
             )
             .join("")}</div>`
         : ""
     }
 
-    <div class="detail-palette" id="detailPalette"></div>
+    <div class="detail-palette${imgs.length ? " detail-palette--compact" : ""}" id="detailPalette"></div>
 
     <div class="detail-grid">
       ${fieldBlock("Type", style.type)}
