@@ -336,7 +336,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 36px 28px 88px; }
 
 /* Palette band: the card face. Segments are clickable (copy hex) and widen on hover. */
 .card-band {
-  display: flex; height: 52px; border-radius: var(--radius-sm); overflow: hidden;
+  display: flex; height: 30px; border-radius: var(--radius-sm); overflow: hidden;
   border: 1px solid var(--border);
 }
 :root[data-theme="dark"] .card-band { border-color: rgba(255, 255, 255, 0.12); }
@@ -431,7 +431,8 @@ mark { background: none; color: inherit; font-weight: 650; }
    type or title length — never scattered mid-row. */
 .gallery--list .card-head .fav { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); }
 .gallery--list .card-thumb { width: 72px; aspect-ratio: 16 / 10; flex-shrink: 0; }
-.gallery--list .card-band { width: 96px; height: 40px; flex-shrink: 0; border-radius: var(--radius-sm); }
+/* A thin strip: the row's height follows the title, not the palette. */
+.gallery--list .card-band { width: 64px; height: 24px; flex-shrink: 0; border-radius: var(--radius-sm); }
 .gallery--list .card-teaser { display: none; }
 .gallery--list .card-body { flex: 1; min-width: 0; }
 .gallery--list .card-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -773,7 +774,7 @@ mark { background: none; color: inherit; font-weight: 650; }
   /* Style rows: the palette band narrows and the row's action buttons give
      their width to the title (the detail view has the same Copy button). */
   .gallery--list .card { gap: 12px; padding-left: 12px; }
-  .gallery--list .card-band { width: 64px; }
+  .gallery--list .card-band { width: 52px; height: 20px; }
   .gallery--list .card:not(.prompt-card):not(.skill-card) > .card-actions { display: none; }
   /* Skill rows: the name wraps instead of clipping; the download button stays
      and Copy moves to the skill's own page ("Copy instructions"). */
