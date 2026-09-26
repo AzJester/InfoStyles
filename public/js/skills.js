@@ -386,7 +386,7 @@ function render() {
         <h2>Skills Hub</h2>
         <p>Every skill here is install-ready: download the file, copy the instructions, or share the link.</p>
       </div>
-      ${adminState().submit ? `<button type="button" class="btn btn-primary" id="skillSubmitBtn">⚡ Submit a skill</button>` : ""}
+      ${adminState().submit ? `<button type="button" class="btn btn-primary" id="skillSubmitBtn">Submit a skill</button>` : ""}
     </div>
     ${queueBannerHTML()}${controlsHTML()}${body}${INSTALL_GUIDE}`;
   wireQueueBanner(view);

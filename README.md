@@ -98,6 +98,7 @@ public/                         # static site (served at /)
   index.html  styles.css
   js/  main.js, catalog.js, card.js, creator.js, prompts.js, skills.js, queue.js, submit.js, skillfile.js, admin.js, api.js, ui.js, imagePrompt.js, storage.js
   data/                         # generated/committed JSON (styles, categories, prompts, skills)
+  fonts/                        # self-hosted Oswald, Lato, Crimson Pro (SIL OFL; the CSP blocks font CDNs)
 api/                            # request handlers (reused by server.js)
   login.js logout.js session.js catalog.js
   generate-style.js styles.js upload-image.js
