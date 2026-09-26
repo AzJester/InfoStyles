@@ -18,13 +18,15 @@
     <meta property="og:url" content="https://infostyles.onrender.com/" />
     <meta property="og:image" content="https://infostyles.onrender.com/icon.svg" />
     <meta name="twitter:card" content="summary" />
+    <link rel="preload" href="/fonts/lato-latin-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/oswald-latin-wght.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/styles.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#f7f8fa" />
+    <meta name="theme-color" content="#000000" />
     <link rel="apple-touch-icon" href="/icon.svg" />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232547d0'/%3E%3Crect x='24' y='24' width='22' height='22' rx='6' fill='%23ffffff'/%3E%3Crect x='54' y='24' width='22' height='22' rx='6' fill='%23ffffff' opacity='0.75'/%3E%3Crect x='24' y='54' width='22' height='22' rx='6' fill='%23ffffff' opacity='0.75'/%3E%3Crect x='54' y='54' width='22' height='22' rx='6' fill='%23ffffff' opacity='0.5'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='12' fill='%23355e93'/%3E%3Crect x='24' y='24' width='22' height='22' rx='3' fill='%23ffffff'/%3E%3Crect x='54' y='24' width='22' height='22' rx='3' fill='%23ffffff' opacity='0.75'/%3E%3Crect x='24' y='54' width='22' height='22' rx='3' fill='%23ffffff' opacity='0.75'/%3E%3Crect x='54' y='54' width='22' height='22' rx='3' fill='%23ffffff' opacity='0.5'/%3E%3C/svg%3E"
     />
     <script src="/js/theme-init.js"></script>
   </head>
@@ -84,14 +86,14 @@
           </a>
           <a class="lib-card" href="/prompts" id="ctaPrompts">
             <span class="lib-count" id="libCountPrompts"></span>
-            <span class="lib-glyph" aria-hidden="true">¶</span>
+            <span class="lib-glyph" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg></span>
             <h3>Prompt Library</h3>
             <p>Reusable LLM prompts for research, project management, and business development — variables filled in at copy time.</p>
             <span class="lib-go">Browse prompts →</span>
           </a>
           <a class="lib-card" href="/skills" id="ctaSkills">
             <span class="lib-count" id="libCountSkills"></span>
-            <span class="lib-glyph" aria-hidden="true">⚡</span>
+            <span class="lib-glyph" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>
             <h3>Skills Hub</h3>
             <p>Install-ready skills for Claude, ChatGPT, and Gemini — download the file, copy the instructions, or share a link.</p>
             <span class="lib-go">Open the hub →</span>
@@ -139,7 +141,7 @@
             <h2>Style Library</h2>
             <p>Design styles for infographics &amp; slides, each with a palette and copy-ready prompts.</p>
           </div>
-          <button type="button" class="btn btn-primary" id="styleSubmitBtn" hidden>🎨 Submit a style</button>
+          <button type="button" class="btn btn-primary" id="styleSubmitBtn" hidden>Submit a style</button>
         </div>
         <div id="stylesQueueBanner"></div>
         <div class="page-toolbar">
@@ -188,7 +190,7 @@
             <h2>Prompt Library</h2>
             <p>Reusable LLM prompts — customize the variables, then copy or open in your tool.</p>
           </div>
-          <button type="button" class="btn btn-primary" id="studioBtn" hidden>✨ Create a prompt</button>
+          <button type="button" class="btn btn-primary" id="studioBtn" hidden>Create a prompt</button>
         </div>
         <div id="promptsView"></div>
       </section>
@@ -460,7 +462,7 @@
     <!-- Prompt Studio (public): draft -> AI improve -> copy; saved to the review queue -->
     <div id="studioModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="stTitleHead">
       <div class="modal-card modal-wide">
-        <div class="modal-head"><h2 id="stTitleHead">✨ Prompt Studio</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <div class="modal-head"><h2 id="stTitleHead">Prompt Studio</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
         <div id="stWork">
           <div id="stOut" class="studio-out" hidden>
             <span aria-hidden="true">⚡</span>
@@ -476,7 +478,7 @@
               <textarea id="stDraft" class="input textarea" rows="7" placeholder="e.g. write a weekly status report for my project. mention what went well and the risks and what i need from my boss. short."></textarea>
               <input id="stWebsite" type="text" name="website" tabindex="-1" autocomplete="off" class="hp-field" aria-hidden="true" />
               <div class="ai-controls">
-                <button type="button" id="stImprove" class="btn btn-primary">✨ Improve with AI</button>
+                <button type="button" id="stImprove" class="btn btn-primary">Improve with AI</button>
                 <span id="stLeft" class="field-help"></span>
               </div>
             </div>
@@ -523,7 +525,7 @@
     <!-- Submit a skill (public): upload or paste; lands in the admin review queue -->
     <div id="subSkillModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="subSkillTitle">
       <div class="modal-card modal-wide">
-        <div class="modal-head"><h2 id="subSkillTitle">⚡ Submit a skill</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <div class="modal-head"><h2 id="subSkillTitle">Submit a skill</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
         <div id="subSkillWork">
           <p class="field-help">Built a skill you'd like to see in the hub? Upload it or fill in the form. The site owner reviews every submission before it's published.</p>
           <section class="ai-section">
@@ -576,7 +578,7 @@
     <!-- Submit a style (public): lands in the admin review queue -->
     <div id="subStyleModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="subStyleTitle">
       <div class="modal-card modal-wide">
-        <div class="modal-head"><h2 id="subStyleTitle">🎨 Submit a style</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
+        <div class="modal-head"><h2 id="subStyleTitle">Submit a style</h2><button class="btn btn-icon" data-close aria-label="Close">✕</button></div>
         <div id="subStyleWork">
           <p class="field-help">Designed an infographic or slide style worth sharing? Describe it below. The site owner reviews every submission before it's published.</p>
           <div class="editor-grid">

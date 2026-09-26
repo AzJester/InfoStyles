@@ -2,7 +2,7 @@
 // - Navigations: network-first, falling back to the cached shell when offline.
 // - Static assets (JS/CSS/JSON/icons): cache-first with a background refresh.
 // - /api/* and /uploads/*: always go to the network (must stay fresh / dynamic).
-const CACHE = "infostyles-v11";
+const CACHE = "infostyles-v12";
 const PRECACHE = [
   "/",
   "/index.html",
@@ -13,6 +13,9 @@ const PRECACHE = [
   "/js/theme-init.js",
   "/data/styles.json",
   "/data/categories.json",
+  "/fonts/lato-latin-400.woff2",
+  "/fonts/lato-latin-700.woff2",
+  "/fonts/oswald-latin-wght.woff2",
 ];
 
 self.addEventListener("install", (event) => {
